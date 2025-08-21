@@ -30,10 +30,9 @@ flutter:
     - assets/images/onb2.jpg
     - assets/images/onb3.jpg
     - assets/images/onb4.jpg
-    - assets/images/chef.png
+    - assets/images/chef.jpg
+    - assets/images/logo.png
   fonts:
     - family: Poppins
       fonts:
-        - asset: assets/fonts/Poppins-Regular.ttf
-        - asset: assets/fonts/Poppins-Bold.ttf
-          weight: 700
+        - asset: assets/fonts/Rye-Regular.ttf

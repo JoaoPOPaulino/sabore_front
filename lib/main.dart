@@ -5,8 +5,9 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/create_account_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/auth/home_screen.dart';
+
 import 'providers/auth_provider.dart';
+
 void main() {
   runApp(ProviderScope(child: MyApp()));
 }
@@ -48,22 +49,25 @@ class MyApp extends StatelessWidget {
 final GoRouter _router = GoRouter(
   initialLocation: '/onboarding',
   routes: [
-    GoRoute(path: '/onboarding', builder: (context, state) => OnboardingScreen()),
-    GoRoute(path: '/create-account', builder: (context, state) => CreateAccountScreen()),
-    GoRoute(path: '/signup', builder: (context, state) => SignupScreen()),
-    GoRoute(path: '/login', builder: (context, state) => LoginScreen()),
-    GoRoute(path: '/home', builder: (context, state) => HomeScreen()),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => OnboardingScreen(),
+    ),
+    GoRoute(
+      path: '/create-account',
+      builder: (context, state) => CreateAccountScreen(),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (context, state) => SignupScreen(),
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => LoginScreen(),
+    ),
   ],
-  redirect: (context, state) async {
-    // Usar ref.read requer um Consumer, então vamos simular com uma verificação simples por agora
-    // Para uma solução completa, use um ProviderScope com Consumer
-    final authNotifier = ProviderScope.containerOf(context).read(authProvider.notifier);
-    final isAuthenticated = authNotifier.state;
-    if (state.fullPath == '/onboarding' && isAuthenticated) return '/home';
-    if (state.fullPath == '/create-account' && isAuthenticated) return '/home';
-    if (state.fullPath == '/login' && isAuthenticated) return '/home';
-    if (state.fullPath == '/signup' && isAuthenticated) return '/home';
-    if (state.fullPath == '/home' && !isAuthenticated) return '/onboarding';
+  redirect: (context, state) {
+    // Simplificando o redirect por enquanto para evitar erros
     return null;
   },
 );
