@@ -72,10 +72,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Positioned(
                       top: index == 0 ? 426 : -34,
                       left: index == 0 ? 3 : 62,
-                      child: Image.asset(
-                        'assets/images/logo.png',
+                      child: SizedBox(
                         width: index == 0 ? 369 : 252,
                         height: index == 0 ? 369 : 252,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
                     ),
                     // Conteúdo só aparece a partir da 2ª tela
@@ -90,18 +96,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             Text(
                               _pages[index]['title']!,
                               style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 30,
-                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Montserrat',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 40,
+                                height: 48 / 40, // line-height
+                                letterSpacing: -0.04 * 40, // -4% do tamanho
                                 color: Colors.white,
-                                height: 1.2,
                               ),
                             ),
                             SizedBox(height: 16),
                             Text(
                               _pages[index]['subtitle']!,
                               style: TextStyle(
-                                fontFamily: 'Poppins',
+                                fontFamily: 'Montserrat',
                                 fontSize: 15,
                                 color: Colors.white,
                                 height: 1.5,

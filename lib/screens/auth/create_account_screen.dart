@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../widgets/custom_button.dart';
 
 class CreateAccountScreen extends StatelessWidget {
   @override
@@ -9,7 +8,7 @@ class CreateAccountScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Usando chef.jpg conforme pubspec.yaml
+          // Imagem de fundo
           Image.asset(
             'assets/images/chef.jpg',
             fit: BoxFit.cover,
@@ -25,33 +24,57 @@ class CreateAccountScreen extends StatelessWidget {
               );
             },
           ),
+
+          // Logo no topo
           Positioned(
-            top: 50,
-            left: 20,
-            child: Text(
-                'Saborê',
-                style: TextStyle(
-                  fontSize: 48,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
-                )
+            top: -47,
+            left: 67,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Opacity(
+                opacity: 1,
+                child: Transform.rotate(
+                  angle: 0,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 252,
+                    height: 252,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
             ),
           ),
+
+          // Conteúdo principal
           Positioned(
-            bottom: 100,
+            bottom: 140,
             left: 20,
             right: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Crie a sua conta',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: Colors.white,
+                // Título estilizado
+                SizedBox(
+                  width: 275,
+                  height: 96,
+                  child: Text(
+                    'Crie a sua conta',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 40,
+                      height: 48 / 40,
+                      letterSpacing: -0.04 * 40, // -4%
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 SizedBox(height: 10),
+
+                // Subtítulo
                 Text(
                   'Junte-se à nossa comunidade e compartilhe suas receitas favoritas com o mundo.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -59,24 +82,86 @@ class CreateAccountScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 40),
-                CustomButton(
-                    text: 'Crie sua conta com e-mail',
-                    onPressed: () => context.go('/signup'),
-                    icon: Icons.email
+
+                // Botão principal (centralizado)
+                Center(
+                  child: SizedBox(
+                    width: 315,
+                    height: 60,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => context.go('/signup'),
+                      icon: Icon(Icons.email, color: Colors.white),
+                      label: Text(
+                        'Crie sua conta com e-mail',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'Montserrat',
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                SizedBox(height: 10),
-                CustomButton(
-                    text: 'Google',
-                    onPressed: () {/* Integre Google SignIn */},
-                    icon: Icons.g_mobiledata
-                ),
-                SizedBox(height: 10),
-                CustomButton(
-                    text: 'Apple',
-                    onPressed: () {/* Integre Apple SignIn */},
-                    icon: Icons.apple
-                ),
+
                 SizedBox(height: 20),
+
+                // Botões Google e Apple lado a lado
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox(
+                      width: 152.5,
+                      height: 60,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {/* Integração Google */},
+                        icon: Icon(Icons.g_mobiledata, color: Colors.red),
+                        label: Text(
+                          'Google',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontFamily: 'Montserrat',
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 152.5,
+                      height: 60,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {/* Integração Apple */},
+                        icon: Icon(Icons.apple, color: Colors.black),
+                        label: Text(
+                          'Apple',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontFamily: 'Montserrat',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 20),
+
                 Center(
                   child: GestureDetector(
                     onTap: () => context.go('/login'),
@@ -86,6 +171,7 @@ class CreateAccountScreen extends StatelessWidget {
                         color: Colors.white,
                         fontWeight: FontWeight.w500,
                         decoration: TextDecoration.underline,
+                        fontFamily: 'Montserrat',
                       ),
                     ),
                   ),
