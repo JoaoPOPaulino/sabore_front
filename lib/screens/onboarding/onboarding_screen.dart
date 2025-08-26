@@ -121,19 +121,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 );
               },
             ),
-            // Progress bar e seta 👉 só aparecem a partir da 2ª tela
-            if (_currentPage > 0) ...[
+            // Progress bar customizado - só aparece a partir da 2ª tela
+            if (_currentPage > 0)
               Positioned(
-                bottom: 120,
-                left: 20,
-                right: 20,
-                child: LinearProgressIndicator(
-                  value: (_currentPage + 1) / _pages.length,
-                  backgroundColor: Colors.white.withOpacity(0.3),
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFA9500)),
-                  minHeight: 3,
+                top: 737,
+                left: 21,
+                child: Container(
+                  width: 100,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: Color(0xFF3C4D18), // Cor de fundo
+                    borderRadius: BorderRadius.circular(3.5),
+                  ),
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: (100 * _currentPage) / (_pages.length - 1), // Calcula o progresso baseado nas telas visíveis (excluindo a primeira)
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: Color(0xFFFA9500), // Cor do progresso
+                          borderRadius: BorderRadius.circular(3.5),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+            // Seta só aparece a partir da 2ª tela
+            if (_currentPage > 0)
               Positioned(
                 bottom: 30,
                 right: 20,
@@ -156,7 +171,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
               ),
-            ]
           ],
         ),
       ),

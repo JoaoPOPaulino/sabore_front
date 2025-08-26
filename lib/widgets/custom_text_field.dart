@@ -21,7 +21,10 @@ class CustomTextField extends StatelessWidget {
     this.onChanged,
     this.suffixIcon,
     this.maxLength,
-  });
+  }) {
+    print('CustomTextField: obscureText = $obscureText');
+    assert(obscureText != null, 'obscureText não pode ser null');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +33,13 @@ class CustomTextField extends StatelessWidget {
       height: 60,
       child: TextFormField(
         controller: controller,
-        obscureText: obscureText,
+        obscureText: obscureText, // Removido o fallback para forçar o erro
         keyboardType: keyboardType,
         onChanged: onChanged,
         maxLength: maxLength,
+        enabled: true,
+        autofocus: false,
+        readOnly: false,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
@@ -58,8 +64,8 @@ class CustomTextField extends StatelessWidget {
             borderSide: BorderSide(color: Color(0xFF3C4D18)),
           ),
           filled: true,
-          fillColor: Color(0x1CFA9500), // #FA95001C
-          counterText: maxLength != null ? '' : null, // Esconde o contador de caracteres
+          fillColor: Color(0x1CFA9500),
+          counterText: maxLength != null ? '' : null,
           contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 21),
         ),
         validator: validator ??

@@ -5,6 +5,8 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/create_account_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/profile/setup_profile_screen.dart'; // Nova tela
+import 'screens/home/home_screen.dart'; // Nova tela
 
 import 'providers/auth_provider.dart';
 
@@ -20,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primaryColor: Color(0xFF4CAF50),
         colorScheme: ColorScheme.fromSwatch().copyWith(
-          secondary: Color(0xFFFF5722), // Substitui accentColor
+          secondary: Color(0xFFFF5722),
         ),
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Poppins',
@@ -65,9 +67,35 @@ final GoRouter _router = GoRouter(
       path: '/login',
       builder: (context, state) => LoginScreen(),
     ),
+    GoRoute(
+      path: '/setup-profile',
+      builder: (context, state) => SetupProfileScreen(),
+    ),
+    GoRoute(
+      path: '/home',
+      builder: (context, state) => HomeScreen(),
+    ),
   ],
   redirect: (context, state) {
-    // Simplificando o redirect por enquanto para evitar erros
-    return null;
+    final isAuthenticated = ref.read(authProvider);
+    final isFirstLogin = ref.read(isFirstLoginProvider); // Adicionaremos esse provider
+
+    // Se não estiver autenticado, redireciona para onboarding
+    if (!isAuthenticated) {
+      return '/onboarding';
+    }
+
+    // Se for o primeiro login, redireciona para configurar perfil
+    if (isAuthenticated && isFirstLogin) {
+      return '/setup-profile';
+    }
+
+    // Caso contrário, vai para a home
+    if (isAuthenticated && !isFirstLogin) {
+      return '/home';
+    }
+
+    return null; // Não redireciona se já estiver na rota correta
   },
+  refreshListenable: GoRouterRefreshStream(ref.read(authProvider.notifier)),
 );
