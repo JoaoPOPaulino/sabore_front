@@ -40,19 +40,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _nextPage() {
+    print('Current page: $_currentPage, Total pages: ${_pages.length}');
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
         duration: Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+    } else {
+      print('Navegando para /create-account a partir do onboarding');
+      context.go('/create-account');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: GestureDetector(
-        // 👉 Na tela 0, qualquer clique avança
+        // Na tela 0, qualquer clique avança; nas outras, usa a seta
         onTap: _currentPage == 0 ? _nextPage : null,
         child: Stack(
           children: [
@@ -68,7 +71,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       _pages[index]['image']!,
                       fit: BoxFit.cover,
                     ),
-                    // 👉 Logo como imagem
                     Positioned(
                       top: index == 0 ? 426 : -34,
                       left: index == 0 ? 3 : 62,
@@ -84,7 +86,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                       ),
                     ),
-                    // Conteúdo só aparece a partir da 2ª tela
                     if (index > 0)
                       Positioned(
                         bottom: 180,
@@ -99,8 +100,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 fontFamily: 'Montserrat',
                                 fontWeight: FontWeight.w700,
                                 fontSize: 40,
-                                height: 48 / 40, // line-height
-                                letterSpacing: -0.04 * 40, // -4% do tamanho
+                                height: 48 / 40,
+                                letterSpacing: -0.04 * 40,
                                 color: Colors.white,
                               ),
                             ),
@@ -121,7 +122,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 );
               },
             ),
-            // Progress bar customizado - só aparece a partir da 2ª tela
             if (_currentPage > 0)
               Positioned(
                 top: 737,
@@ -130,16 +130,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   width: 100,
                   height: 7,
                   decoration: BoxDecoration(
-                    color: Color(0xFF3C4D18), // Cor de fundo
+                    color: Color(0xFF3C4D18),
                     borderRadius: BorderRadius.circular(3.5),
                   ),
                   child: Stack(
                     children: [
                       Container(
-                        width: (100 * _currentPage) / (_pages.length - 1), // Calcula o progresso baseado nas telas visíveis (excluindo a primeira)
+                        width: (100 * _currentPage) / (_pages.length - 1),
                         height: 7,
                         decoration: BoxDecoration(
-                          color: Color(0xFFFA9500), // Cor do progresso
+                          color: Color(0xFFFA9500),
                           borderRadius: BorderRadius.circular(3.5),
                         ),
                       ),
@@ -147,15 +147,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
               ),
-            // Seta só aparece a partir da 2ª tela
             if (_currentPage > 0)
               Positioned(
                 bottom: 30,
                 right: 20,
                 child: GestureDetector(
-                  onTap: _currentPage < _pages.length - 1
-                      ? _nextPage
-                      : () => context.go('/create-account'),
+                  onTap: _nextPage, // Sempre chama _nextPage, que agora lida com a navegação
                   child: Container(
                     width: 55,
                     height: 55,

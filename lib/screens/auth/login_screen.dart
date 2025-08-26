@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../constants.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
@@ -16,18 +16,20 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  // Controllers
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  // Services
   final Dio _dio = Dio(BaseOptions(baseUrl: apiUrl));
   final storage = FlutterSecureStorage();
-
-  // State
   bool _obscurePassword = true;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _obscurePassword = true;
+    print('LoginScreen: _obscurePassword inicializado como $_obscurePassword');
+  }
 
   @override
   void dispose() {
@@ -72,8 +74,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Positioned(
       top: -22,
       left: 96,
-      child: Image.asset(
-        'assets/images/logo2.png',
+      child: Image(
+        image: AssetImage('assets/images/logo2.png'),
         width: 187,
         height: 187,
         fit: BoxFit.contain,
@@ -157,6 +159,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _buildPasswordField() {
+    print('Building password field with _obscurePassword = $_obscurePassword');
     return CustomTextField(
       label: 'Senha',
       obscureText: _obscurePassword,
@@ -235,7 +238,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
-          side: BorderSide(color: Colors.grey[300]!),
+          side: BorderSide(color: Colors.grey),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -260,7 +263,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       right: 30,
       child: Center(
         child: GestureDetector(
-          onTap: () => context.go('/signup'),
+          onTap: () => context.go('/signup'), // Navegação para signup
           child: Text(
             'Não possui uma conta? Cadastre-se',
             style: TextStyle(
@@ -275,7 +278,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  // Validation Methods
   String? _validateEmail(String? email) {
     if (email == null || email.isEmpty) {
       return 'Campo obrigatório';
@@ -286,7 +288,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return null;
   }
 
-  // Event Handlers
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -297,34 +298,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _emailController.text,
         _passwordController.text,
       );
-      context.go('/home');
+      // Remova a navegação explícita e confie no redirecionamento do GoRouter
     } catch (e) {
       _showErrorMessage('Erro no login: Verifique suas credenciais');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
-
   void _handleForgotPassword() {
-    // TODO: Implementar recuperação de senha
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Funcionalidade em desenvolvimento')),
+      const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
     );
   }
 
   void _handleGoogleLogin() {
-    // TODO: Implementar login com Google
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Login com Google em desenvolvimento')),
+      const SnackBar(content: Text('Login com Google em desenvolvimento')),
     );
   }
 
   void _handleAppleLogin() {
-    // TODO: Implementar login com Apple
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Login com Apple em desenvolvimento')),
+      const SnackBar(content: Text('Login com Apple em desenvolvimento')),
     );
   }
 

@@ -5,18 +5,18 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/create_account_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/profile/setup_profile_screen.dart'; // Nova tela
-import 'screens/home/home_screen.dart'; // Nova tela
-
+import 'screens/profile/setup_profile_screen.dart';
+import 'screens/home/home_screen.dart';
 import 'providers/auth_provider.dart';
 
 void main() {
   runApp(ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(goRouterProvider);
     return MaterialApp.router(
       title: 'Saborê',
       theme: ThemeData(
@@ -43,59 +43,59 @@ class MyApp extends StatelessWidget {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         ),
       ),
-      routerConfig: _router,
+      routerConfig: router,
     );
   }
 }
 
-final GoRouter _router = GoRouter(
-  initialLocation: '/onboarding',
-  routes: [
-    GoRoute(
-      path: '/onboarding',
-      builder: (context, state) => OnboardingScreen(),
-    ),
-    GoRoute(
-      path: '/create-account',
-      builder: (context, state) => CreateAccountScreen(),
-    ),
-    GoRoute(
-      path: '/signup',
-      builder: (context, state) => SignupScreen(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => LoginScreen(),
-    ),
-    GoRoute(
-      path: '/setup-profile',
-      builder: (context, state) => SetupProfileScreen(),
-    ),
-    GoRoute(
-      path: '/home',
-      builder: (context, state) => HomeScreen(),
-    ),
-  ],
-  redirect: (context, state) {
-    final isAuthenticated = ref.read(authProvider);
-    final isFirstLogin = ref.read(isFirstLoginProvider); // Adicionaremos esse provider
+final goRouterProvider = Provider<GoRouter>((ref) {
+  final authNotifier = ref.watch(authProvider.notifier);
+  return GoRouter(
+    initialLocation: '/onboarding',
+    routes: [
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/create-account',
+        builder: (context, state) => CreateAccountScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => SignupScreen(),
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => LoginScreen(),
+      ),
+      GoRoute(
+        path: '/setup-profile',
+        builder: (context, state) => SetupProfileScreen(),
+      ),
+      GoRoute(
+        path: '/home',
+        builder: (context, state) => HomeScreen(),
+      ),
+    ],
+    redirect: (context, state) {
+      final isAuthenticated = authNotifier.state;
+      final isFirstLogin = ref.watch(isFirstLoginProvider);
+      final location = state.matchedLocation;
 
-    // Se não estiver autenticado, redireciona para onboarding
-    if (!isAuthenticated) {
+      // Permitir rotas públicas sem redirecionamento
+      if (location == '/onboarding' ||
+          location == '/create-account' ||
+          location == '/login' ||
+          location == '/signup') {
+        return null;
+      }
+
+      // Redirecionar com base no estado de autenticação
+      if (isAuthenticated && isFirstLogin) return '/setup-profile';
+      if (isAuthenticated && !isFirstLogin) return '/home';
       return '/onboarding';
-    }
-
-    // Se for o primeiro login, redireciona para configurar perfil
-    if (isAuthenticated && isFirstLogin) {
-      return '/setup-profile';
-    }
-
-    // Caso contrário, vai para a home
-    if (isAuthenticated && !isFirstLogin) {
-      return '/home';
-    }
-
-    return null; // Não redireciona se já estiver na rota correta
-  },
-  refreshListenable: GoRouterRefreshStream(ref.read(authProvider.notifier)),
-);
+    },
+    refreshListenable: ValueNotifier(authNotifier),
+  );
+});

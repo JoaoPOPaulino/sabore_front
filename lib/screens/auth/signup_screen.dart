@@ -377,7 +377,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Validação assíncrona do e-mail
       final emailError = await _checkEmailAvailability(_emailController.text);
       if (emailError != null) {
         _showErrorMessage(emailError);
@@ -390,8 +389,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         '${_phoneCodeController.text}${_phoneController.text}',
         _passwordController.text,
       );
-
-      context.go('/home');
+      // Remova a navegação explícita e confie no redirecionamento do GoRouter
     } catch (e) {
       _showErrorMessage('Erro no cadastro: Tente novamente');
     } finally {

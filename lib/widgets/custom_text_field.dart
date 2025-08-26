@@ -11,6 +11,7 @@ class CustomTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final int? maxLength;
 
+  // Removendo 'const' do construtor para permitir corpo com print
   CustomTextField({
     required this.label,
     this.obscureText = false,
@@ -22,8 +23,7 @@ class CustomTextField extends StatelessWidget {
     this.suffixIcon,
     this.maxLength,
   }) {
-    print('CustomTextField: obscureText = $obscureText');
-    assert(obscureText != null, 'obscureText não pode ser null');
+    print('CustomTextField: label = $label, obscureText = $obscureText');
   }
 
   @override
@@ -33,7 +33,7 @@ class CustomTextField extends StatelessWidget {
       height: 60,
       child: TextFormField(
         controller: controller,
-        obscureText: obscureText, // Removido o fallback para forçar o erro
+        obscureText: obscureText,
         keyboardType: keyboardType,
         onChanged: onChanged,
         maxLength: maxLength,
@@ -48,30 +48,30 @@ class CustomTextField extends StatelessWidget {
             fontSize: 12,
             height: 1,
             letterSpacing: -0.02 * 12,
-            color: Color(0xFF3C4D18).withOpacity(0.5),
+            color: Color(0xFF3C4D18).withOpacity(0.5), // Permitido fora de const
           ),
           suffixIcon: suffixIcon,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide(color: Color(0xFF3C4D18)),
+            borderSide: const BorderSide(color: Color(0xFF3C4D18)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide(color: Color(0xFF3C4D18)),
+            borderSide: const BorderSide(color: Color(0xFF3C4D18)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide(color: Color(0xFF3C4D18)),
+            borderSide: const BorderSide(color: Color(0xFF3C4D18)),
           ),
           filled: true,
-          fillColor: Color(0x1CFA9500),
+          fillColor: const Color(0x1CFA9500),
           counterText: maxLength != null ? '' : null,
-          contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 21),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 21),
         ),
         validator: validator ??
                 (value) {
-              if (value == null || value.isEmpty && validatorMessage != null) {
-                return validatorMessage;
+              if (value == null || (value.isEmpty && validatorMessage != null)) {
+                return validatorMessage ?? 'Campo obrigatório';
               }
               return null;
             },

@@ -5,7 +5,11 @@ class CustomButton extends StatelessWidget {
   final VoidCallback onPressed;
   final IconData? icon;
 
-  CustomButton({required this.text, required this.onPressed, this.icon});
+  const CustomButton({
+    required this.text,
+    required this.onPressed,
+    this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,32 +19,28 @@ class CustomButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFFEB6424),
+          backgroundColor: const Color(0xFFEB6424),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          padding: EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 16),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (icon != null) Icon(icon, color: Color(0xFFFFFBFA)),
-            if (icon != null) SizedBox(width: 8),
-            SizedBox(
-              width: 58,
-              height: 15,
-              child: Text(
-                text,
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                  height: 1,
-                  letterSpacing: -0.02 * 12,
-                  color: Color(0xFFFFFBFA),
-                ),
-                textAlign: TextAlign.center,
+            if (icon != null) Icon(icon, color: const Color(0xFFFFFBFA)),
+            if (icon != null) const SizedBox(width: 8),
+            Text(
+              text,
+              style: const TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                height: 1,
+                letterSpacing: -0.02 * 12,
+                color: Color(0xFFFFFBFA),
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
