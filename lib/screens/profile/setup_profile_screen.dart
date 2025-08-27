@@ -56,7 +56,6 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
           ListView(
             padding: EdgeInsets.all(16.0),
             children: [
-              // Cabeçalho
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -73,11 +72,10 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
                       color: Color(0xFF3C4D18),
                     ),
                   ),
-                  SizedBox(width: 40), // Placeholder para alinhamento
+                  SizedBox(width: 40),
                 ],
               ),
               SizedBox(height: 40),
-              // Área de upload de foto
               Center(
                 child: Container(
                   width: 200,
@@ -115,7 +113,6 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
                 ),
               ),
               SizedBox(height: 20),
-              // Campo de username
               Form(
                 key: _formKey,
                 child: Column(
@@ -140,7 +137,6 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
                 ),
               ),
               SizedBox(height: 40),
-              // Botão Próximo
               Center(
                 child: CustomButton(
                   text: 'Próximo',

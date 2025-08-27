@@ -41,136 +41,180 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: _buildAppBar(),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: Color(0xFFE65100)))
           : _buildBody(),
     );
   }
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       elevation: 0,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: Color(0xFF3C4D18)),
-        onPressed: () => context.go('/create-account'),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    return Stack(
-      children: [
-        _buildLogo(),
-        _buildHeader(),
-        _buildForm(),
-        _buildFooterLinks(),
-      ],
-    );
-  }
-
-  Widget _buildLogo() {
-    return Positioned(
-      top: -22,
-      left: 96,
-      child: Image(
-        image: AssetImage('assets/images/logo2.png'),
-        width: 187,
-        height: 187,
-        fit: BoxFit.contain,
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Positioned(
-      top: 180,
-      left: 30,
-      child: SizedBox(
-        width: 275,
-        height: 83,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Login',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w700,
-                fontSize: 40,
-                height: 48 / 40,
-                letterSpacing: -0.04 * 40,
-                color: Color(0xFF3C4D18),
-              ),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Preencha seus dados nos campos abaixo',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w400,
-                fontSize: 12,
-                height: 1,
-                letterSpacing: -0.04 * 12,
-                color: Color(0xFF3C4D18),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildForm() {
-    return Positioned(
-      top: 295,
-      left: 30,
-      child: SizedBox(
-        width: 315,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildEmailField(),
-              SizedBox(height: 15),
-              _buildPasswordField(),
-              SizedBox(height: 15),
-              _buildForgotPasswordLink(),
-              SizedBox(height: 40),
-              _buildLoginButton(),
-              SizedBox(height: 20),
-              _buildSocialButtons(),
-            ],
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 16.0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF7CB342),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+            onPressed: () => context.go('/create-account'),
           ),
         ),
       ),
     );
   }
 
+  Widget _buildBody() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 30.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLogo(),
+            SizedBox(height: 40),
+            _buildHeader(),
+            SizedBox(height: 30),
+            _buildForm(),
+            SizedBox(height: 100), // Espaço para os botões sociais
+            _buildSocialButtons(),
+            SizedBox(height: 30),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogo() {
+    return Center(
+      child: Image.asset(
+        'assets/images/logo2.png',
+        width: 187,
+        height: 100,
+        fit: BoxFit.contain,
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Login',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w700,
+            fontSize: 40,
+            color: Color(0xFF3C4D18),
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Preencha seus dados nos campos abaixo',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w400,
+            fontSize: 14,
+            color: Color(0xFF666666),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          _buildEmailField(),
+          SizedBox(height: 15),
+          _buildPasswordField(),
+          SizedBox(height: 15),
+          _buildForgotPasswordLink(),
+          SizedBox(height: 40),
+          _buildLoginButton(),
+          SizedBox(height: 30),
+          _buildFooterLinks(),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmailField() {
-    return CustomTextField(
-      label: 'Email',
-      controller: _emailController,
-      validator: _validateEmail,
-      keyboardType: TextInputType.emailAddress,
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFFF5F5DC),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextFormField(
+        controller: _emailController,
+        keyboardType: TextInputType.emailAddress,
+        style: TextStyle(
+          fontFamily: 'Montserrat',
+          fontSize: 16,
+          color: Color(0xFF3C4D18),
+        ),
+        decoration: InputDecoration(
+          hintText: 'Email',
+          hintStyle: TextStyle(
+            color: Color(0xFF999999),
+            fontFamily: 'Montserrat',
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        ),
+        validator: _validateEmail,
+      ),
     );
   }
 
   Widget _buildPasswordField() {
     print('Building password field with _obscurePassword = $_obscurePassword');
-    return CustomTextField(
-      label: 'Senha',
-      obscureText: _obscurePassword,
-      controller: _passwordController,
-      validatorMessage: 'Campo obrigatório',
-      suffixIcon: IconButton(
-        icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-        onPressed: () {
-          setState(() {
-            _obscurePassword = !_obscurePassword;
-          });
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFFF5F5DC),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextFormField(
+        controller: _passwordController,
+        obscureText: _obscurePassword,
+        style: TextStyle(
+          fontFamily: 'Montserrat',
+          fontSize: 16,
+          color: Color(0xFF3C4D18),
+        ),
+        decoration: InputDecoration(
+          hintText: 'Password',
+          hintStyle: TextStyle(
+            color: Color(0xFF999999),
+            fontFamily: 'Montserrat',
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+              color: Color(0xFF999999),
+            ),
+            onPressed: () {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              });
+            },
+          ),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Campo obrigatório';
+          }
+          return null;
         },
       ),
     );
@@ -187,6 +231,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             color: Color(0xFF3C4D18),
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w600,
+            fontSize: 14,
             decoration: TextDecoration.underline,
           ),
         ),
@@ -195,10 +240,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _buildLoginButton() {
-    return CustomButton(
-      text: 'Entrar',
-      onPressed: _login,
-      icon: Icons.login,
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _login, // Ensure this is not null
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFFE65100),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+        child: Text(
+          'Login',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+  Widget _buildFooterLinks() {
+    return Center(
+      child: GestureDetector(
+        onTap: () => context.go('/signup'),
+        child: Text(
+          'Não possui uma conta? Cadastro',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Color(0xFF3C4D18),
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
     );
   }
 
@@ -207,18 +287,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         Expanded(
           child: _buildSocialButton(
-            text: 'Google',
-            icon: Icons.g_mobiledata,
-            iconColor: Colors.red,
+            iconPath: 'assets/images/google.png',
             onPressed: _handleGoogleLogin,
           ),
         ),
-        SizedBox(width: 10),
+        SizedBox(width: 15),
         Expanded(
           child: _buildSocialButton(
-            text: 'Apple',
-            icon: Icons.apple,
-            iconColor: Colors.black,
+            iconPath: 'assets/images/apple-logo.png',
             onPressed: _handleAppleLogin,
           ),
         ),
@@ -227,50 +303,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _buildSocialButton({
-    required String text,
-    required IconData icon,
-    required Color iconColor,
+    required String iconPath,
     required VoidCallback onPressed,
   }) {
-    return SizedBox(
-      height: 50,
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          side: BorderSide(color: Colors.grey),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: onPressed,
-        icon: Icon(icon, color: iconColor),
-        label: Text(
-          text,
-          style: TextStyle(
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.w600,
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(0xFFE0E0E0)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onPressed,
+          child: Center(
+            child: Image.asset(
+              iconPath,
+              width: 24,
+              height: 24,
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFooterLinks() {
-    return Positioned(
-      bottom: 100,
-      left: 30,
-      right: 30,
-      child: Center(
-        child: GestureDetector(
-          onTap: () => context.go('/signup'), // Navegação para signup
-          child: Text(
-            'Não possui uma conta? Cadastre-se',
-            style: TextStyle(
-              color: Color(0xFF3C4D18),
-              fontFamily: 'Montserrat',
-              fontWeight: FontWeight.w600,
-              decoration: TextDecoration.underline,
+  // Como alternativa, se você não tiver os ícones em assets, pode usar estes ícones temporários:
+  Widget _buildSocialButtonWithIcon({
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(0xFFE0E0E0)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onPressed,
+          child: Center(
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 24,
             ),
           ),
         ),
@@ -279,6 +361,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   String? _validateEmail(String? email) {
+    print('Validating email: $email');
     if (email == null || email.isEmpty) {
       return 'Campo obrigatório';
     }
@@ -298,13 +381,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _emailController.text,
         _passwordController.text,
       );
-      // Remova a navegação explícita e confie no redirecionamento do GoRouter
     } catch (e) {
       _showErrorMessage('Erro no login: Verifique suas credenciais');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
   void _handleForgotPassword() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Funcionalidade em desenvolvimento')),

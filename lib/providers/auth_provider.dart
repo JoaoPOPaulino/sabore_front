@@ -39,15 +39,16 @@ class AuthNotifier extends StateNotifier<bool> {
 
   Future<void> login(String email, String password) async {
     try {
-      final response = await _dio.post(
-        '/auth/login',
-        data: {'email': email, 'password': password},
-      );
-      final jwt = response.data['token']; // Ajuste conforme a resposta da API
-      await storage.write(key: 'jwt', value: jwt);
-      await storage.write(key: 'isFirstLogin', value: response.data['isFirstLogin']?.toString() ?? 'true');
-      state = true;
-      await checkAuthStatus(); // Atualiza o estado após login
+      // Simulação de login com usuário fake
+      if (email == 'test@example.com' && password == 'password123') {
+        final jwt = 'fake-jwt-token';
+        await storage.write(key: 'jwt', value: jwt);
+        await storage.write(key: 'isFirstLogin', value: 'true');
+        state = true;
+        await checkAuthStatus();
+      } else {
+        throw Exception('Credenciais inválidas');
+      }
     } catch (e) {
       throw Exception('Erro no login: $e');
     }
@@ -55,15 +56,15 @@ class AuthNotifier extends StateNotifier<bool> {
 
   Future<void> signup(String name, String email, String phone, String password) async {
     try {
-      final response = await _dio.post(
-        '/auth/signup',
-        data: {'name': name, 'email': email, 'phone': phone, 'password': password},
-      );
-      final jwt = response.data['token'];
+      // Simulação de cadastro com usuário fake
+      if (email == 'test@example.com') {
+        throw Exception('E-mail já em uso');
+      }
+      final jwt = 'fake-jwt-token';
       await storage.write(key: 'jwt', value: jwt);
       await storage.write(key: 'isFirstLogin', value: 'true');
       state = true;
-      await checkAuthStatus(); // Atualiza o estado após cadastro
+      await checkAuthStatus();
     } catch (e) {
       throw Exception('Erro no cadastro: $e');
     }
@@ -78,6 +79,6 @@ class AuthNotifier extends StateNotifier<bool> {
   Future<void> completeProfileSetup() async {
     await storage.write(key: 'isFirstLogin', value: 'false');
     ref.read(isFirstLoginProvider.notifier).state = false;
-    await checkAuthStatus(); // Atualiza o estado após configuração
+    await checkAuthStatus();
   }
 }

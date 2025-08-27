@@ -9,13 +9,10 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Fundo claro
           Container(color: Colors.white),
-          // Conteúdo
           ListView(
             padding: EdgeInsets.all(16.0),
             children: [
-              // Cabeçalho
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -34,13 +31,11 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   CircleAvatar(
                     radius: 20,
-                    backgroundImage: NetworkImage(
-                        'https://via.placeholder.com/40'), // Substitua pela URL da imagem do perfil
+                    backgroundImage: NetworkImage('https://via.placeholder.com/40'),
                   ),
                 ],
               ),
               SizedBox(height: 20),
-              // Seção de busca
               Text(
                 'O que você quer cozinhar hoje?',
                 style: TextStyle(
@@ -54,25 +49,12 @@ class HomeScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  CustomButton(
-                    text: 'Receitas Juninas',
-                    onPressed: () {},
-                    icon: null,
-                  ),
-                  CustomButton(
-                    text: 'Brownie',
-                    onPressed: () {},
-                    icon: null,
-                  ),
-                  CustomButton(
-                    text: 'Pizza',
-                    onPressed: () {},
-                    icon: null,
-                  ),
+                  CustomButton(text: 'Receitas Juninas', onPressed: () {}),
+                  CustomButton(text: 'Brownie', onPressed: () {}),
+                  CustomButton(text: 'Pizza', onPressed: () {}),
                 ],
               ),
               SizedBox(height: 20),
-              // Receita do dia
               Text(
                 'Receita do dia',
                 style: TextStyle(
@@ -87,12 +69,9 @@ class HomeScreen extends ConsumerWidget {
                 height: 200,
                 decoration: BoxDecoration(
                   image: DecorationImage(
-                    image: AssetImage('assets/images/chef.jpg'), // Substitua pela imagem da receita
+                    image: AssetImage('assets/images/chef.jpg'),
                     fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                      Colors.black.withOpacity(0.3),
-                      BlendMode.darken,
-                    ),
+                    colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken),
                   ),
                   borderRadius: BorderRadius.circular(15),
                 ),
@@ -109,7 +88,6 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               SizedBox(height: 20),
-              // Estados Brasileiros
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -148,7 +126,6 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               SizedBox(height: 20),
-              // Top Receitas
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -177,10 +154,8 @@ class HomeScreen extends ConsumerWidget {
               ),
               SizedBox(height: 10),
               _buildRecipeCard('Bolo de milho sem açúcar', '0h20min • 9 ingredientes', 'assets/images/chef.jpg'),
-              // Adicione mais cards conforme necessário
             ],
           ),
-          // Barra de navegação inferior
           Positioned(
             left: 0,
             right: 0,
@@ -230,10 +205,7 @@ class HomeScreen extends ConsumerWidget {
         image: DecorationImage(
           image: AssetImage(imagePath),
           fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(
-            Colors.black.withOpacity(0.3),
-            BlendMode.darken,
-          ),
+          colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken),
         ),
         borderRadius: BorderRadius.circular(15),
       ),

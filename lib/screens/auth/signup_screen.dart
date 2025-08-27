@@ -46,181 +46,281 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: _buildAppBar(),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: Color(0xFFE65100)))
           : _buildBody(),
     );
   }
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       elevation: 0,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: Color(0xFF3C4D18)),
-        onPressed: () => context.go('/create-account'),
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 16.0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF7CB342),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+            onPressed: () => context.go('/create-account'),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildBody() {
-    return Stack(
-      children: [
-        _buildLogo(),
-        _buildHeader(),
-        _buildForm(),
-        _buildFooterLinks(),
-        _buildTermsText(),
-      ],
-    );
-  }
-
-  Widget _buildLogo() {
-    return Positioned(
-      top: -22,
-      left: 96,
-      child: Image.asset(
-        'assets/images/logo2.png',
-        width: 187,
-        height: 187,
-        fit: BoxFit.contain,
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Positioned(
-      top: 180,
-      left: 30,
-      child: SizedBox(
-        width: 275,
-        height: 83,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 30.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Cadastro',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w700,
-                fontSize: 40,
-                height: 48 / 40,
-                letterSpacing: -0.04 * 40,
-                color: Color(0xFF3C4D18),
-              ),
-            ),
+            _buildLogo(),
+            SizedBox(height: 40),
+            _buildHeader(),
+            SizedBox(height: 30),
+            _buildForm(),
             SizedBox(height: 20),
-            Text(
-              'Preencha seus dados nos campos abaixo',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w400,
-                fontSize: 12,
-                height: 1,
-                letterSpacing: -0.04 * 12,
-                color: Color(0xFF3C4D18),
-              ),
-            ),
+            _buildFooterLinks(),
+            SizedBox(height: 15),
+            _buildTermsText(),
+            SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildForm() {
-    return Positioned(
-      top: 295,
-      left: 30,
-      child: SizedBox(
-        width: 315,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildNameField(),
-              SizedBox(height: 10),
-              _buildEmailField(),
-              SizedBox(height: 10),
-              _buildPhoneFields(),
-              SizedBox(height: 10),
-              _buildPasswordField(),
-              SizedBox(height: 10),
-              _buildPasswordStrengthIndicator(),
-              SizedBox(height: 40),
-              _buildSignupButton(),
-            ],
-          ),
-        ),
+  Widget _buildLogo() {
+    return Center(
+      child: Image.asset(
+        'assets/images/logo2.png',
+        width: 187,
+        height: 100, // Ajustado para não ocupar muito espaço
+        fit: BoxFit.contain,
       ),
     );
   }
 
-  Widget _buildNameField() {
-    return CustomTextField(
-      label: 'Nome completo',
-      controller: _nameController,
-      validatorMessage: 'Campo obrigatório',
-      keyboardType: TextInputType.name,
-    );
-  }
-
-  Widget _buildEmailField() {
-    return CustomTextField(
-      label: 'Email',
-      controller: _emailController,
-      validator: _validateEmailFormat,
-      keyboardType: TextInputType.emailAddress,
-    );
-  }
-
-  Widget _buildPhoneFields() {
-    return Row(
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 70,
-          child: CustomTextField(
-            label: 'Código',
-            controller: _phoneCodeController,
-            validatorMessage: 'Obrigatório',
-            keyboardType: TextInputType.phone,
+        Text(
+          'Cadastro',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w700,
+            fontSize: 40,
+            color: Color(0xFF3C4D18),
           ),
         ),
-        SizedBox(width: 5),
-        Text('|', style: TextStyle(fontSize: 24, color: Colors.grey)),
-        SizedBox(width: 5),
-        SizedBox(
-          width: 215,
-          child: CustomTextField(
-            label: 'Telefone (opcional)',
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            maxLength: 11,
-            validator: _validatePhone,
+        SizedBox(height: 8),
+        Text(
+          'Preencha seus dados nos campos abaixo',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w400,
+            fontSize: 14,
+            color: Color(0xFF666666),
           ),
         ),
       ],
     );
   }
 
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          _buildNameField(),
+          SizedBox(height: 15),
+          _buildEmailField(),
+          SizedBox(height: 15),
+          _buildPhoneFields(),
+          SizedBox(height: 15),
+          _buildPasswordField(),
+          SizedBox(height: 10),
+          _buildPasswordStrengthIndicator(),
+          SizedBox(height: 40),
+          _buildSignupButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNameField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFFF5F5DC),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextFormField(
+        controller: _nameController,
+        style: TextStyle(
+          fontFamily: 'Montserrat',
+          fontSize: 16,
+          color: Color(0xFF3C4D18),
+        ),
+        decoration: InputDecoration(
+          hintText: 'Nome completo',
+          hintStyle: TextStyle(
+            color: Color(0xFF999999),
+            fontFamily: 'Montserrat',
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Campo obrigatório';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmailField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFFF5F5DC),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextFormField(
+        controller: _emailController,
+        keyboardType: TextInputType.emailAddress,
+        style: TextStyle(
+          fontFamily: 'Montserrat',
+          fontSize: 16,
+          color: Color(0xFF3C4D18),
+        ),
+        decoration: InputDecoration(
+          hintText: 'Email',
+          hintStyle: TextStyle(
+            color: Color(0xFF999999),
+            fontFamily: 'Montserrat',
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        ),
+        validator: _validateEmailFormat,
+      ),
+    );
+  }
+
+  Widget _buildPhoneFields() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFFF5F5DC),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 80,
+            child: TextFormField(
+              controller: _phoneCodeController,
+              keyboardType: TextInputType.phone,
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 16,
+                color: Color(0xFF3C4D18),
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Obrigatório';
+                }
+                return null;
+              },
+            ),
+          ),
+          Container(
+            height: 20,
+            width: 1,
+            color: Color(0xFFCCCCCC),
+          ),
+          Expanded(
+            child: TextFormField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 16,
+                color: Color(0xFF3C4D18),
+              ),
+              decoration: InputDecoration(
+                hintText: 'Telefone',
+                hintStyle: TextStyle(
+                  color: Color(0xFF999999),
+                  fontFamily: 'Montserrat',
+                ),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              ),
+              validator: _validatePhone,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPasswordField() {
-    return CustomTextField(
-      label: 'Senha',
-      obscureText: _obscurePassword,
-      controller: _passwordController,
-      validatorMessage: 'Campo obrigatório',
-      onChanged: (value) {
-        setState(() {
-          _passwordStrength = _checkPasswordStrength(value);
-        });
-      },
-      suffixIcon: IconButton(
-        icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-        onPressed: () {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFFF5F5DC),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextFormField(
+        controller: _passwordController,
+        obscureText: _obscurePassword,
+        style: TextStyle(
+          fontFamily: 'Montserrat',
+          fontSize: 16,
+          color: Color(0xFF3C4D18),
+        ),
+        decoration: InputDecoration(
+          hintText: 'Senha',
+          hintStyle: TextStyle(
+            color: Color(0xFF999999),
+            fontFamily: 'Montserrat',
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+              color: Color(0xFF999999),
+            ),
+            onPressed: () {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              });
+            },
+          ),
+        ),
+        onChanged: (value) {
           setState(() {
-            _obscurePassword = !_obscurePassword;
+            _passwordStrength = _checkPasswordStrength(value);
           });
+        },
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Campo obrigatório';
+          }
+          return null;
         },
       ),
     );
@@ -237,6 +337,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           style: TextStyle(
             color: _getPasswordStrengthColor(),
             fontWeight: FontWeight.w600,
+            fontFamily: 'Montserrat',
           ),
         ),
         if (_passwordStrength != 'Forte') ...[
@@ -266,34 +367,43 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Widget _buildSignupButton() {
-    return CustomButton(
-      text: 'Cadastrar',
-      onPressed: _signup,
-      icon: Icons.person_add,
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _signup,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFFE65100),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+        child: Text(
+          'Cadastrar',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: Colors.white,
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildFooterLinks() {
-    return Positioned(
-      top: 612,
-      left: 109,
-      child: SizedBox(
-        width: 157,
-        height: 15,
-        child: GestureDetector(
-          onTap: () => context.go('/login'),
-          child: Text(
-            'Já possui uma conta? Login',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Montserrat',
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-              height: 1,
-              letterSpacing: -0.04 * 12,
-              color: Color(0xFF3C4D18),
-              decoration: TextDecoration.underline,
-            ),
+    return Center(
+      child: GestureDetector(
+        onTap: () => context.go('/login'),
+        child: Text(
+          'Já possui uma conta? Login',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Color(0xFF3C4D18),
+            decoration: TextDecoration.underline,
           ),
         ),
       ),
@@ -301,23 +411,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Widget _buildTermsText() {
-    return Positioned(
-      top: 668,
-      left: 44,
-      child: SizedBox(
-        width: 271,
-        height: 40,
-        child: Text(
-          'Ao se cadastrar você estará concordando com os Termos e Condições',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
-            height: 20 / 12,
-            letterSpacing: -0.04 * 12,
-            color: Color(0xFF3C4D18),
-          ),
+    return Center(
+      child: Text(
+        'Ao se cadastrar você estará concordando com os\nTermos e Condições',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontFamily: 'Montserrat',
+          fontWeight: FontWeight.w400,
+          fontSize: 12,
+          color: Color(0xFF666666),
+          height: 1.4,
         ),
       ),
     );
@@ -389,7 +492,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         '${_phoneCodeController.text}${_phoneController.text}',
         _passwordController.text,
       );
-      // Remova a navegação explícita e confie no redirecionamento do GoRouter
     } catch (e) {
       _showErrorMessage('Erro no cadastro: Tente novamente');
     } finally {
