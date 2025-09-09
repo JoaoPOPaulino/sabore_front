@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sabore_app/screens/categorie/categories_screen.dart';
+import 'package:sabore_app/screens/categorie/states_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/create_account_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -49,7 +51,19 @@ class MyApp extends ConsumerWidget {
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final authNotifier = ref.watch(authProvider.notifier);
+  // Criamos um ValueNotifier que será atualizado quando o auth state mudar
+  final routerNotifier = ValueNotifier<int>(0);
+
+  // Escutamos mudanças no auth state
+  ref.listen(authProvider, (previous, next) {
+    routerNotifier.value++;
+  });
+
+  // Escutamos mudanças no first login
+  ref.listen(isFirstLoginProvider, (previous, next) {
+    routerNotifier.value++;
+  });
+
   return GoRouter(
     initialLocation: '/onboarding',
     routes: [
@@ -77,25 +91,155 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/home',
         builder: (context, state) => HomeScreen(),
       ),
+      GoRoute(
+        path: '/categories',
+        builder: (context, state) => CategoriesScreen(),
+      ),
+      GoRoute(
+        path: '/states',
+        builder: (context, state) => StatesScreen(),
+      ),
+      // Rota de teste para facilitar desenvolvimento
+      GoRoute(
+        path: '/test',
+        builder: (context, state) => TestAuthScreen(),
+      ),
     ],
     redirect: (context, state) {
-      final isAuthenticated = authNotifier.state;
-      final isFirstLogin = ref.watch(isFirstLoginProvider);
+      final authState = ref.read(authProvider);
+      final isFirstLogin = ref.read(isFirstLoginProvider);
       final location = state.matchedLocation;
 
-      // Permitir rotas públicas sem redirecionamento
-      if (location == '/onboarding' ||
-          location == '/create-account' ||
-          location == '/login' ||
-          location == '/signup') {
+      print('🧭 Navigation - Location: $location');
+      print('🔐 Auth State - Authenticated: ${authState.isAuthenticated}');
+      print('🔐 Auth State - Initialized: ${authState.isInitialized}');
+      print('🔐 Auth State - Loading: ${authState.isLoading}');
+      print('👤 First Login: $isFirstLogin');
+
+      // Se ainda está carregando, manter na rota atual
+      if (authState.isLoading && !authState.isInitialized) {
+        print('⏳ Still loading, staying at current location');
         return null;
       }
 
-      // Redirecionar com base no estado de autenticação
-      if (isAuthenticated && isFirstLogin) return '/setup-profile';
-      if (isAuthenticated && !isFirstLogin) return '/home';
+      // Rotas públicas que sempre podem ser acessadas
+      if (location == '/onboarding' ||
+          location == '/create-account' ||
+          location == '/login' ||
+          location == '/signup' ||
+          location == '/test') {
+        print('🌍 Public route, allowing access');
+        return null;
+      }
+
+      // Lógica de redirecionamento baseada na autenticação
+      if (authState.isAuthenticated) {
+        if (isFirstLogin && location != '/setup-profile') {
+          print('➡️ Authenticated but first login, redirect to profile setup');
+          return '/setup-profile';
+        }
+        if (!isFirstLogin && location != '/home') {
+          print('➡️ Authenticated and profile complete, redirect to home');
+          return '/home';
+        }
+        print('✅ Authenticated, staying at current location');
+        return null; // Usuário está autenticado e na rota correta
+      }
+
+      // Usuário não autenticado, redirecionar para onboarding
+      print('❌ Not authenticated, redirect to onboarding');
       return '/onboarding';
     },
-    refreshListenable: ValueNotifier(authNotifier),
+    refreshListenable: routerNotifier, // Usa o ValueNotifier personalizado
   );
 });
+
+// Widget de teste para facilitar o desenvolvimento
+class TestAuthScreen extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final isFirstLogin = ref.watch(isFirstLoginProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Test Auth'),
+        backgroundColor: Color(0xFFFA9500),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Estado Atual:',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 8),
+                    Text('Autenticado: ${authState.isAuthenticated}'),
+                    Text('Carregando: ${authState.isLoading}'),
+                    Text('Inicializado: ${authState.isInitialized}'),
+                    Text('Primeiro Login: $isFirstLogin'),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => ref.read(authProvider.notifier).forceLogin(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF3C4D18),
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text('🧪 Force Login (Bypass Auth)',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => context.go('/login'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFFA9500),
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text('📱 Ir para Login',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => context.go('/home'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF3C4D18),
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text('🏠 Tentar ir para Home',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => ref.read(authProvider.notifier).logout(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text('🚪 Logout',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Credenciais de Teste:\nEmail: test@example.com\nSenha: password123',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
