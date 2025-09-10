@@ -89,7 +89,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => HomeScreen(),
+        builder: (context, state) => const HomeScreen(), // Adiciona const aqui
       ),
       GoRoute(
         path: '/categories',
@@ -123,32 +123,39 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // Rotas públicas que sempre podem ser acessadas
-      if (location == '/onboarding' ||
-          location == '/create-account' ||
-          location == '/login' ||
-          location == '/signup' ||
-          location == '/test') {
+      final publicRoutes = ['/onboarding', '/create-account', '/login', '/signup', '/test'];
+      if (publicRoutes.contains(location)) {
         print('🌍 Public route, allowing access');
         return null;
       }
 
-      // Lógica de redirecionamento baseada na autenticação
-      if (authState.isAuthenticated) {
-        if (isFirstLogin && location != '/setup-profile') {
-          print('➡️ Authenticated but first login, redirect to profile setup');
-          return '/setup-profile';
-        }
-        if (!isFirstLogin && location != '/home') {
-          print('➡️ Authenticated and profile complete, redirect to home');
-          return '/home';
-        }
-        print('✅ Authenticated, staying at current location');
-        return null; // Usuário está autenticado e na rota correta
+      // Rotas protegidas que requerem autenticação
+      final protectedRoutes = ['/home', '/categories', '/states', '/setup-profile'];
+
+      // Se não está autenticado e tentando acessar rota protegida
+      if (!authState.isAuthenticated && protectedRoutes.contains(location)) {
+        print('❌ Not authenticated, redirect to onboarding');
+        return '/onboarding';
       }
 
-      // Usuário não autenticado, redirecionar para onboarding
-      print('❌ Not authenticated, redirect to onboarding');
-      return '/onboarding';
+      // Se está autenticado
+      if (authState.isAuthenticated) {
+        // Se é o primeiro login e NÃO está na tela de setup-profile
+        if (isFirstLogin && location != '/setup-profile') {
+          print('➡️ First login detected, redirect to profile setup');
+          return '/setup-profile';
+        }
+
+        // Se já completou o perfil, permitir navegação livre entre rotas protegidas
+        if (!isFirstLogin) {
+          print('✅ Profile complete, allowing navigation to: $location');
+          return null; // Permite navegação para qualquer rota protegida
+        }
+      }
+
+      // Caso padrão: mantém na rota atual
+      print('✅ Staying at current location');
+      return null;
     },
     refreshListenable: routerNotifier, // Usa o ValueNotifier personalizado
   );
@@ -216,6 +223,26 @@ class TestAuthScreen extends ConsumerWidget {
                 padding: EdgeInsets.symmetric(vertical: 16),
               ),
               child: Text('🏠 Tentar ir para Home',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => context.go('/categories'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text('📂 Ir para Categorias',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => context.go('/states'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text('📍 Ir para Estados',
                   style: TextStyle(color: Colors.white)),
             ),
             SizedBox(height: 10),
