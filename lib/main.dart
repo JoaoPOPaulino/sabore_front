@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sabore_app/screens/categorie/categories_screen.dart';
 import 'package:sabore_app/screens/categorie/states_screen.dart';
+import 'package:sabore_app/screens/profile/profile/profile_screen.dart';
+import 'package:sabore_app/screens/search/search_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/create_account_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -103,6 +105,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/test',
         builder: (context, state) => TestAuthScreen(),
+      ),
+      GoRoute(
+          path: '/search',
+          builder: (context, state) => SearchScreen(),
+      ),
+      GoRoute(
+        path: '/profile/:userId',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          return ProfileScreen(userId: userId);
+        },
       ),
     ],
     redirect: (context, state) {

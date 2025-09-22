@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 import '../../widgets/custom_button.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -13,36 +14,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  late ScrollController _scrollController;
-
-  // Lista de estados brasileiros com suas receitas
-  final List<Map<String, String>> states = [
-    {'name': 'Tocantins', 'recipes': '50 receitas'},
-    {'name': 'Minas Gerais', 'recipes': '40 receitas'},
-    {'name': 'Goiás', 'recipes': '70 receitas'},
-    {'name': 'Maranhão', 'recipes': '30 receitas'},
-    {'name': 'Bahia', 'recipes': '85 receitas'},
-    {'name': 'São Paulo', 'recipes': '120 receitas'},
-    {'name': 'Rio de Janeiro', 'recipes': '95 receitas'},
-    {'name': 'Pernambuco', 'recipes': '60 receitas'},
-    {'name': 'Amazonas', 'recipes': '45 receitas'},
-    {'name': 'Pará', 'recipes': '55 receitas'},
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    // Inicializa o ScrollController começando no meio da lista virtual
-    _scrollController = ScrollController(
-      initialScrollOffset: states.length * 50 * 132.0, // 50 é o meio de 100 repetições
-    );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,9 +31,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    CircleAvatar(
-                      radius: 25,
-                      backgroundImage: AssetImage('assets/images/chef.jpg'),
+                    GestureDetector(
+                      onTap: () {
+                        print('👤 Profile button pressed');
+                        context.push('/profile/1'); // NOVA ROTA PARA PERFIL
+                      },
+                      child: CircleAvatar(
+                        radius: 25,
+                        backgroundImage: AssetImage('assets/images/chef.jpg'),
+                      ),
                     ),
                     Text(
                       'Saborê',
@@ -76,7 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     GestureDetector(
                       onTap: () {
                         print('🔍 Search icon tapped');
-                        context.push('/categories');
+                        context.push('/search'); // NOVA ROTA PARA BUSCA
                       },
                       child: Icon(
                         Icons.search,
@@ -181,119 +158,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 SizedBox(height: 30),
 
-                // Estados Brasileiros
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Estados Brasileiros',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                        color: Color(0xFF3C4D18),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        print('🗺️ States "Ver tudo" pressed');
-                        context.push('/states');
-                      },
-                      child: Text(
-                        'Ver tudo',
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                          color: Color(0xFF3C4D18),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 15),
-
-                // CARROSSEL DE ESTADOS COM SCROLL FUNCIONANDO
-                Container(
-                  height: 140,
-                  child: Scrollbar(
-                    controller: _scrollController,
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      scrollDirection: Axis.horizontal,
-                      physics: const AlwaysScrollableScrollPhysics(), // Garante scroll sempre ativo
-                      itemCount: states.length * 100, // Multiplica para simular infinito
-                      itemBuilder: (context, index) {
-                        // Calcula o índice real usando módulo
-                        final realIndex = index % states.length;
-                        final state = states[realIndex];
-
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            left: index == 0 ? 0 : 6,
-                            right: 6,
-                          ),
-                          child: InkWell(
-                            onTap: () {
-                              print('🗺️ State card tapped: ${state['name']}');
-                              context.push('/states');
-                            },
-                            borderRadius: BorderRadius.circular(15),
-                            child: Container(
-                              width: 120,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(15),
-                                image: DecorationImage(
-                                  image: AssetImage('assets/images/chef.jpg'),
-                                  fit: BoxFit.cover,
-                                  colorFilter: ColorFilter.mode(
-                                      Colors.black.withOpacity(0.4),
-                                      BlendMode.darken
-                                  ),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.15),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Container(
-                                padding: EdgeInsets.all(12),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      state['name']!,
-                                      style: TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      state['recipes']!,
-                                      style: TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        fontWeight: FontWeight.w400,
-                                        fontSize: 10,
-                                        color: Colors.white70,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
+                // Estados Brasileiros - CARROSSEL AUTOMÁTICO INFINITO
+                InfiniteStatesCarousel(),
 
                 SizedBox(height: 30),
 
@@ -376,7 +242,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     icon: Icon(Icons.search, color: Colors.white, size: 28),
                     onPressed: () {
                       print('🔍 Search button pressed in bottom nav');
-                      context.go('/categories');
+                      context.go('/search');
                     },
                   ),
                   // Add button
@@ -406,7 +272,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     icon: Icon(Icons.person, color: Colors.white, size: 28),
                     onPressed: () {
                       print('👤 Profile button pressed');
-                      context.push('/setup-profile');
+                      context.push('/profile/1');
                     },
                   ),
                 ],
@@ -536,6 +402,218 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// Classe do carrossel automático infinito
+class InfiniteStatesCarousel extends StatefulWidget {
+  const InfiniteStatesCarousel({Key? key}) : super(key: key);
+
+  @override
+  State<InfiniteStatesCarousel> createState() => _InfiniteStatesCarouselState();
+}
+
+class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
+  late PageController _pageController;
+  late Timer _timer;
+  int _currentPage = 0;
+
+  final List<Map<String, String>> states = [
+    {'name': 'Tocantins', 'recipes': '50 receitas'},
+    {'name': 'São Paulo', 'recipes': '120 receitas'},
+    {'name': 'Paraná', 'recipes': '65 receitas'},
+    {'name': 'Rio de Janeiro', 'recipes': '95 receitas'},
+    {'name': 'Maranhão', 'recipes': '30 receitas'},
+    {'name': 'Goiás', 'recipes': '70 receitas'},
+    {'name': 'Minas Gerais', 'recipes': '85 receitas'},
+    {'name': 'Bahia', 'recipes': '75 receitas'},
+    {'name': 'Pernambuco', 'recipes': '60 receitas'},
+    {'name': 'Ceará', 'recipes': '55 receitas'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Inicializa o PageController começando no "meio" para simular infinito
+    _pageController = PageController(
+      initialPage: states.length * 1000,
+      viewportFraction: 0.35, // Mostra aproximadamente 3 cards por vez
+    );
+
+    _currentPage = states.length * 1000;
+
+    // Timer para avançar automaticamente a cada 3 segundos
+    _timer = Timer.periodic(Duration(seconds: 3), (timer) {
+      if (mounted) {
+        _currentPage++;
+        _pageController.animateToPage(
+          _currentPage,
+          duration: Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Estados Brasileiros',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                color: Color(0xFF3C4D18),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                print('🗺️ States "Ver tudo" pressed');
+                context.push('/states');
+              },
+              child: Text(
+                'Ver tudo',
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                  color: Color(0xFF3C4D18),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 15),
+
+        // Carrossel infinito
+        Container(
+          height: 140,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              // Usa módulo para criar loop infinito
+              final stateIndex = index % states.length;
+              final state = states[stateIndex];
+
+              return Container(
+                margin: EdgeInsets.symmetric(horizontal: 6),
+                child: GestureDetector(
+                  onTap: () {
+                    // Pausa o timer quando usuário interage
+                    _timer.cancel();
+
+                    print('🗺️ State card tapped: ${state['name']}');
+                    context.push('/states');
+
+                    // Reinicia o timer após 5 segundos
+                    Timer(Duration(seconds: 5), () {
+                      if (mounted) {
+                        _timer = Timer.periodic(Duration(seconds: 3), (timer) {
+                          if (mounted) {
+                            _currentPage++;
+                            _pageController.animateToPage(
+                              _currentPage,
+                              duration: Duration(milliseconds: 500),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        });
+                      }
+                    });
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/chef.jpg'),
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(
+                          Colors.black.withOpacity(0.4),
+                          BlendMode.darken,
+                        ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Container(
+                      padding: EdgeInsets.all(12),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            state['name']!,
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            state['recipes']!,
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w400,
+                              fontSize: 10,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        SizedBox(height: 10),
+
+        // Indicadores de posição
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(states.length, (index) {
+            final isActive = (_currentPage % states.length) == index;
+            return Container(
+              width: isActive ? 20 : 8,
+              height: 8,
+              margin: EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: isActive ? Color(0xFFFA9500) : Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 }
