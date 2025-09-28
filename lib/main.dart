@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sabore_app/screens/categorie/categories_screen.dart';
 import 'package:sabore_app/screens/categorie/states_screen.dart';
 import 'package:sabore_app/screens/profile/profile/profile_screen.dart';
+import 'package:sabore_app/screens/recipe/add_recipe_screen.dart';
+import 'package:sabore_app/screens/recipe/recipe_success_screen.dart';
 import 'package:sabore_app/screens/search/search_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/create_account_screen.dart';
@@ -12,6 +14,8 @@ import 'screens/auth/login_screen.dart';
 import 'screens/profile/setup_profile_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'providers/auth_provider.dart';
+import 'screens/recipe/recipe_detail_screen.dart';
+
 
 void main() {
   runApp(ProviderScope(child: MyApp()));
@@ -116,6 +120,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final userId = state.pathParameters['userId']!;
           return ProfileScreen(userId: userId);
         },
+      ),
+      GoRoute(
+        path: '/recipe/:recipeId',
+        builder: (context, state) {
+          final recipeId = state.pathParameters['recipeId']!;
+          return RecipeDetailScreen(recipeId: recipeId);
+        },
+      ),
+      GoRoute(
+        path: '/add-recipe',
+        builder: (context, state) => AddRecipeScreen(),
+      ),
+      GoRoute(
+        path: '/recipe-success',
+        builder: (context, state) => RecipeSuccessScreen(),
       ),
     ],
     redirect: (context, state) {

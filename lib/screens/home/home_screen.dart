@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../../widgets/custom_button.dart';
+import '../../widgets/select_recipe_book_modal.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -126,6 +127,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 GestureDetector(
                   onTap: () {
                     print('🍰 Recipe of the day tapped');
+                    context.push('/recipe/2'); // Navegar para receita do dia
                   },
                   child: Container(
                     height: 200,
@@ -201,6 +203,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   '1h20min • 9 ingredientes',
                   'assets/images/chef.jpg',
                   context,
+                  '1', // ID da receita
                 ),
                 SizedBox(height: 12),
                 _buildTopRecipeCard(
@@ -208,6 +211,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   '45min • 8 ingredientes',
                   'assets/images/chef.jpg',
                   context,
+                  '3', // ID da receita
                 ),
               ],
             ),
@@ -246,19 +250,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     },
                   ),
                   // Add button
-                  Container(
-                    height: 56,
-                    width: 56,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFFA9500),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.add, color: Colors.white, size: 28),
-                      onPressed: () {
-                        print('➕ Add button pressed');
-                      },
-                    ),
+                  IconButton(
+                    icon: Icon(Icons.add, color: Colors.white, size: 28),
+                    onPressed: () {
+                      context.push('/add-recipe');
+                    },
                   ),
                   // Notifications
                   IconButton(
@@ -311,10 +307,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildTopRecipeCard(String title, String subtitle, String imagePath, BuildContext context) {
+  Widget _buildTopRecipeCard(String title, String subtitle, String imagePath, BuildContext context, String recipeId) {
     return GestureDetector(
       onTap: () {
         print('🍳 Recipe card tapped: $title');
+        context.push('/recipe/$recipeId'); // Navegar para detalhes da receita
       },
       child: Container(
         height: 120,
@@ -337,6 +334,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: GestureDetector(
                 onTap: () {
                   print('🔖 Bookmark tapped for: $title');
+                  // Mostrar modal para salvar receita
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => SelectRecipeBookModal(),
+                  ).then((selectedBook) {
+                    if (selectedBook != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Receita "$title" salva em "${selectedBook['title']}"!'),
+                          backgroundColor: Color(0xFF7CB342),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  });
                 },
                 child: Container(
                   padding: EdgeInsets.all(8),
