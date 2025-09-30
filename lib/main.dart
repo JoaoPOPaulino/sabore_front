@@ -17,10 +17,10 @@ import 'screens/auth/create_account_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/profile/setup_profile_screen.dart';
+import 'screens/profile/setup_complete_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'providers/auth_provider.dart';
 import 'screens/recipe/recipe_detail_screen.dart';
-
 
 void main() {
   runApp(ProviderScope(child: MyApp()));
@@ -40,20 +40,24 @@ class MyApp extends ConsumerWidget {
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Poppins',
         textTheme: TextTheme(
-          headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
+          headlineLarge: TextStyle(
+              fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
           bodyMedium: TextStyle(fontSize: 14, color: Colors.grey[700]),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: Color(0xFFFF5722),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             padding: EdgeInsets.symmetric(vertical: 16),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Color(0xFFFFF3E0),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none),
         ),
       ),
       routerConfig: router,
@@ -62,15 +66,12 @@ class MyApp extends ConsumerWidget {
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
-  // Criamos um ValueNotifier que será atualizado quando o auth state mudar
   final routerNotifier = ValueNotifier<int>(0);
 
-  // Escutamos mudanças no auth state
   ref.listen(authProvider, (previous, next) {
     routerNotifier.value++;
   });
 
-  // Escutamos mudanças no first login
   ref.listen(isFirstLoginProvider, (previous, next) {
     routerNotifier.value++;
   });
@@ -78,6 +79,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/onboarding',
     routes: [
+      // Auth Routes
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => OnboardingScreen(),
@@ -94,13 +96,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/login',
         builder: (context, state) => LoginScreen(),
       ),
+
+      // Setup Profile Routes
       GoRoute(
         path: '/setup-profile',
         builder: (context, state) => SetupProfileScreen(),
       ),
       GoRoute(
+        path: '/setup-complete',
+        builder: (context, state) => SetupCompleteScreen(),
+      ),
+
+      // Main App Routes
+      GoRoute(
         path: '/home',
-        builder: (context, state) => const HomeScreen(), // Adiciona const aqui
+        builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
         path: '/categories',
@@ -110,15 +120,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/states',
         builder: (context, state) => StatesScreen(),
       ),
-      // Rota de teste para facilitar desenvolvimento
       GoRoute(
-        path: '/test',
-        builder: (context, state) => TestAuthScreen(),
+        path: '/search',
+        builder: (context, state) => SearchScreen(),
       ),
-      GoRoute(
-          path: '/search',
-          builder: (context, state) => SearchScreen(),
-      ),
+
+      // Profile Routes
       GoRoute(
         path: '/profile/:userId',
         builder: (context, state) {
@@ -126,6 +133,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return ProfileScreen(userId: userId);
         },
       ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/edit-profile',
+        builder: (context, state) => EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/user-info',
+        builder: (context, state) => UserInfoScreen(),
+      ),
+      GoRoute(
+        path: '/recipe-books',
+        builder: (context, state) => RecipeBooksScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => NotificationsScreen(),
+      ),
+
+      // Recipe Routes
       GoRoute(
         path: '/recipe/:recipeId',
         builder: (context, state) {
@@ -141,25 +170,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/recipe-success',
         builder: (context, state) => RecipeSuccessScreen(),
       ),
+
+      // Test Route
       GoRoute(
-        path: '/settings',
-        builder: (context, state) => SettingsScreen(),
-      ),
-      GoRoute(
-        path: '/edit-profile',
-        builder: (context, state) => EditProfileScreen(),
-      ),
-      GoRoute(
-        path: '/recipe-books',
-        builder: (context, state) => RecipeBooksScreen(),
-      ),
-      GoRoute(
-        path: '/user-info',
-        builder: (context, state) => UserInfoScreen(),
-      ),
-      GoRoute(
-        path: '/notifications',
-        builder: (context, state) => NotificationsScreen(),
+        path: '/test',
+        builder: (context, state) => TestAuthScreen(),
       ),
     ],
     redirect: (context, state) {
@@ -180,14 +195,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // Rotas públicas que sempre podem ser acessadas
-      final publicRoutes = ['/onboarding', '/create-account', '/login', '/signup', '/test'];
+      final publicRoutes = [
+        '/onboarding',
+        '/create-account',
+        '/login',
+        '/signup',
+        '/test'
+      ];
       if (publicRoutes.contains(location)) {
         print('🌍 Public route, allowing access');
         return null;
       }
 
       // Rotas protegidas que requerem autenticação
-      final protectedRoutes = ['/home', '/categories', '/states', '/setup-profile'];
+      final protectedRoutes = [
+        '/home',
+        '/categories',
+        '/states',
+        '/setup-profile',
+        '/setup-complete',
+      ];
 
       // Se não está autenticado e tentando acessar rota protegida
       if (!authState.isAuthenticated && protectedRoutes.contains(location)) {
@@ -197,16 +224,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // Se está autenticado
       if (authState.isAuthenticated) {
-        // Se é o primeiro login e NÃO está na tela de setup-profile
-        if (isFirstLogin && location != '/setup-profile') {
+        // Se é o primeiro login e NÃO está nas telas de setup
+        if (isFirstLogin &&
+            location != '/setup-profile' &&
+            location != '/setup-complete') {
           print('➡️ First login detected, redirect to profile setup');
           return '/setup-profile';
         }
 
-        // Se já completou o perfil, permitir navegação livre entre rotas protegidas
+        // Se já completou o perfil, permitir navegação livre
         if (!isFirstLogin) {
           print('✅ Profile complete, allowing navigation to: $location');
-          return null; // Permite navegação para qualquer rota protegida
+          return null;
         }
       }
 
@@ -214,7 +243,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       print('✅ Staying at current location');
       return null;
     },
-    refreshListenable: routerNotifier, // Usa o ValueNotifier personalizado
+    refreshListenable: routerNotifier,
   );
 });
 
@@ -230,7 +259,7 @@ class TestAuthScreen extends ConsumerWidget {
         title: Text('Test Auth'),
         backgroundColor: Color(0xFFFA9500),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -242,7 +271,8 @@ class TestAuthScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Estado Atual:',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
                     SizedBox(height: 8),
                     Text('Autenticado: ${authState.isAuthenticated}'),
                     Text('Carregando: ${authState.isLoading}'),
@@ -304,13 +334,33 @@ class TestAuthScreen extends ConsumerWidget {
             ),
             SizedBox(height: 10),
             ElevatedButton(
+              onPressed: () => context.go('/setup-profile'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text('👤 Ir para Setup Profile',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => context.go('/setup-complete'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text('✅ Ir para Profile Complete',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
               onPressed: () => ref.read(authProvider.notifier).logout(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 padding: EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text('🚪 Logout',
-                  style: TextStyle(color: Colors.white)),
+              child:
+              Text('🚪 Logout', style: TextStyle(color: Colors.white)),
             ),
             SizedBox(height: 20),
             Text(

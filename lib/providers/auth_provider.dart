@@ -1,8 +1,13 @@
-import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../services/auth_service.dart';
+import '../services/api_service.dart';
 import '../constants.dart';
+import '../models/recipe.dart';
+
+// Providers
+final authServiceProvider = Provider((ref) => AuthService());
+final apiServiceProvider = Provider((ref) => ApiService());
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(ref);
@@ -12,38 +17,59 @@ final isFirstLoginProvider = StateProvider<bool>((ref) {
   return true;
 });
 
-// Estado de autenticação mais robusto
+// Provider para o usuário atual
+final currentUserProvider = FutureProvider<User?>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) return null;
+
+  try {
+    final authService = ref.read(authServiceProvider);
+    final userData = await authService.getCurrentUser();
+    return User.fromJson(userData);
+  } catch (e) {
+    print('❌ Error loading current user: $e');
+    return null;
+  }
+});
+
+// Estado de autenticação
 class AuthState {
   final bool isAuthenticated;
   final bool isLoading;
   final bool isInitialized;
+  final String? error;
 
   AuthState({
     required this.isAuthenticated,
     this.isLoading = false,
     this.isInitialized = false,
+    this.error,
   });
 
   AuthState copyWith({
     bool? isAuthenticated,
     bool? isLoading,
     bool? isInitialized,
+    String? error,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isLoading: isLoading ?? this.isLoading,
       isInitialized: isInitialized ?? this.isInitialized,
+      error: error,
     );
   }
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final Ref ref;
-  final storage = FlutterSecureStorage();
-  final Dio _dio = Dio(BaseOptions(baseUrl: apiUrl));
+  final FlutterSecureStorage storage = FlutterSecureStorage();
+  late final AuthService _authService;
+  late final ApiService _apiService;
 
   AuthNotifier(this.ref) : super(AuthState(isAuthenticated: false)) {
-    // Checa o status de autenticação na inicialização
+    _authService = ref.read(authServiceProvider);
+    _apiService = ref.read(apiServiceProvider);
     _initializeAuth();
   }
 
@@ -53,105 +79,171 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: false, isInitialized: true);
   }
 
+  /// Verifica status de autenticação
   Future<void> checkAuthStatus() async {
     print('🔍 Checking auth status...');
-    final jwt = await storage.read(key: 'jwt');
 
-    if (jwt != null) {
-      print('🔑 JWT found: $jwt');
-      try {
-        // Como estamos usando token fake, vamos simular validação
-        if (jwt == 'fake-jwt-token') {
+    try {
+      final hasToken = await _apiService.hasToken();
+
+      if (hasToken) {
+        print('🔑 Token found, validating...');
+
+        // Tenta obter o usuário atual para validar o token
+        try {
+          await _authService.getCurrentUser();
           state = state.copyWith(isAuthenticated: true);
 
           // Verifica se é o primeiro login
-          final isFirst = await storage.read(key: 'isFirstLogin') ?? 'true';
+          final isFirst = await storage.read(key: StorageKeys.isFirstLogin) ?? 'true';
           ref.read(isFirstLoginProvider.notifier).state = isFirst == 'true';
 
           print('✅ User authenticated. First login: $isFirst');
-        } else {
-          print('❌ Invalid token, logging out');
+        } catch (e) {
+          print('❌ Token invalid, logging out');
           await logout();
         }
-      } catch (e) {
-        print('❌ Error validating token: $e');
-        await logout();
+      } else {
+        print('❌ No token found');
+        state = state.copyWith(isAuthenticated: false);
       }
-    } else {
-      print('❌ No JWT found');
+    } catch (e) {
+      print('❌ Error checking auth status: $e');
       state = state.copyWith(isAuthenticated: false);
     }
   }
 
+  /// Login do usuário
   Future<void> login(String email, String password) async {
     print('🔐 Attempting login with: $email');
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Simulação de login com usuário fake
-      if (email == 'test@example.com' && password == 'password123') {
-        final jwt = 'fake-jwt-token';
-        await storage.write(key: 'jwt', value: jwt);
-        await storage.write(key: 'isFirstLogin', value: 'true');
+      final response = await _authService.login(
+        email: email,
+        password: password,
+      );
 
-        state = state.copyWith(isAuthenticated: true, isLoading: false);
+      // Salvar token
+      final token = response['token'] ?? response['access'];
+      if (token != null) {
+        await _apiService.saveToken(token);
+        await storage.write(key: StorageKeys.isFirstLogin, value: 'true');
+        await storage.write(key: StorageKeys.userEmail, value: email);
+
+        state = state.copyWith(
+          isAuthenticated: true,
+          isLoading: false,
+        );
         ref.read(isFirstLoginProvider.notifier).state = true;
 
         print('✅ Login successful');
       } else {
-        throw Exception('Credenciais inválidas');
+        throw Exception('Token não recebido do servidor');
       }
+    } on ApiException catch (e) {
+      print('❌ Login error: ${e.message}');
+      state = state.copyWith(
+        isLoading: false,
+        error: e.message,
+      );
+      throw Exception(e.message);
     } catch (e) {
-      state = state.copyWith(isLoading: false);
-      throw Exception('Erro no login: $e');
+      print('❌ Login error: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Erro no login. Tente novamente.',
+      );
+      rethrow;
     }
   }
 
-  Future<void> signup(String name, String email, String phone, String password) async {
+  /// Cadastro de novo usuário
+  Future<void> signup(
+      String name,
+      String email,
+      String phone,
+      String password,
+      ) async {
     print('📝 Attempting signup with: $email');
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Simulação de cadastro
-      if (email == 'existing@example.com') {
-        throw Exception('E-mail já em uso');
+      final response = await _authService.register(
+        name: name,
+        email: email,
+        password: password,
+        phone: phone.isNotEmpty ? phone : null,
+      );
+
+      // Salvar token
+      final token = response['token'] ?? response['access'];
+      if (token != null) {
+        await _apiService.saveToken(token);
+        await storage.write(key: StorageKeys.isFirstLogin, value: 'true');
+        await storage.write(key: StorageKeys.userEmail, value: email);
+
+        state = state.copyWith(
+          isAuthenticated: true,
+          isLoading: false,
+        );
+        ref.read(isFirstLoginProvider.notifier).state = true;
+
+        print('✅ Signup successful');
+      } else {
+        throw Exception('Token não recebido do servidor');
       }
-
-      final jwt = 'fake-jwt-token';
-      await storage.write(key: 'jwt', value: jwt);
-      await storage.write(key: 'isFirstLogin', value: 'true');
-
-      state = state.copyWith(isAuthenticated: true, isLoading: false);
-      ref.read(isFirstLoginProvider.notifier).state = true;
-
-      print('✅ Signup successful');
+    } on ApiException catch (e) {
+      print('❌ Signup error: ${e.message}');
+      state = state.copyWith(
+        isLoading: false,
+        error: e.message,
+      );
+      throw Exception(e.message);
     } catch (e) {
-      state = state.copyWith(isLoading: false);
-      throw Exception('Erro no cadastro: $e');
+      print('❌ Signup error: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Erro no cadastro. Tente novamente.',
+      );
+      rethrow;
     }
   }
 
+  /// Logout do usuário
   Future<void> logout() async {
     print('🚪 Logging out...');
-    await storage.delete(key: 'jwt');
-    await storage.delete(key: 'isFirstLogin');
-    state = state.copyWith(isAuthenticated: false);
-    ref.read(isFirstLoginProvider.notifier).state = true;
-    print('✅ Logout complete');
+
+    try {
+      await _authService.logout();
+    } catch (e) {
+      print('❌ Logout error: $e');
+    } finally {
+      // Sempre limpa o estado local
+      await storage.delete(key: StorageKeys.jwt);
+      await storage.delete(key: StorageKeys.isFirstLogin);
+      await storage.delete(key: StorageKeys.userEmail);
+
+      state = state.copyWith(isAuthenticated: false);
+      ref.read(isFirstLoginProvider.notifier).state = true;
+
+      print('✅ Logout complete');
+    }
   }
 
+  /// Completa o setup do perfil
   Future<void> completeProfileSetup() async {
     print('✅ Profile setup completed');
-    await storage.write(key: 'isFirstLogin', value: 'false');
+    await storage.write(key: StorageKeys.isFirstLogin, value: 'false');
     ref.read(isFirstLoginProvider.notifier).state = false;
   }
 
-  // Método para testar a autenticação
-  void forceLogin() async {
+  /// Método para testar (remover em produção)
+  Future<void> forceLogin() async {
     print('🧪 Force login for testing...');
-    final jwt = 'fake-jwt-token';
-    await storage.write(key: 'jwt', value: jwt);
-    await storage.write(key: 'isFirstLogin', value: 'false'); // Pula o profile setup
+    final fakeToken = 'fake-jwt-token-for-testing';
+    await _apiService.saveToken(fakeToken);
+    await storage.write(key: StorageKeys.isFirstLogin, value: 'false');
 
     state = state.copyWith(isAuthenticated: true);
     ref.read(isFirstLoginProvider.notifier).state = false;

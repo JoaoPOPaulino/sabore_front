@@ -1,12 +1,10 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../widgets/custom_text_field.dart';
-import '../../widgets/custom_button.dart';
 import '../../constants.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   static const String route = '/signup';
@@ -23,13 +21,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _phoneCodeController = TextEditingController(text: '+55');
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  // Services
-  final Dio _dio = Dio(BaseOptions(baseUrl: apiUrl));
-  final storage = FlutterSecureStorage();
+  final _confirmPasswordController = TextEditingController();
 
   // State
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   String _passwordStrength = '';
   bool _isLoading = false;
 
@@ -40,6 +36,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _phoneCodeController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -102,7 +99,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       child: Image.asset(
         'assets/images/logo2.png',
         width: 187,
-        height: 100, // Ajustado para não ocupar muito espaço
+        height: 100,
         fit: BoxFit.contain,
       ),
     );
@@ -147,6 +144,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           _buildPhoneFields(),
           SizedBox(height: 15),
           _buildPasswordField(),
+          SizedBox(height: 15),
+          _buildConfirmPasswordField(),
           SizedBox(height: 10),
           _buildPasswordStrengthIndicator(),
           SizedBox(height: 40),
@@ -181,6 +180,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         validator: (value) {
           if (value == null || value.isEmpty) {
             return 'Campo obrigatório';
+          }
+          if (value.trim().split(' ').length < 2) {
+            return 'Digite seu nome completo';
           }
           return null;
         },
@@ -229,6 +231,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             child: TextFormField(
               controller: _phoneCodeController,
               keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d+]')),
+                LengthLimitingTextInputFormatter(4),
+              ],
               style: TextStyle(
                 fontFamily: 'Montserrat',
                 fontSize: 16,
@@ -240,7 +246,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Obrigatório';
+                  return 'Código';
+                }
+                if (!value.startsWith('+')) {
+                  return 'Use +';
                 }
                 return null;
               },
@@ -255,13 +264,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             child: TextFormField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(11),
+                _PhoneInputFormatter(),
+              ],
               style: TextStyle(
                 fontFamily: 'Montserrat',
                 fontSize: 16,
                 color: Color(0xFF3C4D18),
               ),
               decoration: InputDecoration(
-                hintText: 'Telefone',
+                hintText: '(00) 00000-0000',
                 hintStyle: TextStyle(
                   color: Color(0xFF999999),
                   fontFamily: 'Montserrat',
@@ -320,6 +334,56 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           if (value == null || value.isEmpty) {
             return 'Campo obrigatório';
           }
+          if (value.length < 8) {
+            return 'A senha deve ter no mínimo 8 caracteres';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildConfirmPasswordField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFFF5F5DC),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextFormField(
+        controller: _confirmPasswordController,
+        obscureText: _obscureConfirmPassword,
+        style: TextStyle(
+          fontFamily: 'Montserrat',
+          fontSize: 16,
+          color: Color(0xFF3C4D18),
+        ),
+        decoration: InputDecoration(
+          hintText: 'Confirmar senha',
+          hintStyle: TextStyle(
+            color: Color(0xFF999999),
+            fontFamily: 'Montserrat',
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+              color: Color(0xFF999999),
+            ),
+            onPressed: () {
+              setState(() {
+                _obscureConfirmPassword = !_obscureConfirmPassword;
+              });
+            },
+          ),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Campo obrigatório';
+          }
+          if (value != _passwordController.text) {
+            return 'As senhas não coincidem';
+          }
           return null;
         },
       ),
@@ -332,18 +396,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Força da senha: $_passwordStrength',
-          style: TextStyle(
-            color: _getPasswordStrengthColor(),
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Montserrat',
-          ),
+        Row(
+          children: [
+            Text(
+              'Força da senha: ',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF666666),
+                fontFamily: 'Montserrat',
+              ),
+            ),
+            Text(
+              _passwordStrength,
+              style: TextStyle(
+                color: _getPasswordStrengthColor(),
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Montserrat',
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
         if (_passwordStrength != 'Forte') ...[
           SizedBox(height: 4),
           Text(
-            'Dica: Use no mínimo 8 caracteres, incluindo uma letra maiúscula, uma minúscula, um número e um caractere especial.',
+            'Use no mínimo 8 caracteres com letras maiúsculas, minúsculas, números e símbolos.',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[600],
@@ -438,10 +515,28 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   String? _validatePhone(String? phone) {
-    if (phone == null || phone.isEmpty) return null; // Telefone é opcional
-    if (!RegExp(r'^\d{10,11}$').hasMatch(phone)) {
-      return 'Telefone deve ter 10 ou 11 dígitos';
+    if (phone == null || phone.isEmpty) {
+      return 'Campo obrigatório';
     }
+
+    // Remove formatação
+    final cleanPhone = phone.replaceAll(RegExp(r'[^\d]'), '');
+
+    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+      return 'Número inválido';
+    }
+
+    // Valida DDD (11-99)
+    final ddd = int.tryParse(cleanPhone.substring(0, 2));
+    if (ddd == null || ddd < 11 || ddd > 99) {
+      return 'DDD inválido';
+    }
+
+    // Valida se é celular (9 dígitos) ou fixo (8 dígitos)
+    if (cleanPhone.length == 11 && !cleanPhone.startsWith(RegExp(r'\d{2}9'))) {
+      return 'Celular deve começar com 9';
+    }
+
     return null;
   }
 
@@ -464,13 +559,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Future<String?> _checkEmailAvailability(String email) async {
     try {
-      final response = await _dio.get('/check-email', queryParameters: {'email': email});
-      if (response.data['exists']) {
+      final authService = ref.read(authServiceProvider);
+      final isAvailable = await authService.checkEmailAvailability(email);
+
+      if (!isAvailable) {
         return 'Este e-mail já está em uso';
       }
       return null;
-    } catch (e) {
-      return 'Erro ao verificar o e-mail';
+    } on ApiException catch (e) {
+      // Em caso de erro na verificação, permite continuar
+      print('Error checking email: ${e.message}');
+      return null;
     }
   }
 
@@ -480,20 +579,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Verifica disponibilidade do email
       final emailError = await _checkEmailAvailability(_emailController.text);
       if (emailError != null) {
         _showErrorMessage(emailError);
+        setState(() => _isLoading = false);
         return;
       }
 
+      // Remove formatação do telefone
+      final cleanPhone = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
+      final fullPhone = '${_phoneCodeController.text}$cleanPhone';
+
+      // Faz o cadastro
       await ref.read(authProvider.notifier).signup(
-        _nameController.text,
-        _emailController.text,
-        '${_phoneCodeController.text}${_phoneController.text}',
+        _nameController.text.trim(),
+        _emailController.text.trim(),
+        fullPhone,
         _passwordController.text,
       );
+
+      // Sucesso - a navegação será tratada pelo GoRouter
+    } on ApiException catch (e) {
+      _showErrorMessage(e.message);
     } catch (e) {
-      _showErrorMessage('Erro no cadastro: Tente novamente');
+      _showErrorMessage('Erro no cadastro. Tente novamente.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -506,7 +616,44 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+        duration: Duration(seconds: 3),
       ),
+    );
+  }
+}
+
+// Formatador personalizado para telefone brasileiro
+class _PhoneInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    final text = newValue.text;
+
+    if (text.isEmpty) {
+      return newValue;
+    }
+
+    String formatted = '';
+
+    if (text.length <= 2) {
+      // (00
+      formatted = '($text';
+    } else if (text.length <= 6) {
+      // (00) 0000
+      formatted = '(${text.substring(0, 2)}) ${text.substring(2)}';
+    } else if (text.length <= 10) {
+      // (00) 0000-0000
+      formatted = '(${text.substring(0, 2)}) ${text.substring(2, 6)}-${text.substring(6)}';
+    } else {
+      // (00) 00000-0000
+      formatted = '(${text.substring(0, 2)}) ${text.substring(2, 7)}-${text.substring(7, 11)}';
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
