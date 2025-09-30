@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
-import '../../widgets/custom_button.dart';
 import '../../widgets/select_recipe_book_modal.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -261,6 +260,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     icon: Icon(Icons.notifications, color: Colors.white, size: 28),
                     onPressed: () {
                       print('🔔 Notifications button pressed');
+                      context.push('/notifications');
                     },
                   ),
                   // Profile

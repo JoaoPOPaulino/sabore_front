@@ -111,10 +111,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: Icon(Icons.share, color: Colors.white, size: 20),
+            icon: Icon(Icons.bookmark_border, color: Colors.white, size: 20),
             onPressed: () {
-              // Implementar compartilhamento
-              print('Share profile');
+              print('Recipe books tapped');
+              context.push('/recipe-books');
+            },
+          ),
+        ),
+        Container(
+          margin: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Color(0xFFFA9500),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: Icon(Icons.settings, color: Colors.white, size: 20),
+            onPressed: () {
+              print('Settings tapped');
+              context.push('/settings');
             },
           ),
         ),
@@ -194,8 +208,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       onTap: () {
         if (label == 'Seguidores') {
           print('Navigate to followers');
+          // Implemente navegação para lista de seguidores
         } else if (label == 'Seguindo') {
           print('Navigate to following');
+          // Implemente navegação para lista de seguindo
         }
       },
       child: Column(
@@ -303,6 +319,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return GestureDetector(
       onTap: () {
         print('Recipe tapped: ${recipe['name']}');
+        // Navegar para detalhes da receita
+        // context.push('/recipe/ID');
       },
       child: Container(
         decoration: BoxDecoration(
@@ -354,14 +372,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildGalleryTab() {
-    // Grid assimétrico como na imagem
     return Container(
       padding: EdgeInsets.all(20),
       child: Column(
         children: [
           Row(
             children: [
-              // Card grande esquerda
               Expanded(
                 flex: 2,
                 child: Container(
@@ -376,7 +392,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
               SizedBox(width: 8),
-              // Coluna direita
               Expanded(
                 flex: 1,
                 child: Column(
@@ -461,7 +476,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Rating header
           Row(
             children: [
               Container(
@@ -487,7 +501,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
               Spacer(),
-              // Fotos das reviews
               Row(
                 children: List.generate(4, (index) {
                   if (index == 3) {
@@ -526,7 +539,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ],
           ),
           SizedBox(height: 20),
-          // Reviews list
           ListView.builder(
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),

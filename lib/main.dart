@@ -3,10 +3,15 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sabore_app/screens/categorie/categories_screen.dart';
 import 'package:sabore_app/screens/categorie/states_screen.dart';
+import 'package:sabore_app/screens/profile/profile/notification_screen.dart';
 import 'package:sabore_app/screens/profile/profile/profile_screen.dart';
+import 'package:sabore_app/screens/profile/profile/recipe_books_screen.dart';
+import 'package:sabore_app/screens/profile/profile/user_info_screen.dart';
 import 'package:sabore_app/screens/recipe/add_recipe_screen.dart';
 import 'package:sabore_app/screens/recipe/recipe_success_screen.dart';
 import 'package:sabore_app/screens/search/search_screen.dart';
+import 'package:sabore_app/screens/profile/profile/edit_profile_screen.dart';
+import 'package:sabore_app/screens/profile/profile/setting_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/create_account_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -135,6 +140,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/recipe-success',
         builder: (context, state) => RecipeSuccessScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/edit-profile',
+        builder: (context, state) => EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/recipe-books',
+        builder: (context, state) => RecipeBooksScreen(),
+      ),
+      GoRoute(
+        path: '/user-info',
+        builder: (context, state) => UserInfoScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => NotificationsScreen(),
       ),
     ],
     redirect: (context, state) {
