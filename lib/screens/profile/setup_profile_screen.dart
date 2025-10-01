@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/mock_auth_service.dart';
 
 class SetupProfileScreen extends ConsumerStatefulWidget {
   @override
@@ -35,7 +36,6 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
       );
 
       if (image != null) {
-        // Verificar tamanho (máximo 2MB)
         final file = File(image.path);
         final fileSize = await file.length();
 
@@ -47,9 +47,11 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
         setState(() {
           _profileImage = file;
         });
+
+        print('✅ Image selected: ${image.path}');
       }
     } catch (e) {
-      print('Error picking image: $e');
+      print('❌ Error picking image: $e');
       _showErrorMessage('Erro ao selecionar imagem');
     }
   }
@@ -93,16 +95,31 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Aqui você pode fazer upload da foto e salvar o username na API
-      // Por enquanto, só completa o setup
+      final authService = ref.read(authServiceProvider);
+
+      // Salvar dados do perfil
+      await authService.updateProfile(
+        username: _usernameController.text,
+        profileImagePath: _profileImage?.path,
+      );
+
+      // Atualizar dados locais
+      final currentData = ref.read(currentUserDataProvider);
+      if (currentData != null) {
+        ref.read(currentUserDataProvider.notifier).state = {
+          ...currentData,
+          'username': _usernameController.text,
+          'profileImage': _profileImage?.path,
+        };
+      }
 
       await ref.read(authProvider.notifier).completeProfileSetup();
 
-      // Navegar para tela de sucesso
       if (mounted) {
         context.go('/setup-complete');
       }
     } catch (e) {
+      print('Error saving profile: $e');
       _showErrorMessage('Erro ao salvar perfil. Tente novamente.');
     } finally {
       if (mounted) {
@@ -110,7 +127,6 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
       }
     }
   }
-
   void _showErrorMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

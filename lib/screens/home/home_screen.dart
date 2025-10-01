@@ -1,9 +1,12 @@
 // home_screen.dart
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
+import '../../providers/auth_provider.dart';
 import '../../widgets/select_recipe_book_modal.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -17,11 +20,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userData = ref.watch(currentUserDataProvider);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Conteúdo principal
           SingleChildScrollView(
             padding: EdgeInsets.only(top: 50, left: 16, right: 16, bottom: 80),
             child: Column(
@@ -34,11 +38,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     GestureDetector(
                       onTap: () {
                         print('👤 Profile button pressed');
-                        context.push('/profile/1'); // NOVA ROTA PARA PERFIL
+                        context.push('/profile/${userData?['id'] ?? '1'}');
                       },
                       child: CircleAvatar(
                         radius: 25,
-                        backgroundImage: AssetImage('assets/images/chef.jpg'),
+                        backgroundImage: userData?['profileImage'] != null
+                            ? FileImage(File(userData!['profileImage']))
+                            : AssetImage('assets/images/chef.jpg') as ImageProvider,
                       ),
                     ),
                     Text(
@@ -263,12 +269,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       context.push('/notifications');
                     },
                   ),
-                  // Profile
+                  // Profile - CORRIGIDO
                   IconButton(
                     icon: Icon(Icons.person, color: Colors.white, size: 28),
                     onPressed: () {
                       print('👤 Profile button pressed');
-                      context.push('/profile/1');
+                      final userId = userData?['id'] ?? '1';
+                      context.push('/profile/$userId');
                     },
                   ),
                 ],

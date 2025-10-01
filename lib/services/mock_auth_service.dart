@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 class MockAuthService {
-  // Banco de dados fake em memória (persiste durante a execução do app)
+  // Banco de dados fake em memória
   static final List<Map<String, dynamic>> _users = [
     {
       'id': '1',
@@ -9,8 +10,13 @@ class MockAuthService {
       'email': 'test@example.com',
       'password': 'password123',
       'phone': '+5511999999999',
+      'username': null,
+      'profileImage': null,
     }
   ];
+
+  // ID do usuário autenticado atualmente
+  static String? _currentUserId;
 
   Future<void> _simulateNetworkDelay() async {
     await Future.delayed(Duration(milliseconds: 800));
@@ -33,29 +39,27 @@ class MockAuthService {
     String? phone,
   }) async {
     print('📝 [MOCK] Registering user: $email');
-    print('📝 [MOCK] Password: $password'); // Debug
     await _simulateNetworkDelay();
 
-    // Verifica se email já existe
     if (_users.any((user) => user['email'] == email.toLowerCase())) {
       print('❌ [MOCK] Email already exists');
       throw Exception('Email já cadastrado');
     }
 
-    // Cria novo usuário
     final newUser = {
       'id': '${_users.length + 1}',
       'name': name,
       'email': email.toLowerCase(),
       'password': password,
       'phone': phone,
+      'username': null,
+      'profileImage': null,
     };
 
     _users.add(newUser);
+    _currentUserId = newUser['id'];
 
-    print('✅ [MOCK] User registered successfully');
-    print('📋 [MOCK] Total users: ${_users.length}');
-    print('📋 [MOCK] All users: ${_users.map((u) => u['email']).toList()}');
+    print('✅ [MOCK] User registered successfully with ID: ${newUser['id']}');
 
     return {
       'token': 'mock-jwt-token-${DateTime.now().millisecondsSinceEpoch}',
@@ -74,8 +78,6 @@ class MockAuthService {
     required String password,
   }) async {
     print('🔐 [MOCK] Login attempt: $email');
-    print('🔐 [MOCK] Password: $password'); // Debug
-    print('📋 [MOCK] Available users: ${_users.map((u) => '${u['email']} (${u['password']})').toList()}');
     await _simulateNetworkDelay();
 
     try {
@@ -83,7 +85,8 @@ class MockAuthService {
             (u) => u['email'] == email.toLowerCase() && u['password'] == password,
       );
 
-      print('✅ [MOCK] Login successful for: ${user['email']}');
+      _currentUserId = user['id'];
+      print('✅ [MOCK] Login successful for: ${user['email']} (ID: ${user['id']})');
 
       return {
         'token': 'mock-jwt-token-${DateTime.now().millisecondsSinceEpoch}',
@@ -93,6 +96,8 @@ class MockAuthService {
           'name': user['name'],
           'email': user['email'],
           'phone': user['phone'],
+          'username': user['username'],
+          'profileImage': user['profileImage'],
         }
       };
     } catch (e) {
@@ -102,24 +107,58 @@ class MockAuthService {
   }
 
   Future<Map<String, dynamic>> getCurrentUser() async {
-    print('👤 [MOCK] Getting current user');
+    print('👤 [MOCK] Getting current user (ID: $_currentUserId)');
     await _simulateNetworkDelay();
 
-    if (_users.isEmpty) {
-      throw Exception('Nenhum usuário encontrado');
+    if (_currentUserId == null) {
+      throw Exception('Nenhum usuário autenticado');
     }
 
-    final user = _users.first;
+    final user = _users.firstWhere(
+          (u) => u['id'] == _currentUserId,
+      orElse: () => throw Exception('Usuário não encontrado'),
+    );
+
     return {
       'id': user['id'],
       'name': user['name'],
       'email': user['email'],
       'phone': user['phone'],
+      'username': user['username'],
+      'profileImage': user['profileImage'],
     };
   }
 
-  Future<void> logout() async {
-    print('🚪 [MOCK] Logout');
+  Future<void> updateProfile({
+    String? username,
+    String? profileImagePath,
+  }) async {
+    print('📝 [MOCK] Updating profile for user ID: $_currentUserId');
     await _simulateNetworkDelay();
+
+    if (_currentUserId == null) {
+      throw Exception('Nenhum usuário autenticado');
+    }
+
+    final userIndex = _users.indexWhere((u) => u['id'] == _currentUserId);
+    if (userIndex == -1) {
+      throw Exception('Usuário não encontrado');
+    }
+
+    if (username != null) {
+      _users[userIndex]['username'] = username;
+      print('✅ [MOCK] Username updated to: $username');
+    }
+
+    if (profileImagePath != null) {
+      _users[userIndex]['profileImage'] = profileImagePath;
+      print('✅ [MOCK] Profile image updated');
+    }
+  }
+
+  Future<void> logout() async {
+    print('🚪 [MOCK] Logout (User ID: $_currentUserId)');
+    await _simulateNetworkDelay();
+    _currentUserId = null;
   }
 }

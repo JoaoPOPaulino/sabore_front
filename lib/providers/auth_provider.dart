@@ -21,6 +21,9 @@ final isFirstLoginProvider = StateProvider<bool>((ref) {
   return true;
 });
 
+// Provider para dados do usuário atual
+final currentUserDataProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
+
 // Provider para o usuário atual
 final currentUserProvider = FutureProvider<User?>((ref) async {
   final authState = ref.watch(authProvider);
@@ -83,7 +86,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: false, isInitialized: true);
   }
 
-  /// Verifica status de autenticação
   Future<void> checkAuthStatus() async {
     print('🔍 Checking auth status...');
 
@@ -93,12 +95,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (hasToken) {
         print('🔑 Token found, validating...');
 
-        // Tenta obter o usuário atual para validar o token
         try {
-          await _authService.getCurrentUser();
+          final userData = await _authService.getCurrentUser();
+          ref.read(currentUserDataProvider.notifier).state = userData;
           state = state.copyWith(isAuthenticated: true);
 
-          // Verifica se é o primeiro login
           final isFirst = await storage.read(key: StorageKeys.isFirstLogin) ?? 'true';
           ref.read(isFirstLoginProvider.notifier).state = isFirst == 'true';
 
@@ -117,7 +118,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Login do usuário
   Future<void> login(String email, String password) async {
     print('🔐 Attempting login with: $email');
     state = state.copyWith(isLoading: true, error: null);
@@ -128,12 +128,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
       );
 
-      // Salvar token
       final token = response['token'] ?? response['access'];
       if (token != null) {
         await _apiService.saveToken(token);
         await storage.write(key: StorageKeys.isFirstLogin, value: 'true');
         await storage.write(key: StorageKeys.userEmail, value: email);
+
+        if (response['user'] != null) {
+          ref.read(currentUserDataProvider.notifier).state = response['user'];
+        }
 
         state = state.copyWith(
           isAuthenticated: true,
@@ -162,7 +165,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Cadastro de novo usuário
   Future<void> signup(
       String name,
       String email,
@@ -180,12 +182,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
         phone: phone.isNotEmpty ? phone : null,
       );
 
-      // Salvar token
       final token = response['token'] ?? response['access'];
       if (token != null) {
         await _apiService.saveToken(token);
         await storage.write(key: StorageKeys.isFirstLogin, value: 'true');
         await storage.write(key: StorageKeys.userEmail, value: email);
+
+        if (response['user'] != null) {
+          ref.read(currentUserDataProvider.notifier).state = response['user'];
+        }
 
         state = state.copyWith(
           isAuthenticated: true,
@@ -214,7 +219,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Logout do usuário
   Future<void> logout() async {
     print('🚪 Logging out...');
 
@@ -223,11 +227,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       print('❌ Logout error: $e');
     } finally {
-      // Sempre limpa o estado local
       await storage.delete(key: StorageKeys.jwt);
       await storage.delete(key: StorageKeys.isFirstLogin);
       await storage.delete(key: StorageKeys.userEmail);
 
+      ref.read(currentUserDataProvider.notifier).state = null;
       state = state.copyWith(isAuthenticated: false);
       ref.read(isFirstLoginProvider.notifier).state = true;
 
@@ -235,14 +239,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Completa o setup do perfil
   Future<void> completeProfileSetup() async {
     print('✅ Profile setup completed');
     await storage.write(key: StorageKeys.isFirstLogin, value: 'false');
     ref.read(isFirstLoginProvider.notifier).state = false;
   }
 
-  /// Método para testar (remover em produção)
   Future<void> forceLogin() async {
     print('🧪 Force login for testing...');
     final fakeToken = 'fake-jwt-token-for-testing';

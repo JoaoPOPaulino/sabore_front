@@ -1,12 +1,22 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/auth_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final userData = ref.watch(currentUserDataProvider);
+
+    if (userData == null) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Color(0xFFFFF8F0),
       appBar: AppBar(
@@ -34,7 +44,7 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             SizedBox(height: 20),
 
-            // Card do perfil
+            // Card do perfil com dados reais
             Container(
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -45,7 +55,13 @@ class SettingsScreen extends ConsumerWidget {
                 children: [
                   CircleAvatar(
                     radius: 35,
-                    backgroundImage: AssetImage('assets/images/chef.jpg'),
+                    backgroundImage: userData['profileImage'] != null
+                        ? FileImage(File(userData['profileImage']))
+                        : null,
+                    backgroundColor: Color(0xFFF5F5F5),
+                    child: userData['profileImage'] == null
+                        ? Icon(Icons.person, size: 35, color: Colors.white)
+                        : null,
                   ),
                   SizedBox(width: 16),
                   Expanded(
@@ -53,7 +69,7 @@ class SettingsScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Tayse Virgulino',
+                          userData['name'] ?? 'Usuário',
                           style: TextStyle(
                             fontFamily: 'Montserrat',
                             fontWeight: FontWeight.w700,
@@ -63,7 +79,7 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Palmas - TO',
+                          userData['email'] ?? '',
                           style: TextStyle(
                             fontFamily: 'Montserrat',
                             fontWeight: FontWeight.w500,
@@ -75,10 +91,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {
-                      // Navegar para edição de perfil
-                      context.push('/edit-profile');
-                    },
+                    onTap: () => context.push('/edit-profile'),
                     child: Container(
                       padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -98,15 +111,11 @@ class SettingsScreen extends ConsumerWidget {
 
             SizedBox(height: 30),
 
-            // Opções de configuração
             _buildSettingsOption(
               context,
               icon: Icons.info_outline,
               title: 'Info',
-              onTap: () {
-                print('Info tapped');
-                context.push('/user-info');
-              },
+              onTap: () => context.push('/user-info'),
             ),
 
             SizedBox(height: 12),
@@ -115,10 +124,7 @@ class SettingsScreen extends ConsumerWidget {
               context,
               icon: Icons.notifications_outlined,
               title: 'Notificações',
-              onTap: () {
-                print('Notifications tapped');
-                context.push('/notifications');
-              },
+              onTap: () => context.push('/notifications'),
             ),
 
             SizedBox(height: 12),
@@ -128,8 +134,9 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.lock_outline,
               title: 'Privacidade',
               onTap: () {
-                print('Privacy tapped');
-                // Navegar para tela de privacidade
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Em breve!')),
+                );
               },
             ),
 
@@ -140,8 +147,9 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.help_outline,
               title: 'Suporte',
               onTap: () {
-                print('Support tapped');
-                // Navegar para tela de suporte
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Em breve!')),
+                );
               },
             ),
 
@@ -152,10 +160,7 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.logout,
               title: 'Logout',
               isDestructive: true,
-              onTap: () {
-                // Mostrar confirmação de logout
-                _showLogoutDialog(context, ref);
-              },
+              onTap: () => _showLogoutDialog(context, ref),
             ),
 
             SizedBox(height: 40),
@@ -234,7 +239,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Cancelar',
               style: TextStyle(
@@ -244,11 +249,12 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           TextButton(
-            onPressed: () {
-              // Fazer logout
-              // ref.read(authProvider.notifier).logout();
-              context.pop();
-              context.go('/onboarding');
+            onPressed: () async {
+              await ref.read(authProvider.notifier).logout();
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                context.go('/onboarding');
+              }
             },
             child: Text(
               'Sair',

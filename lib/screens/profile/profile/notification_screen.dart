@@ -7,48 +7,8 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final List<Map<String, dynamic>> notifications = [
-      {
-        'type': 'like',
-        'user': 'Maria Silva',
-        'avatar': 'assets/images/chef.jpg',
-        'message': 'curtiu sua receita "Brownie zero açúcar"',
-        'time': '5 min atrás',
-        'isRead': false,
-      },
-      {
-        'type': 'comment',
-        'user': 'João Santos',
-        'avatar': 'assets/images/chef.jpg',
-        'message': 'comentou em "Lasanha de panela"',
-        'time': '1 hora atrás',
-        'isRead': false,
-      },
-      {
-        'type': 'follow',
-        'user': 'Ana Souza',
-        'avatar': 'assets/images/chef.jpg',
-        'message': 'começou a seguir você',
-        'time': '2 horas atrás',
-        'isRead': true,
-      },
-      {
-        'type': 'rating',
-        'user': 'Pedro Lima',
-        'avatar': 'assets/images/chef.jpg',
-        'message': 'avaliou "Bolo de milho" com 5 estrelas',
-        'time': '1 dia atrás',
-        'isRead': true,
-      },
-      {
-        'type': 'save',
-        'user': 'Carla Dias',
-        'avatar': 'assets/images/chef.jpg',
-        'message': 'salvou sua receita "Canjica zero lactose"',
-        'time': '2 dias atrás',
-        'isRead': true,
-      },
-    ];
+    // Para um usuário novo, não há notificações ainda
+    final List<Map<String, dynamic>> notifications = [];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -79,25 +39,10 @@ class NotificationsScreen extends ConsumerWidget {
             color: Color(0xFF3C4D18),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              print('Mark all as read');
-              // Implementar marcar todas como lidas
-            },
-            child: Text(
-              'Marcar todas\ncomo lidas',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 12,
-                color: Color(0xFFFA9500),
-              ),
-            ),
-          ),
-        ],
       ),
-      body: ListView.builder(
+      body: notifications.isEmpty
+          ? _buildEmptyState()
+          : ListView.builder(
         padding: EdgeInsets.symmetric(vertical: 8),
         itemCount: notifications.length,
         itemBuilder: (context, index) {
@@ -108,7 +53,43 @@ class NotificationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotificationCard(BuildContext context, Map<String, dynamic> notification) {
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.notifications_none,
+            size: 100,
+            color: Color(0xFFE0E0E0),
+          ),
+          SizedBox(height: 20),
+          Text(
+            'Nenhuma notificação',
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontWeight: FontWeight.w600,
+              fontSize: 20,
+              color: Color(0xFF666666),
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Você será notificado quando\nhouver novidades!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontSize: 14,
+              color: Color(0xFF999999),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationCard(
+      BuildContext context, Map<String, dynamic> notification) {
     IconData icon;
     Color iconColor;
 
@@ -222,7 +203,6 @@ class NotificationsScreen extends ConsumerWidget {
             : null,
         onTap: () {
           print('Notification tapped: ${notification['message']}');
-          // Navegar para o conteúdo relacionado
         },
       ),
     );

@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/auth_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final String userId;
@@ -12,69 +14,33 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String selectedTab = 'Receitas';
-  bool isLoading = false;
-
-  // Dados simulados (substitua pela sua API)
-  final Map<String, dynamic> userData = {
-    'username': 'hemchrsz',
-    'name': 'Hemilly',
-    'location': 'Palmas - TO',
-    'profileImage': 'assets/images/chef.jpg',
-    'recipesCount': 8,
-    'followersCount': 432,
-    'followingCount': 100,
-    'isFollowing': false,
-    'averageRating': 4.5,
-  };
-
-  final List<Map<String, dynamic>> userRecipes = [
-    {
-      'name': 'Brownie zero açúcar',
-      'time': '21 min',
-      'image': 'assets/images/chef.jpg'
-    },
-    {
-      'name': 'Lasanha de panela',
-      'time': '27 min',
-      'image': 'assets/images/chef.jpg'
-    },
-  ];
-
-  final List<Map<String, dynamic>> userReviews = [
-    {
-      'user': 'Danilo Belém',
-      'avatar': 'assets/images/chef.jpg',
-      'rating': 4,
-      'comment': 'Fiz a receita e gostei muito, o macarrão demora um pouco pra amolecer mas tudo ok, coloquei mais temperos e gostei muito.',
-      'image': 'assets/images/chef.jpg',
-    },
-    {
-      'user': 'hem_brinaa',
-      'avatar': 'assets/images/chef.jpg',
-      'rating': 5,
-      'comment': 'Fiz a farofa natalina aqui em casa e todo mundo amou, to aqui avaliando só pra dizer que façaaammmmm!!',
-      'image': null,
-    },
-    {
-      'user': 'Maria',
-      'avatar': 'assets/images/chef.jpg',
-      'rating': 4,
-      'comment': 'Adoro doce amei a receitaaa, só troquei a manteiga',
-      'image': 'assets/images/chef.jpg',
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
+    final currentUserData = ref.watch(currentUserDataProvider);
+    final bool isOwnProfile = widget.userId == currentUserData?['id'];
+
+    // Se não é o próprio perfil, mostrar dados mockados (outros usuários)
+    if (!isOwnProfile) {
+      return _buildOtherUserProfile();
+    }
+
+    // Se é o próprio perfil mas não tem dados
+    if (currentUserData == null) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-          _buildSliverAppBar(),
+          _buildSliverAppBar(currentUserData),
           SliverToBoxAdapter(
             child: Column(
               children: [
-                _buildProfileHeader(),
+                _buildProfileHeader(currentUserData),
                 _buildStatsSection(),
                 _buildTabButtons(),
                 _buildTabContent(),
@@ -86,7 +52,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildSliverAppBar() {
+  Widget _buildSliverAppBar(Map<String, dynamic> userData) {
+    final hasProfileImage = userData['profileImage'] != null;
+
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
@@ -112,10 +80,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           child: IconButton(
             icon: Icon(Icons.bookmark_border, color: Colors.white, size: 20),
-            onPressed: () {
-              print('Recipe books tapped');
-              context.push('/recipe-books');
-            },
+            onPressed: () => context.push('/recipe-books'),
           ),
         ),
         Container(
@@ -126,43 +91,63 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           child: IconButton(
             icon: Icon(Icons.settings, color: Colors.white, size: 20),
-            onPressed: () {
-              print('Settings tapped');
-              context.push('/settings');
-            },
+            onPressed: () => context.push('/settings'),
           ),
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/chef.jpg'),
+            image: hasProfileImage
+                ? DecorationImage(
+              image: FileImage(File(userData['profileImage'])),
               fit: BoxFit.cover,
               colorFilter: ColorFilter.mode(
                 Colors.black.withOpacity(0.4),
                 BlendMode.darken,
               ),
-            ),
+            )
+                : null,
+            color: hasProfileImage ? null : Color(0xFFFA9500).withOpacity(0.3),
           ),
+          child: !hasProfileImage
+              ? Center(
+            child: Icon(
+              Icons.person,
+              size: 100,
+              color: Color(0xFFFA9500),
+            ),
+          )
+              : null,
         ),
       ),
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(Map<String, dynamic> userData) {
+    final hasProfileImage = userData['profileImage'] != null;
+
     return Container(
       transform: Matrix4.translationValues(0, -80, 0),
       child: Column(
         children: [
           CircleAvatar(
             radius: 60,
-            backgroundImage: AssetImage(userData['profileImage']),
             backgroundColor: Colors.white,
+            child: CircleAvatar(
+              radius: 58,
+              backgroundImage: hasProfileImage
+                  ? FileImage(File(userData['profileImage']))
+                  : null,
+              backgroundColor: Color(0xFFF5F5F5),
+              child: !hasProfileImage
+                  ? Icon(Icons.person, size: 50, color: Color(0xFFFA9500))
+                  : null,
+            ),
           ),
           SizedBox(height: 12),
           Text(
-            userData['username'],
+            userData['username'] ?? 'Sem username',
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontWeight: FontWeight.w700,
@@ -171,12 +156,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
           Text(
-            userData['location'],
+            userData['name'] ?? 'Usuário',
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontWeight: FontWeight.w500,
               fontSize: 16,
-              color: Color(0xFFFA9500),
+              color: Color(0xFF666666),
             ),
           ),
         ],
@@ -195,47 +180,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatColumn('${userData['recipesCount']}', 'Receitas'),
-          _buildStatColumn('${userData['followersCount']}', 'Seguidores'),
-          _buildStatColumn('${userData['followingCount']}', 'Seguindo'),
+          _buildStatColumn('0', 'Receitas'),
+          _buildStatColumn('0', 'Seguidores'),
+          _buildStatColumn('0', 'Seguindo'),
         ],
       ),
     );
   }
 
   Widget _buildStatColumn(String number, String label) {
-    return GestureDetector(
-      onTap: () {
-        if (label == 'Seguidores') {
-          print('Navigate to followers');
-          // Implemente navegação para lista de seguidores
-        } else if (label == 'Seguindo') {
-          print('Navigate to following');
-          // Implemente navegação para lista de seguindo
-        }
-      },
-      child: Column(
-        children: [
-          Text(
-            number,
-            style: TextStyle(
-              fontFamily: 'Montserrat',
-              fontWeight: FontWeight.w700,
-              fontSize: 24,
-              color: Color(0xFF3C4D18),
-            ),
+    return Column(
+      children: [
+        Text(
+          number,
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
+            color: Color(0xFF3C4D18),
           ),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Montserrat',
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-              color: Color(0xFF666666),
-            ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            color: Color(0xFF666666),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -284,339 +258,118 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildTabContent() {
     switch (selectedTab) {
       case 'Receitas':
-        return _buildRecipesTab();
+        return _buildEmptyState(
+          icon: Icons.restaurant_menu,
+          title: 'Nenhuma receita ainda',
+          subtitle: 'Compartilhe suas receitas favoritas!',
+          buttonText: 'Adicionar Receita',
+          onPressed: () => context.push('/add-recipe'),
+        );
       case 'Galeria':
-        return _buildGalleryTab();
+        return _buildEmptyState(
+          icon: Icons.photo_library,
+          title: 'Galeria vazia',
+          subtitle: 'Suas fotos aparecerão aqui',
+        );
       case 'Avaliações':
-        return _buildReviewsTab();
+        return _buildEmptyState(
+          icon: Icons.star_border,
+          title: 'Sem avaliações',
+          subtitle: 'Suas avaliações aparecerão aqui',
+        );
       default:
-        return _buildRecipesTab();
+        return SizedBox.shrink();
     }
   }
 
-  Widget _buildRecipesTab() {
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    String? buttonText,
+    VoidCallback? onPressed,
+  }) {
     return Container(
-      padding: EdgeInsets.all(20),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.8,
-        ),
-        itemCount: userRecipes.length,
-        itemBuilder: (context, index) {
-          final recipe = userRecipes[index];
-          return _buildRecipeCard(recipe);
-        },
-      ),
-    );
-  }
-
-  Widget _buildRecipeCard(Map<String, dynamic> recipe) {
-    return GestureDetector(
-      onTap: () {
-        print('Recipe tapped: ${recipe['name']}');
-        // Navegar para detalhes da receita
-        // context.push('/recipe/ID');
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          image: DecorationImage(
-            image: AssetImage(recipe['image']),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.3),
-              BlendMode.darken,
-            ),
-          ),
-        ),
-        child: Container(
-          padding: EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.access_time, color: Colors.white, size: 14),
-                  SizedBox(width: 4),
-                  Text(
-                    recipe['time'],
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 4),
-              Text(
-                recipe['name'],
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGalleryTab() {
-    return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(40),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/chef.jpg'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                flex: 1,
-                child: Column(
-                  children: [
-                    Container(
-                      height: 96,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        image: DecorationImage(
-                          image: AssetImage('assets/images/chef.jpg'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Container(
-                      height: 96,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        image: DecorationImage(
-                          image: AssetImage('assets/images/chef.jpg'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/chef.jpg'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/chef.jpg'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/chef.jpg'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewsTab() {
-    return Container(
-      padding: EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Color(0xFF7CB342),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.star, color: Colors.white, size: 16),
-                    SizedBox(width: 4),
-                    Text(
-                      '${userData['averageRating']}',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Spacer(),
-              Row(
-                children: List.generate(4, (index) {
-                  if (index == 3) {
-                    return Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: Colors.black54,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '+23',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  return Container(
-                    margin: EdgeInsets.only(right: 4),
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/chef.jpg'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ],
+          Icon(
+            icon,
+            size: 80,
+            color: Color(0xFFE0E0E0),
           ),
           SizedBox(height: 20),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: userReviews.length,
-            itemBuilder: (context, index) {
-              return _buildReviewCard(userReviews[index]);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewCard(Map<String, dynamic> review) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundImage: AssetImage(review['avatar']),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      review['user'],
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Color(0xFF3C4D18),
-                      ),
-                    ),
-                    Row(
-                      children: List.generate(5, (index) {
-                        return Icon(
-                          index < review['rating'] ? Icons.star : Icons.star_border,
-                          color: Color(0xFFFA9500),
-                          size: 16,
-                        );
-                      }),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12),
           Text(
-            review['comment'],
+            title,
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontWeight: FontWeight.w600,
+              fontSize: 20,
+              color: Color(0xFF666666),
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontSize: 14,
-              color: Color(0xFF666666),
-              height: 1.4,
+              color: Color(0xFF999999),
             ),
           ),
-          if (review['image'] != null) ...[
-            SizedBox(height: 12),
-            Container(
-              height: 200,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                image: DecorationImage(
-                  image: AssetImage(review['image']),
-                  fit: BoxFit.cover,
+          if (buttonText != null && onPressed != null) ...[
+            SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFFA9500),
+                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+              ),
+              child: Text(
+                buttonText,
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  // Perfil de outros usuários (mockado)
+  Widget _buildOtherUserProfile() {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person, size: 100, color: Color(0xFFE0E0E0)),
+            SizedBox(height: 20),
+            Text(
+              'Perfil de outro usuário',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 18,
+                color: Color(0xFF666666),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => context.pop(),
+              child: Text('Voltar'),
+            ),
+          ],
+        ),
       ),
     );
   }

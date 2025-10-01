@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sabore_app/screens/categorie/categories_screen.dart';
 import 'package:sabore_app/screens/categorie/states_screen.dart';
+import 'package:sabore_app/screens/profile/profile/edit_profile_screen.dart';
 import 'package:sabore_app/screens/profile/profile/notification_screen.dart';
 import 'package:sabore_app/screens/profile/profile/profile_screen.dart';
 import 'package:sabore_app/screens/profile/profile/recipe_books_screen.dart';
@@ -10,7 +11,6 @@ import 'package:sabore_app/screens/profile/profile/user_info_screen.dart';
 import 'package:sabore_app/screens/recipe/add_recipe_screen.dart';
 import 'package:sabore_app/screens/recipe/recipe_success_screen.dart';
 import 'package:sabore_app/screens/search/search_screen.dart';
-import 'package:sabore_app/screens/profile/profile/edit_profile_screen.dart';
 import 'package:sabore_app/screens/profile/profile/setting_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/create_account_screen.dart';
@@ -32,23 +32,31 @@ class MyApp extends ConsumerWidget {
     final router = ref.watch(goRouterProvider);
     return MaterialApp.router(
       title: 'Saborê',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: Color(0xFF4CAF50),
         colorScheme: ColorScheme.fromSwatch().copyWith(
           secondary: Color(0xFFFF5722),
         ),
         scaffoldBackgroundColor: Colors.white,
-        fontFamily: 'Poppins',
+        fontFamily: 'Montserrat',
         textTheme: TextTheme(
           headlineLarge: TextStyle(
-              fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
-          bodyMedium: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+          bodyMedium: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[700],
+          ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: Color(0xFFFF5722),
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
             padding: EdgeInsets.symmetric(vertical: 16),
           ),
         ),
@@ -56,8 +64,9 @@ class MyApp extends ConsumerWidget {
           filled: true,
           fillColor: Color(0xFFFFF3E0),
           border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
       routerConfig: router,
@@ -182,19 +191,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isFirstLogin = ref.read(isFirstLoginProvider);
       final location = state.matchedLocation;
 
-      print('🧭 Navigation - Location: $location');
-      print('🔐 Auth State - Authenticated: ${authState.isAuthenticated}');
-      print('🔐 Auth State - Initialized: ${authState.isInitialized}');
-      print('🔐 Auth State - Loading: ${authState.isLoading}');
-      print('👤 First Login: $isFirstLogin');
-
       // Se ainda está carregando, manter na rota atual
       if (authState.isLoading && !authState.isInitialized) {
-        print('⏳ Still loading, staying at current location');
         return null;
       }
 
-      // Rotas públicas que sempre podem ser acessadas
+      // Rotas públicas
       final publicRoutes = [
         '/onboarding',
         '/create-account',
@@ -202,45 +204,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         '/signup',
         '/test'
       ];
+
       if (publicRoutes.contains(location)) {
-        print('🌍 Public route, allowing access');
         return null;
       }
 
-      // Rotas protegidas que requerem autenticação
-      final protectedRoutes = [
-        '/home',
-        '/categories',
-        '/states',
-        '/setup-profile',
-        '/setup-complete',
-      ];
-
-      // Se não está autenticado e tentando acessar rota protegida
-      if (!authState.isAuthenticated && protectedRoutes.contains(location)) {
-        print('❌ Not authenticated, redirect to onboarding');
+      // Se não está autenticado, redirecionar para onboarding
+      if (!authState.isAuthenticated) {
         return '/onboarding';
       }
 
-      // Se está autenticado
-      if (authState.isAuthenticated) {
-        // Se é o primeiro login e NÃO está nas telas de setup
-        if (isFirstLogin &&
-            location != '/setup-profile' &&
-            location != '/setup-complete') {
-          print('➡️ First login detected, redirect to profile setup');
+      // Se está autenticado e é primeiro login
+      if (authState.isAuthenticated && isFirstLogin) {
+        if (location != '/setup-profile' && location != '/setup-complete') {
           return '/setup-profile';
-        }
-
-        // Se já completou o perfil, permitir navegação livre
-        if (!isFirstLogin) {
-          print('✅ Profile complete, allowing navigation to: $location');
-          return null;
         }
       }
 
-      // Caso padrão: mantém na rota atual
-      print('✅ Staying at current location');
+      // Permitir navegação livre
       return null;
     },
     refreshListenable: routerNotifier,
@@ -253,6 +234,7 @@ class TestAuthScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final isFirstLogin = ref.watch(isFirstLoginProvider);
+    final userData = ref.watch(currentUserDataProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -270,37 +252,36 @@ class TestAuthScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Estado Atual:',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(
+                      'Estado Atual:',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     SizedBox(height: 8),
                     Text('Autenticado: ${authState.isAuthenticated}'),
                     Text('Carregando: ${authState.isLoading}'),
                     Text('Inicializado: ${authState.isInitialized}'),
                     Text('Primeiro Login: $isFirstLogin'),
+                    if (userData != null) ...[
+                      Divider(height: 20),
+                      Text('Nome: ${userData['name']}'),
+                      Text('Email: ${userData['email']}'),
+                      Text('Username: ${userData['username'] ?? 'não definido'}'),
+                    ],
                   ],
                 ),
               ),
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => ref.read(authProvider.notifier).forceLogin(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF3C4D18),
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text('🧪 Force Login (Bypass Auth)',
-                  style: TextStyle(color: Colors.white)),
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
               onPressed: () => context.go('/login'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFFA9500),
                 padding: EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text('📱 Ir para Login',
-                  style: TextStyle(color: Colors.white)),
+              child: Text('Ir para Login', style: TextStyle(color: Colors.white)),
             ),
             SizedBox(height: 10),
             ElevatedButton(
@@ -309,48 +290,19 @@ class TestAuthScreen extends ConsumerWidget {
                 backgroundColor: Color(0xFF3C4D18),
                 padding: EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text('🏠 Tentar ir para Home',
-                  style: TextStyle(color: Colors.white)),
+              child: Text('Ir para Home', style: TextStyle(color: Colors.white)),
             ),
             SizedBox(height: 10),
             ElevatedButton(
-              onPressed: () => context.go('/categories'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text('📂 Ir para Categorias',
-                  style: TextStyle(color: Colors.white)),
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => context.go('/states'),
+              onPressed: () {
+                final userId = userData?['id'] ?? '1';
+                context.go('/profile/$userId');
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 padding: EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text('📍 Ir para Estados',
-                  style: TextStyle(color: Colors.white)),
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => context.go('/setup-profile'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text('👤 Ir para Setup Profile',
-                  style: TextStyle(color: Colors.white)),
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => context.go('/setup-complete'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text('✅ Ir para Profile Complete',
-                  style: TextStyle(color: Colors.white)),
+              child: Text('Ir para Perfil', style: TextStyle(color: Colors.white)),
             ),
             SizedBox(height: 10),
             ElevatedButton(
@@ -359,8 +311,7 @@ class TestAuthScreen extends ConsumerWidget {
                 backgroundColor: Colors.red,
                 padding: EdgeInsets.symmetric(vertical: 16),
               ),
-              child:
-              Text('🚪 Logout', style: TextStyle(color: Colors.white)),
+              child: Text('Logout', style: TextStyle(color: Colors.white)),
             ),
             SizedBox(height: 20),
             Text(

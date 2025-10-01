@@ -1,12 +1,22 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/auth_provider.dart';
 
 class UserInfoScreen extends ConsumerWidget {
   const UserInfoScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final userData = ref.watch(currentUserDataProvider);
+
+    if (userData == null) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Color(0xFFFFF8F0),
       appBar: AppBar(
@@ -42,17 +52,22 @@ class UserInfoScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Avatar e nome
             Center(
               child: Column(
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage: AssetImage('assets/images/chef.jpg'),
+                    backgroundImage: userData['profileImage'] != null
+                        ? FileImage(File(userData['profileImage']))
+                        : null,
+                    backgroundColor: Color(0xFFF5F5F5),
+                    child: userData['profileImage'] == null
+                        ? Icon(Icons.person, size: 50, color: Color(0xFFFA9500))
+                        : null,
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Tayse Virgulino',
+                    userData['name'] ?? 'Usuário',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontWeight: FontWeight.w700,
@@ -62,7 +77,7 @@ class UserInfoScreen extends ConsumerWidget {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    '@hemchrsz',
+                    '@${userData['username'] ?? 'username'}',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontSize: 16,
@@ -75,70 +90,32 @@ class UserInfoScreen extends ConsumerWidget {
 
             SizedBox(height: 30),
 
-            // Seções de informação
             _buildInfoSection(
               'Email',
-              'tayse.virgulino@example.com',
+              userData['email'] ?? 'Não informado',
               Icons.email_outlined,
             ),
 
             _buildInfoSection(
               'Telefone',
-              '(63) 99999-9999',
+              userData['phone'] ?? 'Não informado',
               Icons.phone_outlined,
             ),
 
             _buildInfoSection(
-              'Localização',
-              'Palmas - TO, Brasil',
-              Icons.location_on_outlined,
-            ),
-
-            _buildInfoSection(
-              'Data de nascimento',
-              '15 de março de 1995',
-              Icons.cake_outlined,
+              'Username',
+              userData['username'] ?? 'Não definido',
+              Icons.alternate_email,
             ),
 
             _buildInfoSection(
               'Membro desde',
-              'Janeiro de 2024',
+              'Recentemente',
               Icons.calendar_today_outlined,
             ),
 
             SizedBox(height: 30),
 
-            // Bio
-            Text(
-              'Sobre mim',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: Color(0xFF3C4D18),
-              ),
-            ),
-            SizedBox(height: 12),
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Color(0xFFFFF3E0),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Text(
-                'Apaixonada por culinária desde pequena. Adoro experimentar novas receitas e compartilhar minhas criações! Especialidade em receitas juninas e sobremesas.',
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 14,
-                  color: Color(0xFF666666),
-                  height: 1.5,
-                ),
-              ),
-            ),
-
-            SizedBox(height: 30),
-
-            // Estatísticas
             Text(
               'Estatísticas',
               style: TextStyle(
@@ -153,11 +130,11 @@ class UserInfoScreen extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildStatCard('8', 'Receitas\npublicadas'),
+                  child: _buildStatCard('0', 'Receitas\npublicadas'),
                 ),
                 SizedBox(width: 12),
                 Expanded(
-                  child: _buildStatCard('432', 'Total de\nseguidores'),
+                  child: _buildStatCard('0', 'Total de\nseguidores'),
                 ),
               ],
             ),
@@ -165,11 +142,11 @@ class UserInfoScreen extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildStatCard('1.2k', 'Receitas\nsalvas'),
+                  child: _buildStatCard('0', 'Receitas\nsalvas'),
                 ),
                 SizedBox(width: 12),
                 Expanded(
-                  child: _buildStatCard('4.5⭐', 'Avaliação\nmédia'),
+                  child: _buildStatCard('⭐', 'Avaliação\nmédia'),
                 ),
               ],
             ),
