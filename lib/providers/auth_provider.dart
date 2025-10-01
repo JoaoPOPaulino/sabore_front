@@ -1,12 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/auth_service.dart';
+import '../services/mock_auth_service.dart';
 import '../services/api_service.dart';
 import '../constants.dart';
 import '../models/recipe.dart';
 
 // Providers
-final authServiceProvider = Provider((ref) => AuthService());
+final authServiceProvider = Provider<dynamic>((ref) {
+  return USE_MOCK_SERVICES ? MockAuthService() : AuthService();
+});
+
 final apiServiceProvider = Provider((ref) => ApiService());
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
@@ -64,7 +68,7 @@ class AuthState {
 class AuthNotifier extends StateNotifier<AuthState> {
   final Ref ref;
   final FlutterSecureStorage storage = FlutterSecureStorage();
-  late final AuthService _authService;
+  late final dynamic _authService;
   late final ApiService _apiService;
 
   AuthNotifier(this.ref) : super(AuthState(isAuthenticated: false)) {
@@ -147,7 +151,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
         error: e.message,
       );
-      throw Exception(e.message);
+      throw ApiException(statusCode: e.statusCode, message: e.message);
     } catch (e) {
       print('❌ Login error: $e');
       state = state.copyWith(
@@ -199,7 +203,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
         error: e.message,
       );
-      throw Exception(e.message);
+      throw ApiException(statusCode: e.statusCode, message: e.message);
     } catch (e) {
       print('❌ Signup error: $e');
       state = state.copyWith(

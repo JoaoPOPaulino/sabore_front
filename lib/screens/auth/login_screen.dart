@@ -381,6 +381,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _emailController.text,
         _passwordController.text,
       );
+
+      if (mounted) {
+        final isFirstLogin = ref.read(isFirstLoginProvider);
+        print('Login successful, first login: $isFirstLogin');
+
+        if (isFirstLogin) {
+          context.go('/setup-profile');
+        } else {
+          context.go('/home');
+        }
+      }
     } catch (e) {
       _showErrorMessage('Erro no login: Verifique suas credenciais');
     } finally {

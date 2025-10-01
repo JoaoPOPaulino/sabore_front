@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/mock_auth_service.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   static const String route = '/signup';
@@ -519,20 +520,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return 'Campo obrigatório';
     }
 
-    // Remove formatação
     final cleanPhone = phone.replaceAll(RegExp(r'[^\d]'), '');
 
     if (cleanPhone.length < 10 || cleanPhone.length > 11) {
       return 'Número inválido';
     }
 
-    // Valida DDD (11-99)
     final ddd = int.tryParse(cleanPhone.substring(0, 2));
     if (ddd == null || ddd < 11 || ddd > 99) {
       return 'DDD inválido';
     }
 
-    // Valida se é celular (9 dígitos) ou fixo (8 dígitos)
     if (cleanPhone.length == 11 && !cleanPhone.startsWith(RegExp(r'\d{2}9'))) {
       return 'Celular deve começar com 9';
     }
@@ -560,15 +558,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<String?> _checkEmailAvailability(String email) async {
     try {
       final authService = ref.read(authServiceProvider);
-      final isAvailable = await authService.checkEmailAvailability(email);
 
-      if (!isAvailable) {
-        return 'Este e-mail já está em uso';
+      // Verifica se é MockAuthService ou AuthService real
+      if (authService is MockAuthService) {
+        final isAvailable = await authService.checkEmailAvailability(email);
+        if (!isAvailable) {
+          return 'Este e-mail já está em uso';
+        }
+      } else {
+        // Para AuthService real (quando implementar)
+        final isAvailable = await (authService as dynamic).checkEmailAvailability(email);
+        if (!isAvailable) {
+          return 'Este e-mail já está em uso';
+        }
       }
+
       return null;
-    } on ApiException catch (e) {
-      // Em caso de erro na verificação, permite continuar
-      print('Error checking email: ${e.message}');
+    } catch (e) {
+      print('Error checking email: $e');
       return null;
     }
   }
@@ -599,7 +606,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _passwordController.text,
       );
 
-      // Sucesso - a navegação será tratada pelo GoRouter
+      // ✅ ADICIONE ESTA NAVEGAÇÃO EXPLÍCITA
+      if (mounted) {
+        print('✅ Signup successful, navigating to setup profile');
+        context.go('/setup-profile');
+      }
     } on ApiException catch (e) {
       _showErrorMessage(e.message);
     } catch (e) {
@@ -638,16 +649,12 @@ class _PhoneInputFormatter extends TextInputFormatter {
     String formatted = '';
 
     if (text.length <= 2) {
-      // (00
       formatted = '($text';
     } else if (text.length <= 6) {
-      // (00) 0000
       formatted = '(${text.substring(0, 2)}) ${text.substring(2)}';
     } else if (text.length <= 10) {
-      // (00) 0000-0000
       formatted = '(${text.substring(0, 2)}) ${text.substring(2, 6)}-${text.substring(6)}';
     } else {
-      // (00) 00000-0000
       formatted = '(${text.substring(0, 2)}) ${text.substring(2, 7)}-${text.substring(7, 11)}';
     }
 

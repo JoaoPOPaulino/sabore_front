@@ -9,8 +9,12 @@
 // iOS Simulator ou Web
 // const String apiUrl = 'http://localhost:8000/api';
 
+const bool USE_MOCK_SERVICES = true;
+
 // Dispositivo físico (use o IP da sua máquina na rede local)
-const String apiUrl = 'http://192.168.1.100:8000/api';
+const String apiUrl = 'http://192.168.15.68:8000/api';
+
+
 
 // Produção
 // const String apiUrl = 'https://sua-api.com/api';
