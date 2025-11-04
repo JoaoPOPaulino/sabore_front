@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../widgets/profile_image_widget.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({Key? key}) : super(key: key);
@@ -18,6 +21,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final ImagePicker _picker = ImagePicker();
 
   String? _profileImagePath;
+  Uint8List? _profileImageBytes;
   bool _isLoading = false;
 
   @override
@@ -27,6 +31,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _nameController = TextEditingController(text: userData?['name'] ?? '');
     _usernameController = TextEditingController(text: userData?['username'] ?? '');
     _profileImagePath = userData?['profileImage'];
+    _profileImageBytes = userData?['profileImageBytes'];
   }
 
   @override
@@ -46,9 +51,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       );
 
       if (image != null) {
-        setState(() {
-          _profileImagePath = image.path;
-        });
+        if (kIsWeb) {
+          final bytes = await image.readAsBytes();
+          setState(() {
+            _profileImageBytes = bytes;
+            _profileImagePath = null;
+          });
+        } else {
+          setState(() {
+            _profileImagePath = image.path;
+            _profileImageBytes = null;
+          });
+        }
       }
     } catch (e) {
       print('Error picking image: $e');
@@ -72,7 +86,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         profileImagePath: _profileImagePath,
       );
 
-      // Atualizar dados locais
       final currentData = ref.read(currentUserDataProvider);
       if (currentData != null) {
         ref.read(currentUserDataProvider.notifier).state = {
@@ -80,6 +93,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           'name': _nameController.text,
           'username': _usernameController.text,
           'profileImage': _profileImagePath,
+          'profileImageBytes': _profileImageBytes,
         };
       }
 
@@ -112,6 +126,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final userData = ref.watch(currentUserDataProvider);
+
+    // Criar userData temporário com as mudanças locais
+    final tempUserData = {
+      ...?userData,
+      'profileImage': _profileImagePath,
+      'profileImageBytes': _profileImageBytes,
+    };
 
     return Scaffold(
       backgroundColor: Color(0xFFFFF8F0),
@@ -152,16 +173,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               onTap: _pickProfileImage,
               child: Stack(
                 children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundImage: _profileImagePath != null
-                        ? FileImage(File(_profileImagePath!))
-                        : null,
-                    backgroundColor: Color(0xFFF5F5F5),
-                    child: _profileImagePath == null
-                        ? Icon(Icons.person, size: 60, color: Color(0xFFFA9500))
-                        : null,
-                  ),
+                  ProfileImageWidget(userData: tempUserData, radius: 60),
                   Positioned(
                     bottom: 0,
                     right: 0,

@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../widgets/profile_image_widget.dart';
 
 class UserInfoScreen extends ConsumerWidget {
   const UserInfoScreen({Key? key}) : super(key: key);
@@ -55,16 +55,7 @@ class UserInfoScreen extends ConsumerWidget {
             Center(
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: userData['profileImage'] != null
-                        ? FileImage(File(userData['profileImage']))
-                        : null,
-                    backgroundColor: Color(0xFFF5F5F5),
-                    child: userData['profileImage'] == null
-                        ? Icon(Icons.person, size: 50, color: Color(0xFFFA9500))
-                        : null,
-                  ),
+                  ProfileImageWidget(userData: userData, radius: 50),
                   SizedBox(height: 16),
                   Text(
                     userData['name'] ?? 'Usuário',

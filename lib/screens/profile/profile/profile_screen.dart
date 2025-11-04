@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../widgets/profile_image_widget.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final String userId;
@@ -20,12 +23,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final currentUserData = ref.watch(currentUserDataProvider);
     final bool isOwnProfile = widget.userId == currentUserData?['id'];
 
-    // Se não é o próprio perfil, mostrar dados mockados (outros usuários)
     if (!isOwnProfile) {
       return _buildOtherUserProfile();
     }
 
-    // Se é o próprio perfil mas não tem dados
     if (currentUserData == null) {
       return Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -53,10 +54,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildSliverAppBar(Map<String, dynamic> userData) {
-    final hasProfileImage = userData['profileImage'] != null;
-
     return SliverAppBar(
-      expandedHeight: 300,
+      expandedHeight: 200,
       pinned: true,
       backgroundColor: Colors.white,
       elevation: 0,
@@ -73,18 +72,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       actions: [
         Container(
-          margin: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Color(0xFFFA9500),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: Icon(Icons.bookmark_border, color: Colors.white, size: 20),
-            onPressed: () => context.push('/recipe-books'),
-          ),
-        ),
-        Container(
-          margin: EdgeInsets.all(8),
+          margin: EdgeInsets.only(right: 8, top: 8, bottom: 8),
           decoration: BoxDecoration(
             color: Color(0xFFFA9500),
             shape: BoxShape.circle,
@@ -96,65 +84,120 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            image: hasProfileImage
-                ? DecorationImage(
-              image: FileImage(File(userData['profileImage'])),
-              fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.4),
-                BlendMode.darken,
-              ),
-            )
-                : null,
-            color: hasProfileImage ? null : Color(0xFFFA9500).withOpacity(0.3),
+        background: _buildCoverImage(userData),
+      ),
+    );
+  }
+
+  Widget _buildCoverImage(Map<String, dynamic> userData) {
+    final hasCoverImage = (kIsWeb && userData['coverImageBytes'] != null) ||
+        (!kIsWeb && userData['coverImage'] != null);
+
+    if (!hasCoverImage) {
+      // Fundo padrão bonito quando não tem capa
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFA9500).withOpacity(0.3),
+              Color(0xFF7CB342).withOpacity(0.3),
+            ],
           ),
-          child: !hasProfileImage
-              ? Center(
-            child: Icon(
-              Icons.person,
-              size: 100,
-              color: Color(0xFFFA9500),
+        ),
+        child: Stack(
+          children: [
+            // Padrão decorativo
+            Positioned(
+              top: 20,
+              right: -30,
+              child: Icon(
+                Icons.restaurant,
+                size: 150,
+                color: Colors.white.withOpacity(0.1),
+              ),
             ),
-          )
-              : null,
+            Positioned(
+              bottom: 20,
+              left: -20,
+              child: Icon(
+                Icons.local_dining,
+                size: 120,
+                color: Colors.white.withOpacity(0.1),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Com imagem de capa
+    ImageProvider? imageProvider;
+    if (kIsWeb && userData['coverImageBytes'] != null) {
+      imageProvider = MemoryImage(userData['coverImageBytes'] as Uint8List);
+    } else if (!kIsWeb && userData['coverImage'] != null) {
+      imageProvider = FileImage(File(userData['coverImage']));
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        image: imageProvider != null
+            ? DecorationImage(
+          image: imageProvider,
+          fit: BoxFit.cover,
+        )
+            : null,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.white.withOpacity(0.3),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildProfileHeader(Map<String, dynamic> userData) {
-    final hasProfileImage = userData['profileImage'] != null;
-
-    return Container(
-      transform: Matrix4.translationValues(0, -80, 0),
+    return Transform.translate(
+      offset: Offset(0, -60),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 60,
-            backgroundColor: Colors.white,
-            child: CircleAvatar(
-              radius: 58,
-              backgroundImage: hasProfileImage
-                  ? FileImage(File(userData['profileImage']))
-                  : null,
-              backgroundColor: Color(0xFFF5F5F5),
-              child: !hasProfileImage
-                  ? Icon(Icons.person, size: 50, color: Color(0xFFFA9500))
-                  : null,
+          // Foto de perfil com borda branca
+          Container(
+            padding: EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
+            child: ProfileImageWidget(userData: userData, radius: 55),
           ),
           SizedBox(height: 12),
+          // Username
           Text(
-            userData['username'] ?? 'Sem username',
+            '@${userData['username'] ?? 'username'}',
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontWeight: FontWeight.w700,
-              fontSize: 28,
+              fontSize: 24,
               color: Color(0xFFFA9500),
             ),
           ),
+          SizedBox(height: 4),
+          // Nome completo
           Text(
             userData['name'] ?? 'Usuário',
             style: TextStyle(
@@ -171,17 +214,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildStatsSection() {
     return Container(
-      margin: EdgeInsets.fromLTRB(20, 0, 20, 20),
+      margin: EdgeInsets.fromLTRB(20, -40, 20, 20),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Color(0xFFF5F5F5),
+        color: Color(0xFFFFF8F0),
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatColumn('0', 'Receitas'),
+          Container(
+            height: 40,
+            width: 1,
+            color: Color(0xFFE0E0E0),
+          ),
           _buildStatColumn('0', 'Seguidores'),
+          Container(
+            height: 40,
+            width: 1,
+            color: Color(0xFFE0E0E0),
+          ),
           _buildStatColumn('0', 'Seguindo'),
         ],
       ),
@@ -200,6 +260,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             color: Color(0xFF3C4D18),
           ),
         ),
+        SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
@@ -239,6 +300,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
             color: isSelected ? Color(0xFFFA9500) : Color(0xFFE0E0E0),
+            width: 2,
           ),
         ),
         child: Text(
@@ -294,11 +356,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 80,
-            color: Color(0xFFE0E0E0),
-          ),
+          Icon(icon, size: 80, color: Color(0xFFE0E0E0)),
           SizedBox(height: 20),
           Text(
             title,
@@ -345,7 +403,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  // Perfil de outros usuários (mockado)
   Widget _buildOtherUserProfile() {
     return Scaffold(
       backgroundColor: Colors.white,

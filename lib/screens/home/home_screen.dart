@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../../providers/auth_provider.dart';
+import '../../widgets/profile_image_widget.dart';
 import '../../widgets/select_recipe_book_modal.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -40,12 +41,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         print('👤 Profile button pressed');
                         context.push('/profile/${userData?['id'] ?? '1'}');
                       },
-                      child: CircleAvatar(
-                        radius: 25,
-                        backgroundImage: userData?['profileImage'] != null
-                            ? FileImage(File(userData!['profileImage']))
-                            : AssetImage('assets/images/chef.jpg') as ImageProvider,
-                      ),
+                      child: ProfileImageWidget(userData: userData, radius: 25),
                     ),
                     Text(
                       'Saborê',

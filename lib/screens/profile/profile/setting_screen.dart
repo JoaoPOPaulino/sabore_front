@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../widgets/profile_image_widget.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -44,7 +44,7 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             SizedBox(height: 20),
 
-            // Card do perfil com dados reais
+            // Card do perfil
             Container(
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -53,16 +53,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 35,
-                    backgroundImage: userData['profileImage'] != null
-                        ? FileImage(File(userData['profileImage']))
-                        : null,
-                    backgroundColor: Color(0xFFF5F5F5),
-                    child: userData['profileImage'] == null
-                        ? Icon(Icons.person, size: 35, color: Colors.white)
-                        : null,
-                  ),
+                  ProfileImageWidget(userData: userData, radius: 35),
                   SizedBox(width: 16),
                   Expanded(
                     child: Column(
