@@ -116,8 +116,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
         ),
-
-        // Foto de perfil sobreposta (NA FRENTE)
         Positioned(
           bottom: -60,
           left: 0,

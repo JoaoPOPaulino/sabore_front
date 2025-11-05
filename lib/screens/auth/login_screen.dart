@@ -148,74 +148,96 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _buildEmailField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFFF5F5DC),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextFormField(
-        controller: _emailController,
-        keyboardType: TextInputType.emailAddress,
-        style: TextStyle(
-          fontFamily: 'Montserrat',
-          fontSize: 16,
-          color: Color(0xFF3C4D18),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
-        decoration: InputDecoration(
-          hintText: 'Email',
-          hintStyle: TextStyle(
-            color: Color(0xFF999999),
+        child: TextFormField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          style: TextStyle(
             fontFamily: 'Montserrat',
+            fontSize: 16,
+            color: Color(0xFF3C4D18),
           ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          decoration: InputDecoration(
+            hintText: 'Email',
+            hintStyle: TextStyle(
+              color: Color(0xFF999999),
+              fontFamily: 'Montserrat',
+            ),
+            prefixIcon: Icon(Icons.email_outlined, color: Color(0xFFFA9500)),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          ),
+          validator: _validateEmail,
         ),
-        validator: _validateEmail,
       ),
     );
   }
 
   Widget _buildPasswordField() {
     print('Building password field with _obscurePassword = $_obscurePassword');
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFFF5F5DC),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextFormField(
-        controller: _passwordController,
-        obscureText: _obscurePassword,
-        style: TextStyle(
-          fontFamily: 'Montserrat',
-          fontSize: 16,
-          color: Color(0xFF3C4D18),
-        ),
-        decoration: InputDecoration(
-          hintText: 'Password',
-          hintStyle: TextStyle(
-            color: Color(0xFF999999),
-            fontFamily: 'Montserrat',
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-              color: Color(0xFF999999),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25), // ✅ Clip para cortar as bordas
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
-            onPressed: () {
-              setState(() {
-                _obscurePassword = !_obscurePassword;
-              });
-            },
-          ),
+          ],
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Campo obrigatório';
-          }
-          return null;
-        },
+        child: TextFormField(
+          controller: _passwordController,
+          obscureText: _obscurePassword,
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontSize: 16,
+            color: Color(0xFF3C4D18),
+          ),
+          decoration: InputDecoration(
+            hintText: 'Senha',
+            hintStyle: TextStyle(
+              color: Color(0xFF999999),
+              fontFamily: 'Montserrat',
+            ),
+            prefixIcon: Icon(Icons.lock_outline, color: Color(0xFFFA9500)),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                color: Color(0xFF999999),
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Campo obrigatório';
+            }
+            return null;
+          },
+        ),
       ),
     );
   }
@@ -242,15 +264,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: 60,
       child: ElevatedButton(
-        onPressed: _login, // Ensure this is not null
+        onPressed: _login,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFFE65100),
+          backgroundColor: Color(0xFFFA9500),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(30),
           ),
-          elevation: 0,
+          elevation: 8,
+          shadowColor: Color(0xFFFA9500).withOpacity(0.3),
         ),
         child: Text(
           'Login',
@@ -307,16 +330,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     required VoidCallback onPressed,
   }) {
     return Container(
-      height: 56,
+      height: 60,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0xFFE0E0E0)),
+        borderRadius: BorderRadius.circular(30), // ✅ Mais arredondado
+        border: Border.all(color: Color(0xFFE0E0E0), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(30),
           onTap: onPressed,
           child: Center(
             child: Image.asset(
@@ -330,7 +360,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  // Como alternativa, se você não tiver os ícones em assets, pode usar estes ícones temporários:
   Widget _buildSocialButtonWithIcon({
     required IconData icon,
     required Color iconColor,

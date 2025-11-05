@@ -156,14 +156,15 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
           ...currentData,
           'username': _usernameController.text,
           'profileImage': _profileImage?.path,
-          'profileImageBytes': _profileImageBytes, // Para web
+          'profileImageBytes': _profileImageBytes,
         };
       }
 
       await ref.read(authProvider.notifier).completeProfileSetup();
 
       if (mounted) {
-        context.go('/setup-complete');
+        print('✅ Profile setup completed, navigating to email verification');
+        context.go('/verify-email'); // ✅ MUDANÇA AQUI - vai para verificação de e-mail
       }
     } catch (e) {
       print('Error saving profile: $e');

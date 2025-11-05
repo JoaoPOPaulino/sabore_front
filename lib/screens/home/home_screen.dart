@@ -1,5 +1,3 @@
-// home_screen.dart
-
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -7,8 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../../providers/auth_provider.dart';
-import '../../widgets/profile_image_widget.dart';
 import '../../widgets/select_recipe_book_modal.dart';
+import '../../widgets/profile_image_widget.dart';
+import '../../widgets/phone_verification_banner.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -55,7 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     GestureDetector(
                       onTap: () {
                         print('🔍 Search icon tapped');
-                        context.push('/search'); // NOVA ROTA PARA BUSCA
+                        context.push('/search');
                       },
                       child: Icon(
                         Icons.search,
@@ -65,7 +64,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 30),
+                SizedBox(height: 20),
+
+                // ✅ BANNER DE VERIFICAÇÃO DE TELEFONE
+                PhoneVerificationBanner(),
+
+                SizedBox(height: 10),
 
                 // Título principal
                 Row(
@@ -128,7 +132,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 GestureDetector(
                   onTap: () {
                     print('🍰 Recipe of the day tapped');
-                    context.push('/recipe/2'); // Navegar para receita do dia
+                    context.push('/recipe/2');
                   },
                   child: Container(
                     height: 200,
@@ -204,7 +208,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   '1h20min • 9 ingredientes',
                   'assets/images/chef.jpg',
                   context,
-                  '1', // ID da receita
+                  '1',
                 ),
                 SizedBox(height: 12),
                 _buildTopRecipeCard(
@@ -212,7 +216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   '45min • 8 ingredientes',
                   'assets/images/chef.jpg',
                   context,
-                  '3', // ID da receita
+                  '3',
                 ),
               ],
             ),
@@ -235,14 +239,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  // Home - ativo
                   IconButton(
                     icon: Icon(Icons.home, color: Color(0xFFFA9500), size: 28),
                     onPressed: () {
                       print('🏠 Home button pressed - already here');
                     },
                   ),
-                  // Search
                   IconButton(
                     icon: Icon(Icons.search, color: Colors.white, size: 28),
                     onPressed: () {
@@ -250,14 +252,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       context.go('/search');
                     },
                   ),
-                  // Add button
                   IconButton(
                     icon: Icon(Icons.add, color: Colors.white, size: 28),
                     onPressed: () {
                       context.push('/add-recipe');
                     },
                   ),
-                  // Notifications
                   IconButton(
                     icon: Icon(Icons.notifications, color: Colors.white, size: 28),
                     onPressed: () {
@@ -265,7 +265,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       context.push('/notifications');
                     },
                   ),
-                  // Profile - CORRIGIDO
                   IconButton(
                     icon: Icon(Icons.person, color: Colors.white, size: 28),
                     onPressed: () {
@@ -314,7 +313,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return GestureDetector(
       onTap: () {
         print('🍳 Recipe card tapped: $title');
-        context.push('/recipe/$recipeId'); // Navegar para detalhes da receita
+        context.push('/recipe/$recipeId');
       },
       child: Container(
         height: 120,
@@ -337,7 +336,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: GestureDetector(
                 onTap: () {
                   print('🔖 Bookmark tapped for: $title');
-                  // Mostrar modal para salvar receita
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
@@ -453,15 +451,13 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
   void initState() {
     super.initState();
 
-    // Inicializa o PageController começando no "meio" para simular infinito
     _pageController = PageController(
       initialPage: states.length * 1000,
-      viewportFraction: 0.35, // Mostra aproximadamente 3 cards por vez
+      viewportFraction: 0.35,
     );
 
     _currentPage = states.length * 1000;
 
-    // Timer para avançar automaticamente a cada 3 segundos
     _timer = Timer.periodic(Duration(seconds: 3), (timer) {
       if (mounted) {
         _currentPage++;
@@ -485,7 +481,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -517,7 +512,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
         ),
         SizedBox(height: 15),
 
-        // Carrossel infinito
         Container(
           height: 140,
           child: PageView.builder(
@@ -528,7 +522,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
               });
             },
             itemBuilder: (context, index) {
-              // Usa módulo para criar loop infinito
               final stateIndex = index % states.length;
               final state = states[stateIndex];
 
@@ -536,13 +529,10 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
                 margin: EdgeInsets.symmetric(horizontal: 6),
                 child: GestureDetector(
                   onTap: () {
-                    // Pausa o timer quando usuário interage
                     _timer.cancel();
-
                     print('🗺️ State card tapped: ${state['name']}');
                     context.push('/states');
 
-                    // Reinicia o timer após 5 segundos
                     Timer(Duration(seconds: 5), () {
                       if (mounted) {
                         _timer = Timer.periodic(Duration(seconds: 3), (timer) {
@@ -614,7 +604,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
 
         SizedBox(height: 10),
 
-        // Indicadores de posição
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(states.length, (index) {

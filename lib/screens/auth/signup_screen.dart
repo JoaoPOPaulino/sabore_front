@@ -157,236 +157,295 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Widget _buildNameField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFFF5F5DC),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextFormField(
-        controller: _nameController,
-        style: TextStyle(
-          fontFamily: 'Montserrat',
-          fontSize: 16,
-          color: Color(0xFF3C4D18),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
-        decoration: InputDecoration(
-          hintText: 'Nome completo',
-          hintStyle: TextStyle(
-            color: Color(0xFF999999),
+        child: TextFormField(
+          controller: _nameController,
+          style: TextStyle(
             fontFamily: 'Montserrat',
+            fontSize: 16,
+            color: Color(0xFF3C4D18),
           ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          decoration: InputDecoration(
+            hintText: 'Nome completo',
+            hintStyle: TextStyle(
+              color: Color(0xFF999999),
+              fontFamily: 'Montserrat',
+            ),
+            prefixIcon: Icon(Icons.person_outline, color: Color(0xFFFA9500)),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Campo obrigatório';
+            }
+            if (value.trim().split(' ').length < 2) {
+              return 'Digite seu nome completo';
+            }
+            return null;
+          },
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Campo obrigatório';
-          }
-          if (value.trim().split(' ').length < 2) {
-            return 'Digite seu nome completo';
-          }
-          return null;
-        },
       ),
     );
   }
 
   Widget _buildEmailField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFFF5F5DC),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextFormField(
-        controller: _emailController,
-        keyboardType: TextInputType.emailAddress,
-        style: TextStyle(
-          fontFamily: 'Montserrat',
-          fontSize: 16,
-          color: Color(0xFF3C4D18),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
-        decoration: InputDecoration(
-          hintText: 'Email',
-          hintStyle: TextStyle(
-            color: Color(0xFF999999),
+        child: TextFormField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          style: TextStyle(
             fontFamily: 'Montserrat',
+            fontSize: 16,
+            color: Color(0xFF3C4D18),
           ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          decoration: InputDecoration(
+            hintText: 'Email',
+            hintStyle: TextStyle(
+              color: Color(0xFF999999),
+              fontFamily: 'Montserrat',
+            ),
+            prefixIcon: Icon(Icons.email_outlined, color: Color(0xFFFA9500)),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          ),
+          validator: _validateEmailFormat,
         ),
-        validator: _validateEmailFormat,
       ),
     );
   }
 
   Widget _buildPhoneFields() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFFF5F5DC),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 80,
-            child: TextFormField(
-              controller: _phoneCodeController,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d+]')),
-                LengthLimitingTextInputFormatter(4),
-              ],
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 16,
-                color: Color(0xFF3C4D18),
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Código';
-                }
-                if (!value.startsWith('+')) {
-                  return 'Use +';
-                }
-                return null;
-              },
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
-          ),
-          Container(
-            height: 20,
-            width: 1,
-            color: Color(0xFFCCCCCC),
-          ),
-          Expanded(
-            child: TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(11),
-                _PhoneInputFormatter(),
-              ],
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 16,
-                color: Color(0xFF3C4D18),
-              ),
-              decoration: InputDecoration(
-                hintText: '(00) 00000-0000',
-                hintStyle: TextStyle(
-                  color: Color(0xFF999999),
+          ],
+        ),
+        child: Row(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(left: 16),
+              child: Icon(Icons.phone_outlined, color: Color(0xFFFA9500)),
+            ),
+            SizedBox(width: 8),
+            Container(
+              width: 70,
+              child: TextFormField(
+                controller: _phoneCodeController,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d+]')),
+                  LengthLimitingTextInputFormatter(4),
+                ],
+                style: TextStyle(
                   fontFamily: 'Montserrat',
+                  fontSize: 16,
+                  color: Color(0xFF3C4D18),
                 ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Código';
+                  }
+                  if (!value.startsWith('+')) {
+                    return 'Use +';
+                  }
+                  return null;
+                },
               ),
-              validator: _validatePhone,
             ),
-          ),
-        ],
+            Container(
+              height: 30,
+              width: 1,
+              color: Color(0xFFCCCCCC),
+            ),
+            Expanded(
+              child: TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11),
+                  _PhoneInputFormatter(),
+                ],
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 16,
+                  color: Color(0xFF3C4D18),
+                ),
+                decoration: InputDecoration(
+                  hintText: '(00) 00000-0000',
+                  hintStyle: TextStyle(
+                    color: Color(0xFF999999),
+                    fontFamily: 'Montserrat',
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                ),
+                validator: _validatePhone,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildPasswordField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFFF5F5DC),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextFormField(
-        controller: _passwordController,
-        obscureText: _obscurePassword,
-        style: TextStyle(
-          fontFamily: 'Montserrat',
-          fontSize: 16,
-          color: Color(0xFF3C4D18),
-        ),
-        decoration: InputDecoration(
-          hintText: 'Senha',
-          hintStyle: TextStyle(
-            color: Color(0xFF999999),
-            fontFamily: 'Montserrat',
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-              color: Color(0xFF999999),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
-            onPressed: () {
-              setState(() {
-                _obscurePassword = !_obscurePassword;
-              });
-            },
-          ),
+          ],
         ),
-        onChanged: (value) {
-          setState(() {
-            _passwordStrength = _checkPasswordStrength(value);
-          });
-        },
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Campo obrigatório';
-          }
-          if (value.length < 8) {
-            return 'A senha deve ter no mínimo 8 caracteres';
-          }
-          return null;
-        },
+        child: TextFormField(
+          controller: _passwordController,
+          obscureText: _obscurePassword,
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontSize: 16,
+            color: Color(0xFF3C4D18),
+          ),
+          decoration: InputDecoration(
+            hintText: 'Senha',
+            hintStyle: TextStyle(
+              color: Color(0xFF999999),
+              fontFamily: 'Montserrat',
+            ),
+            prefixIcon: Icon(Icons.lock_outline, color: Color(0xFFFA9500)),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                color: Color(0xFF999999),
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
+            ),
+          ),
+          onChanged: (value) {
+            setState(() {
+              _passwordStrength = _checkPasswordStrength(value);
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Campo obrigatório';
+            }
+            if (value.length < 8) {
+              return 'A senha deve ter no mínimo 8 caracteres';
+            }
+            return null;
+          },
+        ),
       ),
     );
   }
 
   Widget _buildConfirmPasswordField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFFF5F5DC),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextFormField(
-        controller: _confirmPasswordController,
-        obscureText: _obscureConfirmPassword,
-        style: TextStyle(
-          fontFamily: 'Montserrat',
-          fontSize: 16,
-          color: Color(0xFF3C4D18),
-        ),
-        decoration: InputDecoration(
-          hintText: 'Confirmar senha',
-          hintStyle: TextStyle(
-            color: Color(0xFF999999),
-            fontFamily: 'Montserrat',
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-              color: Color(0xFF999999),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
-            onPressed: () {
-              setState(() {
-                _obscureConfirmPassword = !_obscureConfirmPassword;
-              });
-            },
-          ),
+          ],
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Campo obrigatório';
-          }
-          if (value != _passwordController.text) {
-            return 'As senhas não coincidem';
-          }
-          return null;
-        },
+        child: TextFormField(
+          controller: _confirmPasswordController,
+          obscureText: _obscureConfirmPassword,
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontSize: 16,
+            color: Color(0xFF3C4D18),
+          ),
+          decoration: InputDecoration(
+            hintText: 'Confirmar senha',
+            hintStyle: TextStyle(
+              color: Color(0xFF999999),
+              fontFamily: 'Montserrat',
+            ),
+            prefixIcon: Icon(Icons.lock_outline, color: Color(0xFFFA9500)),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                color: Color(0xFF999999),
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                });
+              },
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Campo obrigatório';
+            }
+            if (value != _passwordController.text) {
+              return 'As senhas não coincidem';
+            }
+            return null;
+          },
+        ),
       ),
     );
   }
@@ -447,15 +506,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget _buildSignupButton() {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: 60,
       child: ElevatedButton(
         onPressed: _signup,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFFE65100),
+          backgroundColor: Color(0xFFFA9500),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(30),
           ),
-          elevation: 0,
+          elevation: 8,
+          shadowColor: Color(0xFFFA9500).withOpacity(0.3),
         ),
         child: Text(
           'Cadastrar',

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sabore_app/screens/auth/verify_email_screen.dart';
+import 'package:sabore_app/screens/auth/verify_phone_screen.dart';
 import 'package:sabore_app/screens/categorie/categories_screen.dart';
 import 'package:sabore_app/screens/categorie/states_screen.dart';
 import 'package:sabore_app/screens/profile/profile/edit_profile_screen.dart';
@@ -185,6 +187,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/test',
         builder: (context, state) => TestAuthScreen(),
       ),
+
+      GoRoute(
+          path: '/verify-email',
+          builder: (context, state) => VerifyEmailScreen(),
+      ),
+      GoRoute(
+        path: '/verify-phone',
+        builder: (context, state) => VerifyPhoneScreen(),
+      )
     ],
     redirect: (context, state) {
       final authState = ref.read(authProvider);

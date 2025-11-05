@@ -1,3 +1,4 @@
+// lib/screens/profile/profile/settings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,8 @@ class SettingsScreen extends ConsumerWidget {
         body: Center(child: CircularProgressIndicator()),
       );
     }
+
+    final phoneVerified = userData['phoneVerified'] ?? false;
 
     return Scaffold(
       backgroundColor: Color(0xFFFFF8F0),
@@ -111,6 +114,29 @@ class SettingsScreen extends ConsumerWidget {
 
             SizedBox(height: 12),
 
+            // ✅ OPÇÃO DE VERIFICAR TELEFONE
+            _buildSettingsOption(
+              context,
+              icon: Icons.phone_android,
+              title: phoneVerified ? 'Telefone Verificado ✓' : 'Verificar Telefone',
+              subtitle: phoneVerified ? null : 'Recomendado para recuperação de senha',
+              isVerified: phoneVerified,
+              onTap: () {
+                if (phoneVerified) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('✅ Telefone já verificado!'),
+                      backgroundColor: Color(0xFF7CB342),
+                    ),
+                  );
+                } else {
+                  context.push('/verify-phone');
+                }
+              },
+            ),
+
+            SizedBox(height: 12),
+
             _buildSettingsOption(
               context,
               icon: Icons.notifications_outlined,
@@ -165,39 +191,74 @@ class SettingsScreen extends ConsumerWidget {
       BuildContext context, {
         required IconData icon,
         required String title,
+        String? subtitle,
         required VoidCallback onTap,
         bool isDestructive = false,
+        bool isVerified = false,
       }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         decoration: BoxDecoration(
-          color: Color(0xFFFFF3E0),
+          color: isVerified
+              ? Color(0xFF7CB342).withOpacity(0.1)
+              : Color(0xFFFFF3E0),
           borderRadius: BorderRadius.circular(20),
+          border: isVerified
+              ? Border.all(color: Color(0xFF7CB342).withOpacity(0.3), width: 2)
+              : null,
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              color: isDestructive ? Colors.red : Color(0xFF3C4D18),
+              color: isDestructive
+                  ? Colors.red
+                  : isVerified
+                  ? Color(0xFF7CB342)
+                  : Color(0xFF3C4D18),
               size: 24,
             ),
             SizedBox(width: 16),
             Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
-                  color: isDestructive ? Colors.red : Color(0xFF3C4D18),
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      color: isDestructive
+                          ? Colors.red
+                          : isVerified
+                          ? Color(0xFF7CB342)
+                          : Color(0xFF3C4D18),
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 12,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: isDestructive ? Colors.red : Color(0xFF3C4D18),
+              color: isDestructive
+                  ? Colors.red
+                  : isVerified
+                  ? Color(0xFF7CB342)
+                  : Color(0xFF3C4D18),
               size: 18,
             ),
           ],
