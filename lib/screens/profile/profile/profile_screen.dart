@@ -35,57 +35,112 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(currentUserData),
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                _buildProfileHeader(currentUserData),
-                _buildStatsSection(),
-                _buildTabButtons(),
-                _buildTabContent(),
-              ],
-            ),
-          ),
-        ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildHeaderWithProfile(currentUserData),
+            _buildStatsSection(),
+            SizedBox(height: 20),
+            _buildTabButtons(),
+            SizedBox(height: 20),
+            _buildTabContent(),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSliverAppBar(Map<String, dynamic> userData) {
-    return SliverAppBar(
-      expandedHeight: 200,
-      pinned: true,
-      backgroundColor: Colors.white,
-      elevation: 0,
-      leading: GestureDetector(
-        onTap: () => context.pop(),
-        child: Container(
-          margin: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Color(0xFF7CB342),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-        ),
-      ),
-      actions: [
+  Widget _buildHeaderWithProfile(Map<String, dynamic> userData) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Foto de capa
         Container(
-          margin: EdgeInsets.only(right: 8, top: 8, bottom: 8),
-          decoration: BoxDecoration(
-            color: Color(0xFFFA9500),
-            shape: BoxShape.circle,
+          height: 250,
+          width: double.infinity,
+          child: _buildCoverImage(userData),
+        ),
+
+        // Botão voltar
+        Positioned(
+          top: 50,
+          left: 16,
+          child: GestureDetector(
+            onTap: () => context.pop(),
+            child: Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Color(0xFF7CB342),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
           ),
-          child: IconButton(
-            icon: Icon(Icons.settings, color: Colors.white, size: 20),
-            onPressed: () => context.push('/settings'),
+        ),
+
+        // Botão configurações
+        Positioned(
+          top: 50,
+          right: 16,
+          child: GestureDetector(
+            onTap: () => context.push('/settings'),
+            child: Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Color(0xFFFA9500),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.settings,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+
+        // Foto de perfil sobreposta (NA FRENTE)
+        Positioned(
+          bottom: -60,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Container(
+              padding: EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: ProfileImageWidget(userData: userData, radius: 60),
+            ),
           ),
         ),
       ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: _buildCoverImage(userData),
-      ),
     );
   }
 
@@ -94,7 +149,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         (!kIsWeb && userData['coverImage'] != null);
 
     if (!hasCoverImage) {
-      // Fundo padrão bonito quando não tem capa
       return Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -108,9 +162,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         child: Stack(
           children: [
-            // Padrão decorativo
             Positioned(
-              top: 20,
+              top: 30,
               right: -30,
               child: Icon(
                 Icons.restaurant,
@@ -119,7 +172,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
             Positioned(
-              bottom: 20,
+              bottom: 30,
               left: -20,
               child: Icon(
                 Icons.local_dining,
@@ -132,7 +185,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
     }
 
-    // Com imagem de capa
     ImageProvider? imageProvider;
     if (kIsWeb && userData['coverImageBytes'] != null) {
       imageProvider = MemoryImage(userData['coverImageBytes'] as Uint8List);
@@ -155,8 +207,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
+              Colors.black.withOpacity(0.2),
               Colors.transparent,
-              Colors.white.withOpacity(0.3),
             ],
           ),
         ),
@@ -164,31 +216,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileHeader(Map<String, dynamic> userData) {
-    return Transform.translate(
-      offset: Offset(0, -60),
+  Widget _buildStatsSection() {
+    final userData = ref.watch(currentUserDataProvider);
+
+    return Container(
+      margin: EdgeInsets.fromLTRB(20, 80, 20, 0),
       child: Column(
         children: [
-          // Foto de perfil com borda branca
-          Container(
-            padding: EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ProfileImageWidget(userData: userData, radius: 55),
-          ),
-          SizedBox(height: 12),
-          // Username
+          // Username e nome
           Text(
-            '@${userData['username'] ?? 'username'}',
+            '@${userData?['username'] ?? 'username'}',
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontWeight: FontWeight.w700,
@@ -197,9 +234,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
           SizedBox(height: 4),
-          // Nome completo
           Text(
-            userData['name'] ?? 'Usuário',
+            userData?['name'] ?? 'Usuário',
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontWeight: FontWeight.w500,
@@ -207,42 +243,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               color: Color(0xFF666666),
             ),
           ),
-        ],
-      ),
-    );
-  }
+          SizedBox(height: 20),
 
-  Widget _buildStatsSection() {
-    return Container(
-      margin: EdgeInsets.fromLTRB(20, -40, 20, 20),
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Color(0xFFFFF8F0),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatColumn('0', 'Receitas'),
+          // Card de estatísticas
           Container(
-            height: 40,
-            width: 1,
-            color: Color(0xFFE0E0E0),
+            padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Color(0xFFFFF8F0),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatColumn('0', 'Receitas'),
+                Container(
+                  height: 40,
+                  width: 1,
+                  color: Color(0xFFE0E0E0),
+                ),
+                _buildStatColumn('0', 'Seguidores'),
+                Container(
+                  height: 40,
+                  width: 1,
+                  color: Color(0xFFE0E0E0),
+                ),
+                _buildStatColumn('0', 'Seguindo'),
+              ],
+            ),
           ),
-          _buildStatColumn('0', 'Seguidores'),
-          Container(
-            height: 40,
-            width: 1,
-            color: Color(0xFFE0E0E0),
-          ),
-          _buildStatColumn('0', 'Seguindo'),
         ],
       ),
     );
@@ -294,10 +329,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return GestureDetector(
       onTap: () => setState(() => selectedTab = title),
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12),
+        padding: EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: isSelected ? Color(0xFFFA9500) : Colors.white,
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(30),
           border: Border.all(
             color: isSelected ? Color(0xFFFA9500) : Color(0xFFE0E0E0),
             width: 2,

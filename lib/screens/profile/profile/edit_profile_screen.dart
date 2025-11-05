@@ -22,6 +22,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   String? _profileImagePath;
   Uint8List? _profileImageBytes;
+  String? _coverImagePath;
+  Uint8List? _coverImageBytes;
   bool _isLoading = false;
 
   @override
@@ -32,6 +34,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _usernameController = TextEditingController(text: userData?['username'] ?? '');
     _profileImagePath = userData?['profileImage'];
     _profileImageBytes = userData?['profileImageBytes'];
+    _coverImagePath = userData?['coverImage'];
+    _coverImageBytes = userData?['coverImageBytes'];
   }
 
   @override
@@ -45,7 +49,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 80,
+        imageQuality: 85,
         maxWidth: 1024,
         maxHeight: 1024,
       );
@@ -65,13 +69,37 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         }
       }
     } catch (e) {
-      print('Error picking image: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao selecionar imagem'),
-          backgroundColor: Colors.red,
-        ),
+      print('Error picking profile image: $e');
+      _showErrorMessage('Erro ao selecionar imagem de perfil');
+    }
+  }
+
+  Future<void> _pickCoverImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1080,
       );
+
+      if (image != null) {
+        if (kIsWeb) {
+          final bytes = await image.readAsBytes();
+          setState(() {
+            _coverImageBytes = bytes;
+            _coverImagePath = null;
+          });
+        } else {
+          setState(() {
+            _coverImagePath = image.path;
+            _coverImageBytes = null;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error picking cover image: $e');
+      _showErrorMessage('Erro ao selecionar imagem de capa');
     }
   }
 
@@ -94,6 +122,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           'username': _usernameController.text,
           'profileImage': _profileImagePath,
           'profileImageBytes': _profileImageBytes,
+          'coverImage': _coverImagePath,
+          'coverImageBytes': _coverImageBytes,
         };
       }
 
@@ -109,12 +139,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     } catch (e) {
       print('Error saving profile: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao atualizar perfil'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorMessage('Erro ao atualizar perfil');
       }
     } finally {
       if (mounted) {
@@ -123,17 +148,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final userData = ref.watch(currentUserDataProvider);
-
-    // Criar userData temporário com as mudanças locais
-    final tempUserData = {
-      ...?userData,
-      'profileImage': _profileImagePath,
-      'profileImageBytes': _profileImageBytes,
-    };
-
     return Scaffold(
       backgroundColor: Color(0xFFFFF8F0),
       appBar: AppBar(
@@ -165,23 +190,39 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
         child: Column(
           children: [
-            // Foto de perfil
-            GestureDetector(
-              onTap: _pickProfileImage,
-              child: Stack(
-                children: [
-                  ProfileImageWidget(userData: tempUserData, radius: 60),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
+            // Foto de Capa
+            Stack(
+              children: [
+                GestureDetector(
+                  onTap: _pickCoverImage,
+                  child: Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Color(0xFFFFF3E0),
+                    ),
+                    child: _buildCoverImagePreview(),
+                  ),
+                ),
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: _pickCoverImage,
                     child: Container(
-                      padding: EdgeInsets.all(10),
+                      padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Color(0xFFFA9500),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Icon(
                         Icons.camera_alt,
@@ -190,82 +231,60 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
 
-            SizedBox(height: 30),
-
-            // Campo Nome
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: Color(0xFFFFF3E0),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: TextField(
-                controller: _nameController,
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: Color(0xFF3C4D18),
-                ),
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  labelText: 'Nome',
-                  labelStyle: TextStyle(
-                    color: Color(0xFF999999),
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(height: 16),
-
-            // Campo Username
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: Color(0xFFFFF3E0),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: TextField(
-                controller: _usernameController,
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: Color(0xFF3C4D18),
-                ),
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  labelText: 'Username',
-                  labelStyle: TextStyle(
-                    color: Color(0xFF999999),
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(height: 16),
-
-            // Email (read-only)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-              decoration: BoxDecoration(
-                color: Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Row(
+            // Foto de Perfil sobreposta
+            Transform.translate(
+              offset: Offset(0, -50),
+              child: Column(
                 children: [
-                  Icon(Icons.email, color: Color(0xFF999999)),
-                  SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: _pickProfileImage,
+                    child: Stack(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: _buildProfileImagePreview(),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFFA9500),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                            ),
+                            child: Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 8),
                   Text(
-                    userData?['email'] ?? '',
+                    'Toque para alterar foto de perfil',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
-                      fontSize: 16,
+                      fontSize: 12,
                       color: Color(0xFF999999),
                     ),
                   ),
@@ -273,37 +292,214 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
             ),
 
-            SizedBox(height: 40),
+            // Formulário
+            Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                children: [
+                  // Campo Nome
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: TextField(
+                      controller: _nameController,
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Color(0xFF3C4D18),
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        labelText: 'Nome',
+                        labelStyle: TextStyle(
+                          color: Color(0xFF999999),
+                        ),
+                        prefixIcon: Icon(Icons.person, color: Color(0xFFFA9500)),
+                      ),
+                    ),
+                  ),
 
-            // Botão Salvar
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFFFA9500),
-                  disabledBackgroundColor: Color(0xFFE0E0E0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                  SizedBox(height: 16),
+
+                  // Campo Username
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: TextField(
+                      controller: _usernameController,
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Color(0xFF3C4D18),
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        labelText: 'Username',
+                        labelStyle: TextStyle(
+                          color: Color(0xFF999999),
+                        ),
+                        prefixIcon: Icon(Icons.alternate_email, color: Color(0xFFFA9500)),
+                      ),
+                    ),
                   ),
-                ),
-                child: _isLoading
-                    ? CircularProgressIndicator(color: Colors.white)
-                    : Text(
-                  'Salvar Alterações',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                    color: Colors.white,
+
+                  SizedBox(height: 16),
+
+                  // Email (read-only)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.email, color: Color(0xFF999999)),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            ref.watch(currentUserDataProvider)?['email'] ?? '',
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: 16,
+                              color: Color(0xFF999999),
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.lock, color: Color(0xFF999999), size: 18),
+                      ],
+                    ),
                   ),
-                ),
+
+                  SizedBox(height: 40),
+
+                  // Botão Salvar
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _saveProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFFA9500),
+                        disabledBackgroundColor: Color(0xFFE0E0E0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      )
+                          : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white),
+                          SizedBox(width: 12),
+                          Text(
+                            'Salvar Alterações',
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildCoverImagePreview() {
+    final hasCoverImage = (kIsWeb && _coverImageBytes != null) ||
+        (!kIsWeb && _coverImagePath != null);
+
+    if (!hasCoverImage) {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFA9500).withOpacity(0.2),
+              Color(0xFF7CB342).withOpacity(0.2),
+            ],
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_photo_alternate,
+              size: 48,
+              color: Color(0xFFFA9500),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Adicionar foto de capa',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+                color: Color(0xFF3C4D18),
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Recomendado: 1920x1080',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 12,
+                color: Color(0xFF999999),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    ImageProvider? imageProvider;
+    if (kIsWeb && _coverImageBytes != null) {
+      imageProvider = MemoryImage(_coverImageBytes!);
+    } else if (!kIsWeb && _coverImagePath != null) {
+      imageProvider = FileImage(File(_coverImagePath!));
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        image: imageProvider != null
+            ? DecorationImage(
+          image: imageProvider,
+          fit: BoxFit.cover,
+        )
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildProfileImagePreview() {
+    final tempUserData = {
+      'profileImage': _profileImagePath,
+      'profileImageBytes': _profileImageBytes,
+    };
+
+    return ProfileImageWidget(userData: tempUserData, radius: 55);
   }
 }
