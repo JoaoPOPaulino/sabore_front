@@ -2,19 +2,137 @@ import 'dart:async';
 import 'dart:math';
 
 class MockAuthService {
-  // Lista de usuários mockados
+  // Lista de usuários mockados com diversos perfis de teste
   static final List<Map<String, dynamic>> _users = [
+    // ✅ Usuário completo - já configurou tudo
     {
       'id': '1',
-      'name': 'Usuario Teste',
-      'email': 'test@example.com',
-      'password': 'password123',
-      'phone': '+5511999999999',
+      'name': 'João Pedro Silva',
+      'email': 'joao@sabore.com',
+      'password': '123456',
+      'phone': '+5563999887766',
+      'username': 'joaopedro',
+      'profileImage': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+    },
+
+    // ✅ Usuário sem username (primeiro login)
+    {
+      'id': '2',
+      'name': 'Maria Santos',
+      'email': 'maria@sabore.com',
+      'password': '123456',
+      'phone': '+5511988776655',
       'username': null,
       'profileImage': null,
       'emailVerified': false,
       'phoneVerified': false,
-    }
+    },
+
+    // ✅ Usuário com email verificado mas sem telefone
+    {
+      'id': '3',
+      'name': 'Carlos Eduardo',
+      'email': 'carlos@sabore.com',
+      'password': '123456',
+      'phone': '+5521987654321',
+      'username': 'carlosedu',
+      'profileImage': null,
+      'emailVerified': true,
+      'phoneVerified': false,
+    },
+
+    // ✅ Chef profissional
+    {
+      'id': '4',
+      'name': 'Ana Beatriz Costa',
+      'email': 'ana@sabore.com',
+      'password': '123456',
+      'phone': '+5548991234567',
+      'username': 'chefana',
+      'profileImage': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+    },
+
+    // ✅ Usuário simples
+    {
+      'id': '5',
+      'name': 'Rafael Oliveira',
+      'email': 'rafael@sabore.com',
+      'password': '123456',
+      'phone': '+5531987654321',
+      'username': 'rafaoliveira',
+      'profileImage': null,
+      'emailVerified': true,
+      'phoneVerified': false,
+    },
+
+    // ✅ Usuário gourmet
+    {
+      'id': '6',
+      'name': 'Juliana Ferreira',
+      'email': 'juliana@sabore.com',
+      'password': '123456',
+      'phone': '+5541988776655',
+      'username': 'jugourmet',
+      'profileImage': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+    },
+
+    // ✅ Usuário teste original
+    {
+      'id': '7',
+      'name': 'Usuario Teste',
+      'email': 'test@example.com',
+      'password': 'password123',
+      'phone': '+5511999999999',
+      'username': 'testusuario',
+      'profileImage': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+    },
+
+    // ✅ Admin
+    {
+      'id': '8',
+      'name': 'Admin Saborê',
+      'email': 'admin@sabore.com',
+      'password': 'admin123',
+      'phone': '+5563999000000',
+      'username': 'admin',
+      'profileImage': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+    },
+
+    // ✅ Usuário novo (sem nada configurado)
+    {
+      'id': '9',
+      'name': 'Pedro Henrique',
+      'email': 'pedro@sabore.com',
+      'password': '123456',
+      'phone': '+5562988887777',
+      'username': null,
+      'profileImage': null,
+      'emailVerified': false,
+      'phoneVerified': false,
+    },
+
+    // ✅ Influencer culinário
+    {
+      'id': '10',
+      'name': 'Fernanda Gomes',
+      'email': 'fernanda@sabore.com',
+      'password': '123456',
+      'phone': '+5581987654321',
+      'username': 'fezcozinha',
+      'profileImage': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+    },
   ];
 
   // Códigos de verificação temporários
@@ -159,7 +277,7 @@ class MockAuthService {
     };
 
     _users.add(newUser);
-    _currentUserId = newUser['id'] as String?; // ✅ CAST EXPLÍCITO
+    _currentUserId = newUser['id'] as String?;
 
     print('✅ [MOCK] User registered successfully with ID: ${newUser['id']}');
 
@@ -191,7 +309,7 @@ class MockAuthService {
             (u) => u['email'] == email.toLowerCase() && u['password'] == password,
       );
 
-      _currentUserId = user['id'] as String?; // ✅ CAST EXPLÍCITO
+      _currentUserId = user['id'] as String?;
       print('✅ [MOCK] Login successful for: ${user['email']} (ID: ${user['id']})');
 
       return {
@@ -296,5 +414,82 @@ class MockAuthService {
     );
 
     return user['phoneVerified'] == true;
+  }
+
+  // ========== PARA DEBUGGING ==========
+
+  // Lista todos os usuários (apenas para debug)
+  void printAllUsers() {
+    print('\n📋 ========== USUÁRIOS CADASTRADOS ==========');
+    for (var user in _users) {
+      print('ID: ${user['id']}');
+      print('Nome: ${user['name']}');
+      print('Email: ${user['email']}');
+      print('Senha: ${user['password']}');
+      print('Username: ${user['username'] ?? 'não configurado'}');
+      print('Email Verificado: ${user['emailVerified']}');
+      print('Telefone Verificado: ${user['phoneVerified']}');
+      print('---');
+    }
+    print('============================================\n');
+  }
+  
+  Map<String, dynamic>? getUserByEmail(String email){
+    try {
+      return _users.firstWhere(
+          (u) => u['email'] == email.toLowerCase(),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  Future<bool> resetPassword (String email, String newPassword) async {
+    await Future.delayed(Duration(milliseconds: 500));
+    
+    final userIndex = _users.indexWhere(
+        (u) => u['email'] == email.toLowerCase(),
+    );
+    
+    if (userIndex != -1) {
+      _users[userIndex]['password'] = newPassword;
+      print('✅ Senha atualizada para $email');
+      return true;
+    }
+
+    throw Exception('Usuário não encontrado');
+  }
+
+  Future<bool> verifyRecoveryCode(String destination, String code) async {
+    await Future.delayed(Duration(milliseconds: 500));
+
+    if (!_verificationCodes.containsKey(destination)) {
+      throw Exception('Nenhum código foi enviado');
+    }
+
+    if (_codeExpiration[destination]!.isBefore(DateTime.now())) {
+      throw Exception('Código expirado');
+    }
+
+    if (_verificationCodes[destination] != code) {
+      throw Exception('Código inválido');
+    }
+
+    _verificationCodes.remove(destination);
+    _codeExpiration.remove(destination);
+
+    return true;
+  }
+
+  Future<void> sendRecoveryCode(String destination, String method) async {
+    await Future.delayed(Duration(seconds: 1));
+
+    final code = _generateCode();
+    _verificationCodes[destination] = code;
+    _codeExpiration[destination] = DateTime.now().add(
+      method == 'email' ? Duration(minutes: 10) : Duration(minutes: 3),
+    );
+
+    print('📨 Código de recuperação enviado para $destination: $code');
   }
 }

@@ -3,6 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sabore_app/screens/auth/verify_email_screen.dart';
 import 'package:sabore_app/screens/auth/verify_phone_screen.dart';
+import 'package:sabore_app/screens/auth/forgot_password_screen.dart';
+import 'package:sabore_app/screens/auth/choose_recovery_method_screen.dart';
+import 'package:sabore_app/screens/auth/verify_recovery_code_screen.dart';
+import 'package:sabore_app/screens/auth/reset_password_screen.dart';
 import 'package:sabore_app/screens/categorie/categories_screen.dart';
 import 'package:sabore_app/screens/categorie/states_screen.dart';
 import 'package:sabore_app/screens/profile/profile/edit_profile_screen.dart';
@@ -108,6 +112,42 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => LoginScreen(),
       ),
 
+      // ✅ ROTAS DE RECUPERAÇÃO DE SENHA
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/choose-recovery-method',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return ChooseRecoveryMethodScreen(
+            email: extra['email'],
+            phone: extra['phone'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/verify-recovery-code',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return VerifyRecoveryCodeScreen(
+            method: extra['method'],
+            email: extra['email'],
+            phone: extra['phone'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return ResetPasswordScreen(
+            email: extra['email'],
+          );
+        },
+      ),
+
       // Setup Profile Routes
       GoRoute(
         path: '/setup-profile',
@@ -116,6 +156,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/setup-complete',
         builder: (context, state) => SetupCompleteScreen(),
+      ),
+
+      // Verification Routes
+      GoRoute(
+        path: '/verify-email',
+        builder: (context, state) => VerifyEmailScreen(),
+      ),
+      GoRoute(
+        path: '/verify-phone',
+        builder: (context, state) => VerifyPhoneScreen(),
       ),
 
       // Main App Routes
@@ -187,15 +237,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/test',
         builder: (context, state) => TestAuthScreen(),
       ),
-
-      GoRoute(
-          path: '/verify-email',
-          builder: (context, state) => VerifyEmailScreen(),
-      ),
-      GoRoute(
-        path: '/verify-phone',
-        builder: (context, state) => VerifyPhoneScreen(),
-      )
     ],
     redirect: (context, state) {
       final authState = ref.read(authProvider);
@@ -213,6 +254,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         '/create-account',
         '/login',
         '/signup',
+        '/forgot-password',
+        '/choose-recovery-method',
+        '/verify-recovery-code',
+        '/reset-password',
         '/test'
       ];
 
@@ -227,7 +272,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // Se está autenticado e é primeiro login
       if (authState.isAuthenticated && isFirstLogin) {
-        if (location != '/setup-profile' && location != '/setup-complete') {
+        if (location != '/setup-profile' &&
+            location != '/setup-complete' &&
+            location != '/verify-email') {
           return '/setup-profile';
         }
       }
@@ -293,6 +340,16 @@ class TestAuthScreen extends ConsumerWidget {
                 padding: EdgeInsets.symmetric(vertical: 16),
               ),
               child: Text('Ir para Login', style: TextStyle(color: Colors.white)),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => context.go('/forgot-password'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text('Testar Recuperação de Senha',
+                  style: TextStyle(color: Colors.white)),
             ),
             SizedBox(height: 10),
             ElevatedButton(

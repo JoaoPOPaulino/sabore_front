@@ -100,10 +100,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
           ref.read(currentUserDataProvider.notifier).state = userData;
           state = state.copyWith(isAuthenticated: true);
 
-          final isFirst = await storage.read(key: StorageKeys.isFirstLogin) ?? 'true';
-          ref.read(isFirstLoginProvider.notifier).state = isFirst == 'true';
+          // ✅ VERIFICAR SE TEM USERNAME PARA DETERMINAR PRIMEIRO LOGIN
+          final hasUsername = userData['username'] != null &&
+              userData['username'].toString().isNotEmpty;
 
-          print('✅ User authenticated. First login: $isFirst');
+          final isFirst = !hasUsername;
+          await storage.write(
+              key: StorageKeys.isFirstLogin,
+              value: isFirst ? 'true' : 'false'
+          );
+          ref.read(isFirstLoginProvider.notifier).state = isFirst;
+
+          print('✅ User authenticated. Has username: $hasUsername, First login: $isFirst');
         } catch (e) {
           print('❌ Token invalid, logging out');
           await logout();
@@ -131,18 +139,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final token = response['token'] ?? response['access'];
       if (token != null) {
         await _apiService.saveToken(token);
-        await storage.write(key: StorageKeys.isFirstLogin, value: 'true');
         await storage.write(key: StorageKeys.userEmail, value: email);
 
         if (response['user'] != null) {
           ref.read(currentUserDataProvider.notifier).state = response['user'];
+
+          // ✅ VERIFICAR SE O USUÁRIO TEM USERNAME
+          final hasUsername = response['user']['username'] != null &&
+              response['user']['username'].toString().isNotEmpty;
+
+          final isFirstLogin = !hasUsername;
+
+          await storage.write(
+              key: StorageKeys.isFirstLogin,
+              value: isFirstLogin ? 'true' : 'false'
+          );
+
+          ref.read(isFirstLoginProvider.notifier).state = isFirstLogin;
+
+          print('✅ Login successful. Username: ${response['user']['username']}, First login: $isFirstLogin');
         }
 
         state = state.copyWith(
           isAuthenticated: true,
           isLoading: false,
         );
-        ref.read(isFirstLoginProvider.notifier).state = true;
 
         print('✅ Login successful');
       } else {
@@ -185,6 +206,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final token = response['token'] ?? response['access'];
       if (token != null) {
         await _apiService.saveToken(token);
+        // ✅ NO SIGNUP, SEMPRE É PRIMEIRO LOGIN (USUÁRIO NOVO)
         await storage.write(key: StorageKeys.isFirstLogin, value: 'true');
         await storage.write(key: StorageKeys.userEmail, value: email);
 

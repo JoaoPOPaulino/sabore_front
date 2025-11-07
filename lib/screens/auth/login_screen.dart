@@ -429,9 +429,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _handleForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-    );
+    context.push('/forgot-password');
   }
 
   void _handleGoogleLogin() {
