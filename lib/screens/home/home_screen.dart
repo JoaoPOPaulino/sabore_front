@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,398 +15,355 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }
 
   @override
   Widget build(BuildContext context) {
     final userData = ref.watch(currentUserDataProvider);
+    final firstName = userData?['name']?.toString().split(' ').first ?? 'Chef';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFFAFAFA),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.only(top: 50, left: 16, right: 16, bottom: 80),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        print('👤 Profile button pressed');
-                        context.push('/profile/${userData?['id'] ?? '1'}');
-                      },
-                      child: ProfileImageWidget(userData: userData, radius: 25),
-                    ),
-                    Text(
-                      'Saborê',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 28,
-                        color: Color(0xFFFA9500),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        print('🔍 Search icon tapped');
-                        context.push('/search');
-                      },
-                      child: Icon(
-                        Icons.search,
-                        color: Color(0xFFFA9500),
-                        size: 24,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20),
-
-                // ✅ BANNER DE VERIFICAÇÃO DE TELEFONE
-                PhoneVerificationBanner(),
-
-                SizedBox(height: 10),
-
-                // Título principal
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'O que você quer\ncozinhar hoje?',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 20,
-                        color: Color(0xFF3C4D18),
-                        height: 1.2,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.filter_list,
-                        color: Color(0xFFFA9500),
-                        size: 24,
-                      ),
-                      onPressed: () {
-                        print('🎛️ Filter button pressed');
-                        context.push('/categories');
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20),
-
-                // Botões de categoria
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildCategoryButton('Receitas Juninas', context),
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: _buildCategoryButton('Brownie', context),
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: _buildCategoryButton('Pizza', context),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 30),
-
-                // Receita do dia
-                Text(
-                  'Receita do dia',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                    color: Color(0xFF3C4D18),
-                  ),
-                ),
-                SizedBox(height: 15),
-                GestureDetector(
-                  onTap: () {
-                    print('🍰 Recipe of the day tapped');
-                    context.push('/recipe/2');
-                  },
-                  child: Container(
-                    height: 200,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/chef.jpg'),
-                        fit: BoxFit.cover,
-                        colorFilter: ColorFilter.mode(
-                            Colors.black.withOpacity(0.3),
-                            BlendMode.darken
-                        ),
-                      ),
-                    ),
-                    child: Container(
-                      padding: EdgeInsets.all(20),
-                      alignment: Alignment.bottomLeft,
-                      child: Text(
-                        'Canjica zero lactose',
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 22,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 30),
-
-                // Estados Brasileiros - CARROSSEL AUTOMÁTICO INFINITO
-                InfiniteStatesCarousel(),
-
-                SizedBox(height: 30),
-
-                // Top Receitas
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Top Receitas',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                        color: Color(0xFF3C4D18),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        print('🔝 Top recipes "Ver tudo" tapped');
-                        context.push('/categories');
-                      },
-                      child: Text(
-                        'Ver tudo',
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                          color: Color(0xFF3C4D18),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 15),
-
-                // Cards de receitas
-                _buildTopRecipeCard(
-                  'Bolo de milho sem açúcar',
-                  '1h20min • 9 ingredientes',
-                  'assets/images/chef.jpg',
-                  context,
-                  '1',
-                ),
-                SizedBox(height: 12),
-                _buildTopRecipeCard(
-                  'Brownie de chocolate',
-                  '45min • 8 ingredientes',
-                  'assets/images/chef.jpg',
-                  context,
-                  '3',
-                ),
-              ],
-            ),
-          ),
-
-          // Bottom Navigation Bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              height: 80,
-              decoration: BoxDecoration(
-                color: Color(0xFF3C4D18),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.home, color: Color(0xFFFA9500), size: 28),
-                    onPressed: () {
-                      print('🏠 Home button pressed - already here');
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.search, color: Colors.white, size: 28),
-                    onPressed: () {
-                      print('🔍 Search button pressed in bottom nav');
-                      context.go('/search');
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.add, color: Colors.white, size: 28),
-                    onPressed: () {
-                      context.push('/add-recipe');
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.notifications, color: Colors.white, size: 28),
-                    onPressed: () {
-                      print('🔔 Notifications button pressed');
-                      context.push('/notifications');
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.person, color: Colors.white, size: 28),
-                    onPressed: () {
-                      print('👤 Profile button pressed');
-                      final userId = userData?['id'] ?? '1';
-                      context.push('/profile/$userId');
-                    },
-                  ),
+          // Background gradient sutil
+          Container(
+            height: 300,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFFF8F0),
+                  Color(0xFFFAFAFA),
                 ],
               ),
             ),
           ),
+
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(top: 50, left: 16, right: 16, bottom: 100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ✨ Header com saudação
+                  _buildHeader(userData, firstName),
+
+                  SizedBox(height: 20),
+
+                  // ✅ Banner de verificação
+                  PhoneVerificationBanner(),
+
+                  SizedBox(height: 24),
+
+                  // ✨ Search Bar
+                  _buildSearchBar(),
+
+                  SizedBox(height: 24),
+
+                  // ✨ Categorias em chips
+                  _buildCategoriesSection(),
+
+                  SizedBox(height: 32),
+
+                  // ✨ Receita do Dia (Featured)
+                  _buildFeaturedRecipe(),
+
+                  SizedBox(height: 32),
+
+                  // Carrossel de Estados
+                  InfiniteStatesCarousel(),
+
+                  SizedBox(height: 32),
+
+                  // ✨ Receitas Populares
+                  _buildPopularRecipesSection(),
+
+                  SizedBox(height: 32),
+
+                  // ✨ Novas Receitas
+                  _buildNewRecipesSection(),
+
+                  SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+
+          // Bottom Navigation Bar
+          _buildBottomNavigationBar(userData),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryButton(String text, BuildContext context) {
+  // ✨ HEADER COM SAUDAÇÃO
+  Widget _buildHeader(Map<String, dynamic>? userData, String firstName) {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () {
+            print('👤 Profile button pressed');
+            context.push('/profile/${userData?['id'] ?? '1'}');
+          },
+          child: Hero(
+            tag: 'profile_image',
+            child: ProfileImageWidget(userData: userData, radius: 28),
+          ),
+        ),
+        SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _getGreeting(),
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 14,
+                  color: Color(0xFF666666),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                firstName,
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 24,
+                  color: Color(0xFF3C4D18),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Color(0xFFFFF3E0),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: Icon(Icons.notifications_outlined, color: Color(0xFFFA9500)),
+            onPressed: () {
+              print('🔔 Notifications pressed');
+              context.push('/notifications');
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✨ SEARCH BAR
+  Widget _buildSearchBar() {
     return GestureDetector(
       onTap: () {
-        print('🏷️ Category button tapped: $text');
-        context.push('/categories');
+        print('🔍 Search bar tapped');
+        context.push('/search');
       },
       child: Container(
-        height: 36,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: Color(0xFFFA9500),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Center(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontFamily: 'Montserrat',
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-              color: Colors.white,
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 15,
+              offset: Offset(0, 4),
             ),
-          ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search, color: Color(0xFF999999), size: 22),
+            SizedBox(width: 12),
+            Text(
+              'O que você quer cozinhar hoje?',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 14,
+                color: Color(0xFF999999),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Spacer(),
+            Container(
+              padding: EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Color(0xFFFA9500),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.tune, color: Colors.white, size: 16),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTopRecipeCard(String title, String subtitle, String imagePath, BuildContext context, String recipeId) {
-    return GestureDetector(
-      onTap: () {
-        print('🍳 Recipe card tapped: $title');
-        context.push('/recipe/$recipeId');
-      },
-      child: Container(
-        height: 120,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          image: DecorationImage(
-            image: AssetImage(imagePath),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.3),
-                BlendMode.darken
-            ),
+  // ✨ CATEGORIAS EM CHIPS
+  Widget _buildCategoriesSection() {
+    final categories = [
+      {'name': 'Juninas', 'icon': '🎉', 'color': Color(0xFFFA9500)},
+      {'name': 'Doces', 'icon': '🍰', 'color': Color(0xFFE91E63)},
+      {'name': 'Salgados', 'icon': '🥐', 'color': Color(0xFF7CB342)},
+      {'name': 'Bebidas', 'icon': '🧃', 'color': Color(0xFF00BCD4)},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Categorias',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            color: Color(0xFF3C4D18),
           ),
         ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 12,
-              right: 12,
-              child: GestureDetector(
-                onTap: () {
-                  print('🔖 Bookmark tapped for: $title');
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => SelectRecipeBookModal(),
-                  ).then((selectedBook) {
-                    if (selectedBook != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Receita "$title" salva em "${selectedBook['title']}"!'),
-                          backgroundColor: Color(0xFF7CB342),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  });
-                },
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black26,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.bookmark_border,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+        SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: categories.map((category) {
+              return Container(
+                margin: EdgeInsets.only(right: 12),
+                child: _buildCategoryChip(
+                  category['name'] as String,
+                  category['icon'] as String,
+                  category['color'] as Color,
                 ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryChip(String name, String icon, Color color) {
+    return GestureDetector(
+      onTap: () {
+        print('🏷️ Category tapped: $name');
+        context.push('/categories');
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color, color.withOpacity(0.8)],
+          ),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.3),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Text(
+              icon,
+              style: TextStyle(fontSize: 20),
+            ),
+            SizedBox(width: 8),
+            Text(
+              name,
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: Colors.white,
               ),
             ),
-            Positioned(
-              bottom: 12,
-              left: 12,
-              right: 60,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.access_time, color: Colors.white, size: 16),
-                      SizedBox(width: 4),
-                      Text(
-                        '1h20min',
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontWeight: FontWeight.w400,
-                          fontSize: 12,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Icon(Icons.restaurant, color: Colors.white, size: 16),
-                      SizedBox(width: 4),
-                      Text(
-                        '9 ingredientes',
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontWeight: FontWeight.w400,
-                          fontSize: 12,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✨ RECEITA DESTACADA (FEATURED)
+  Widget _buildFeaturedRecipe() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Receita do Dia',
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 20,
+                    color: Color(0xFF3C4D18),
                   ),
-                  SizedBox(height: 4),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Especial de hoje',
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 12,
+                    color: Color(0xFF999999),
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Color(0xFFFA9500),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.star, color: Colors.white, size: 14),
+                  SizedBox(width: 4),
                   Text(
-                    title,
+                    'Destaque',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
                   ),
@@ -416,12 +372,602 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
+        SizedBox(height: 16),
+        GestureDetector(
+          onTap: () {
+            print('🍰 Featured recipe tapped');
+            context.push('/recipe/2');
+          },
+          child: Hero(
+            tag: 'featured_recipe',
+            child: Container(
+              height: 240,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(25),
+                child: Stack(
+                  children: [
+                    // Imagem
+                    Container(
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/chef.jpg'),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    // Gradiente
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Conteúdo
+                    Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Color(0xFF7CB342),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'NOVO',
+                              style: TextStyle(
+                                fontFamily: 'Montserrat',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'Canjica zero lactose',
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 28,
+                              color: Colors.white,
+                              height: 1.2,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              _buildRecipeInfo(Icons.access_time, '1h20min'),
+                              SizedBox(width: 16),
+                              _buildRecipeInfo(Icons.restaurant, '9 itens'),
+                              SizedBox(width: 16),
+                              _buildRecipeInfo(Icons.star, '4.8'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Bookmark
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      child: _buildBookmarkButton('Canjica zero lactose'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecipeInfo(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white, size: 16),
+        SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✨ RECEITAS POPULARES
+  Widget _buildPopularRecipesSection() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Receitas Populares',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w700,
+                fontSize: 20,
+                color: Color(0xFF3C4D18),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                print('🔝 Ver tudo - Popular');
+                context.push('/categories');
+              },
+              child: Row(
+                children: [
+                  Text(
+                    'Ver tudo',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Color(0xFFFA9500),
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFFFA9500)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 16),
+        _buildRecipeCard(
+          'Bolo de milho sem açúcar',
+          '1h20min',
+          '9 ingredientes',
+          'Chef Ana',
+          4.8,
+          'assets/images/chef.jpg',
+          '1',
+          isPopular: true,
+        ),
+        SizedBox(height: 12),
+        _buildRecipeCard(
+          'Brownie de chocolate',
+          '45min',
+          '8 ingredientes',
+          'Chef Carlos',
+          4.9,
+          'assets/images/chef.jpg',
+          '3',
+          isPopular: true,
+        ),
+      ],
+    );
+  }
+
+  // ✨ NOVAS RECEITAS
+  Widget _buildNewRecipesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Novas Receitas',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            color: Color(0xFF3C4D18),
+          ),
+        ),
+        SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildSmallRecipeCard('Pizza Margherita', 'assets/images/chef.jpg', '4'),
+              _buildSmallRecipeCard('Tapioca Recheada', 'assets/images/chef.jpg', '5'),
+              _buildSmallRecipeCard('Pão de Queijo', 'assets/images/chef.jpg', '6'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✨ CARD DE RECEITA MELHORADO
+  Widget _buildRecipeCard(
+      String title,
+      String time,
+      String ingredients,
+      String author,
+      double rating,
+      String imagePath,
+      String recipeId, {
+        bool isPopular = false,
+      }) {
+    return GestureDetector(
+      onTap: () {
+        print('🍳 Recipe tapped: $title');
+        context.push('/recipe/$recipeId');
+      },
+      child: Container(
+        height: 140,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 15,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Imagem
+            Container(
+              width: 120,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.horizontal(left: Radius.circular(20)),
+                image: DecorationImage(
+                  image: AssetImage(imagePath),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: Stack(
+                children: [
+                  if (isPopular)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFFA9500),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.trending_up, color: Colors.white, size: 12),
+                            SizedBox(width: 4),
+                            Text(
+                              'Popular',
+                              style: TextStyle(
+                                fontFamily: 'Montserrat',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Info
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: Color(0xFF3C4D18),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline, color: Color(0xFF999999), size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          author,
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 12,
+                            color: Color(0xFF999999),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Spacer(),
+                    Row(
+                      children: [
+                        Icon(Icons.star, color: Color(0xFFFA9500), size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          rating.toString(),
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Color(0xFF3C4D18),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Icon(Icons.access_time, color: Color(0xFF999999), size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          time,
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 12,
+                            color: Color(0xFF999999),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Bookmark
+            Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: _buildBookmarkButton(title),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✨ CARD PEQUENO DE RECEITA
+  Widget _buildSmallRecipeCard(String title, String imagePath, String recipeId) {
+    return GestureDetector(
+      onTap: () {
+        print('🍳 Small recipe tapped: $title');
+        context.push('/recipe/$recipeId');
+      },
+      child: Container(
+        width: 160,
+        margin: EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage(imagePath),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 12,
+                left: 12,
+                right: 12,
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Color(0xFF7CB342),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'NOVO',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✨ BOTÃO DE BOOKMARK
+  Widget _buildBookmarkButton(String title) {
+    return GestureDetector(
+      onTap: () {
+        print('🔖 Bookmark tapped: $title');
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => SelectRecipeBookModal(),
+        ).then((selectedBook) {
+          if (selectedBook != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Receita salva em "${selectedBook['title']}"!'),
+                backgroundColor: Color(0xFF7CB342),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            );
+          }
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Color(0xFFFFF3E0),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          Icons.bookmark_border,
+          color: Color(0xFFFA9500),
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  // ✨ BOTTOM NAVIGATION BAR
+  Widget _buildBottomNavigationBar(Map<String, dynamic>? userData) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Container(
+        height: 75,
+        margin: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Color(0xFF3C4D18),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFF3C4D18).withOpacity(0.3),
+              blurRadius: 20,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(Icons.home, true, () {
+              print('🏠 Home - already here');
+            }),
+            _buildNavItem(Icons.search, false, () {
+              print('🔍 Search');
+              context.go('/search');
+            }),
+            _buildNavItemFAB(Icons.add, () {
+              context.push('/add-recipe');
+            }),
+            _buildNavItem(Icons.notifications_outlined, false, () {
+              print('🔔 Notifications');
+              context.push('/notifications');
+            }),
+            _buildNavItem(Icons.person_outline, false, () {
+              print('👤 Profile');
+              context.push('/profile/${userData?['id'] ?? '1'}');
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, bool isActive, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isActive ? Color(0xFFFA9500) : Colors.transparent,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Icon(
+          icon,
+          color: isActive ? Colors.white : Colors.white70,
+          size: 24,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItemFAB(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFA9500), Color(0xFFFF6B35)],
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFFFA9500).withOpacity(0.4),
+              blurRadius: 15,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: Colors.white, size: 28),
       ),
     );
   }
 }
-
-// Classe do carrossel automático infinito
+// ✨ CARROSSEL DE ESTADOS MELHORADO
 class InfiniteStatesCarousel extends StatefulWidget {
   const InfiniteStatesCarousel({Key? key}) : super(key: key);
 
@@ -435,16 +981,16 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
   int _currentPage = 0;
 
   final List<Map<String, String>> states = [
-    {'name': 'Tocantins', 'recipes': '50 receitas'},
-    {'name': 'São Paulo', 'recipes': '120 receitas'},
-    {'name': 'Paraná', 'recipes': '65 receitas'},
-    {'name': 'Rio de Janeiro', 'recipes': '95 receitas'},
-    {'name': 'Maranhão', 'recipes': '30 receitas'},
-    {'name': 'Goiás', 'recipes': '70 receitas'},
-    {'name': 'Minas Gerais', 'recipes': '85 receitas'},
-    {'name': 'Bahia', 'recipes': '75 receitas'},
-    {'name': 'Pernambuco', 'recipes': '60 receitas'},
-    {'name': 'Ceará', 'recipes': '55 receitas'},
+    {'name': 'Tocantins', 'recipes': '50 receitas', 'emoji': '🌾'},
+    {'name': 'São Paulo', 'recipes': '120 receitas', 'emoji': '🏙️'},
+    {'name': 'Paraná', 'recipes': '65 receitas', 'emoji': '🌲'},
+    {'name': 'Rio de Janeiro', 'recipes': '95 receitas', 'emoji': '🏖️'},
+    {'name': 'Maranhão', 'recipes': '30 receitas', 'emoji': '🦐'},
+    {'name': 'Goiás', 'recipes': '70 receitas', 'emoji': '🌽'},
+    {'name': 'Minas Gerais', 'recipes': '85 receitas', 'emoji': '🧀'},
+    {'name': 'Bahia', 'recipes': '75 receitas', 'emoji': '🥥'},
+    {'name': 'Pernambuco', 'recipes': '60 receitas', 'emoji': '🦞'},
+    {'name': 'Ceará', 'recipes': '55 receitas', 'emoji': '🦀'},
   ];
 
   @override
@@ -453,7 +999,7 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
 
     _pageController = PageController(
       initialPage: states.length * 1000,
-      viewportFraction: 0.35,
+      viewportFraction: 0.4,
     );
 
     _currentPage = states.length * 1000;
@@ -463,8 +1009,8 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
         _currentPage++;
         _pageController.animateToPage(
           _currentPage,
-          duration: Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
+          duration: Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
         );
       }
     });
@@ -481,39 +1027,61 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Estados Brasileiros',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                color: Color(0xFF3C4D18),
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Estados Brasileiros',
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 20,
+                    color: Color(0xFF3C4D18),
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Explore receitas típicas',
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 12,
+                    color: Color(0xFF999999),
+                  ),
+                ),
+              ],
             ),
             TextButton(
               onPressed: () {
-                print('🗺️ States "Ver tudo" pressed');
+                print('🗺️ Ver todos estados');
                 context.push('/states');
               },
-              child: Text(
-                'Ver tudo',
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                  color: Color(0xFF3C4D18),
-                ),
+              child: Row(
+                children: [
+                  Text(
+                    'Ver tudo',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Color(0xFFFA9500),
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFFFA9500)),
+                ],
               ),
             ),
           ],
         ),
-        SizedBox(height: 15),
+        SizedBox(height: 16),
 
+        // Carrossel
         Container(
-          height: 140,
+          height: 160,
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (index) {
@@ -524,15 +1092,21 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
             itemBuilder: (context, index) {
               final stateIndex = index % states.length;
               final state = states[stateIndex];
+              final isCenter = (index - _currentPage).abs() == 0;
 
-              return Container(
-                margin: EdgeInsets.symmetric(horizontal: 6),
+              return AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                margin: EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: isCenter ? 0 : 10,
+                ),
                 child: GestureDetector(
                   onTap: () {
                     _timer.cancel();
-                    print('🗺️ State card tapped: ${state['name']}');
+                    print('🗺️ State tapped: ${state['name']}');
                     context.push('/states');
 
+                    // Reinicia timer após 5 segundos
                     Timer(Duration(seconds: 5), () {
                       if (mounted) {
                         _timer = Timer.periodic(Duration(seconds: 3), (timer) {
@@ -540,8 +1114,8 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
                             _currentPage++;
                             _pageController.animateToPage(
                               _currentPage,
-                              duration: Duration(milliseconds: 500),
-                              curve: Curves.easeInOut,
+                              duration: Duration(milliseconds: 600),
+                              curve: Curves.easeInOutCubic,
                             );
                           }
                         });
@@ -550,46 +1124,113 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/chef.jpg'),
-                        fit: BoxFit.cover,
-                        colorFilter: ColorFilter.mode(
-                          Colors.black.withOpacity(0.4),
-                          BlendMode.darken,
-                        ),
-                      ),
+                      borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
+                          color: Colors.black.withOpacity(isCenter ? 0.15 : 0.08),
+                          blurRadius: isCenter ? 15 : 8,
+                          offset: Offset(0, isCenter ? 8 : 4),
                         ),
                       ],
                     ),
-                    child: Container(
-                      padding: EdgeInsets.all(12),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Stack(
                         children: [
-                          Text(
-                            state['name']!,
-                            style: TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: Colors.white,
+                          // Imagem
+                          Container(
+                            decoration: BoxDecoration(
+                              image: DecorationImage(
+                                image: AssetImage('assets/images/chef.jpg'),
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
-                          SizedBox(height: 2),
-                          Text(
-                            state['recipes']!,
-                            style: TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w400,
-                              fontSize: 10,
-                              color: Colors.white70,
+                          // Gradiente
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.black.withOpacity(0.3),
+                                  Colors.black.withOpacity(0.7),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Badge de destaque
+                          if (isCenter)
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFFA9500),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.star, color: Colors.white, size: 10),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Popular',
+                                      style: TextStyle(
+                                        fontFamily: 'Montserrat',
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          // Conteúdo
+                          Positioned(
+                            bottom: 12,
+                            left: 12,
+                            right: 12,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Emoji do estado
+                                Text(
+                                  state['emoji']!,
+                                  style: TextStyle(fontSize: 24),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  state['name']!,
+                                  style: TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.restaurant_menu,
+                                      color: Colors.white70,
+                                      size: 12,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      state['recipes']!,
+                                      style: TextStyle(
+                                        fontFamily: 'Montserrat',
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 11,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -602,19 +1243,30 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
           ),
         ),
 
-        SizedBox(height: 10),
+        SizedBox(height: 12),
 
+        // Indicadores de página melhorados
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(states.length, (index) {
             final isActive = (_currentPage % states.length) == index;
-            return Container(
-              width: isActive ? 20 : 8,
+            return AnimatedContainer(
+              duration: Duration(milliseconds: 300),
+              width: isActive ? 24 : 8,
               height: 8,
-              margin: EdgeInsets.symmetric(horizontal: 2),
+              margin: EdgeInsets.symmetric(horizontal: 3),
               decoration: BoxDecoration(
                 color: isActive ? Color(0xFFFA9500) : Color(0xFFE0E0E0),
                 borderRadius: BorderRadius.circular(4),
+                boxShadow: isActive
+                    ? [
+                  BoxShadow(
+                    color: Color(0xFFFA9500).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ]
+                    : [],
               ),
             );
           }),

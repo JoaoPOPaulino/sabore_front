@@ -1,10 +1,16 @@
+// lib/models/models.dart
+import 'dart:typed_data';
+
 class User {
-  final int id;
+  final int id; // Chave como int
   final String username;
   final String email;
   final String? name;
   final String? location;
   final String? profileImage;
+  final Uint8List? profileImageBytes; // Adicionado
+  final String? coverImage; // Adicionado
+  final Uint8List? coverImageBytes; // Adicionado
   final String? bio;
   final String? phone;
   final int recipesCount;
@@ -19,6 +25,9 @@ class User {
     this.name,
     this.location,
     this.profileImage,
+    this.profileImageBytes,
+    this.coverImage,
+    this.coverImageBytes,
     this.bio,
     this.phone,
     this.recipesCount = 0,
@@ -29,37 +38,27 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      username: json['username'],
+      id: int.tryParse(json['id'].toString()) ?? 0, // Garante que seja int
+      username: json['username'] ?? 'user_${json['id']}',
       email: json['email'],
       name: json['name'],
       location: json['location'],
-      profileImage: json['profile_image'],
+      profileImage: json['profileImage'],
+      profileImageBytes: json['profileImageBytes'],
+      coverImage: json['coverImage'],
+      coverImageBytes: json['coverImageBytes'],
       bio: json['bio'],
       phone: json['phone'],
-      recipesCount: json['recipes_count'] ?? 0,
-      followersCount: json['followers_count'] ?? 0,
-      followingCount: json['following_count'] ?? 0,
+      recipesCount: json['recipesCount'] ?? 0,
+      followersCount: json['followersCount'] ?? 0,
+      followingCount: json['followingCount'] ?? 0,
       averageRating: json['average_rating']?.toDouble(),
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'username': username,
-      'email': email,
-      'name': name,
-      'location': location,
-      'profile_image': profileImage,
-      'bio': bio,
-      'phone': phone,
-    };
   }
 }
 
 class Recipe {
-  final int id;
+  final int id; // Chave como int
   final String title;
   final String description;
   final String? image;
@@ -68,7 +67,7 @@ class Recipe {
   final List<String> ingredients;
   final List<String> steps;
   final String? category;
-  final int userId;
+  final int userId; // Chave como int
   final String? userName;
   final String? userImage;
   final DateTime createdAt;
@@ -103,7 +102,7 @@ class Recipe {
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
-      id: json['id'],
+      id: int.tryParse(json['id'].toString()) ?? 0, // Garante que seja int
       title: json['title'],
       description: json['description'],
       image: json['image'],
@@ -112,7 +111,7 @@ class Recipe {
       ingredients: List<String>.from(json['ingredients'] ?? []),
       steps: List<String>.from(json['steps'] ?? []),
       category: json['category'],
-      userId: json['user_id'] ?? json['user']?['id'],
+      userId: int.tryParse(json['user_id'].toString()) ?? (json['user'] != null ? int.tryParse(json['user']['id'].toString()) ?? 0 : 0), // Garante que seja int
       userName: json['user_name'] ?? json['user']?['name'],
       userImage: json['user_image'] ?? json['user']?['profile_image'],
       createdAt: DateTime.parse(json['created_at']),
@@ -150,6 +149,10 @@ class Recipe {
     List<String>? ingredients,
     List<String>? steps,
     String? category,
+    int? userId,
+    String? userName,
+    String? userImage,
+    DateTime? createdAt,
     bool? isLiked,
     bool? isSaved,
     int? likesCount,
@@ -164,10 +167,10 @@ class Recipe {
       ingredients: ingredients ?? this.ingredients,
       steps: steps ?? this.steps,
       category: category ?? this.category,
-      userId: this.userId,
-      userName: this.userName,
-      userImage: this.userImage,
-      createdAt: this.createdAt,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userImage: userImage ?? this.userImage,
+      createdAt: createdAt ?? this.createdAt,
       updatedAt: this.updatedAt,
       likesCount: likesCount ?? this.likesCount,
       commentsCount: this.commentsCount,
@@ -199,7 +202,7 @@ class RecipeBook {
 
   factory RecipeBook.fromJson(Map<String, dynamic> json) {
     return RecipeBook(
-      id: json['id'],
+      id: int.tryParse(json['id'].toString()) ?? 0,
       title: json['title'],
       description: json['description'],
       recipesCount: json['recipes_count'] ?? 0,
@@ -244,9 +247,9 @@ class Review {
 
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      id: json['id'],
-      recipeId: json['recipe_id'],
-      userId: json['user_id'],
+      id: int.tryParse(json['id'].toString()) ?? 0,
+      recipeId: int.tryParse(json['recipe_id'].toString()) ?? 0,
+      userId: int.tryParse(json['user_id'].toString()) ?? 0,
       userName: json['user_name'] ?? json['user']?['name'] ?? 'Usuário',
       userAvatar: json['user_avatar'] ?? json['user']?['profile_image'],
       rating: json['rating'],
@@ -281,7 +284,7 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      id: json['id'],
+      id: int.tryParse(json['id'].toString()) ?? 0,
       name: json['name'],
       icon: json['icon'],
       recipesCount: json['recipes_count'] ?? 0,

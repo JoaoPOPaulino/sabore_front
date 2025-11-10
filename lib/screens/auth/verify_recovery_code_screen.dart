@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/mock_auth_service.dart';
 
 class VerifyRecoveryCodeScreen extends ConsumerStatefulWidget {
   final String method;
@@ -47,29 +49,38 @@ class _VerifyRecoveryCodeScreenState
     super.dispose();
   }
 
+  // ✅ ENVIA O CÓDIGO USANDO O MockAuthService
   Future<void> _sendCode() async {
-    await Future.delayed(const Duration(seconds: 1));
-    final destination = widget.method == 'email' ? widget.email : widget.phone;
-    debugPrint('📨 Código enviado para: $destination');
+    try {
+      final authService = ref.read(authServiceProvider) as MockAuthService;
+      final destination = widget.method == 'email' ? widget.email : widget.phone;
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.method == 'email'
-                ? 'Código enviado para seu e-mail'
-                : 'Código enviado via SMS',
+      // ✅ CHAMA O MÉTODO QUE IMPRIME NO CONSOLE
+      await authService.sendRecoveryCode(destination, widget.method);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.method == 'email'
+                  ? '📧 Código enviado para seu e-mail'
+                  : '📱 Código enviado via SMS',
+            ),
+            backgroundColor: const Color(0xFF7CB342),
           ),
-          backgroundColor: const Color(0xFF7CB342),
-        ),
-      );
+        );
 
-      setState(() {
-        _canResend = false;
-        _resendCountdown = 60;
-      });
+        setState(() {
+          _canResend = false;
+          _resendCountdown = 60;
+        });
 
-      _startResendTimer();
+        _startResendTimer();
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorMessage('Erro ao enviar código');
+      }
     }
   }
 
@@ -87,6 +98,7 @@ class _VerifyRecoveryCodeScreenState
     });
   }
 
+  // ✅ VERIFICA O CÓDIGO USANDO O MockAuthService
   Future<void> _verifyCode() async {
     final code = _controllers.map((c) => c.text).join();
 
@@ -98,13 +110,18 @@ class _VerifyRecoveryCodeScreenState
     setState(() => _isLoading = true);
 
     try {
-      await Future.delayed(const Duration(seconds: 1));
+      // ✅ VALIDA O CÓDIGO
+      final authService = ref.read(authServiceProvider) as MockAuthService;
+      final destination = widget.method == 'email' ? widget.email : widget.phone;
+
+      await authService.verifyRecoveryCode(destination, code);
 
       if (mounted) {
+        // ✅ Navega passando o email
         context.push('/reset-password', extra: {'email': widget.email});
       }
     } catch (e) {
-      _showErrorMessage('Código inválido');
+      _showErrorMessage(e.toString().replaceAll('Exception: ', ''));
       _clearCode();
     } finally {
       if (mounted) {

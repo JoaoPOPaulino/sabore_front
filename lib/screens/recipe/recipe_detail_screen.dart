@@ -1,118 +1,76 @@
+// lib/screens/recipe/recipe_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // ✨ Importar
 import 'package:go_router/go_router.dart';
+import 'package:sabore_app/models/models.dart'; // ✨ Importar
+import 'package:sabore_app/providers/recipe_provider.dart'; // ✨ Importar
 import '../../widgets/select_recipe_book_modal.dart';
 
-class RecipeDetailScreen extends StatefulWidget {
+// ✨ Mudar para ConsumerStatefulWidget
+class RecipeDetailScreen extends ConsumerStatefulWidget {
   final String recipeId;
 
   const RecipeDetailScreen({Key? key, required this.recipeId}) : super(key: key);
 
   @override
-  State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
+  // ✨ Mudar para ConsumerState
+  ConsumerState<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
 }
 
-class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   bool isBookmarked = false;
   bool showFullIngredients = false;
 
-  final Map<String, dynamic> recipe = {
-    'name': 'Canjica zero lactose',
-    'author': 'hemchrsz',
-    'authorImage': 'assets/images/chef.jpg',
-    'recipesCount': '8 Receitas',
-    'rating': 4.5,
-    'image': 'assets/images/chef.jpg',
-    'calories': 300,
-    'salt': 'Sem',
-    'lactose': 'Zero',
-    'ingredients': [
-      {'amount': '1000g', 'name': 'Leite zero lactose'},
-      {'amount': '1', 'name': 'Milho de canjica'},
-      {'amount': '100g', 'name': 'Açúcar'},
-      {'amount': '20g', 'name': 'Canela'},
-      {'amount': '50g', 'name': 'Leite condensado zero lactose'},
-      {'amount': '1 colher', 'name': 'Essência de baunilha'},
-    ],
-    'preparation': [
-      'Deixe a canjica de molho na água por 24 horas.',
-      'Transfira a receita de canjica embebida para uma panela grande junto com a água do molho.',
-      'Adicione o cravo e a canela e cozinhe sua canjica até milho ficar macio.',
-      'Acrescente o açúcar, o leite, o leite condensado e o coco. Com a panela destampada, cozinhe até engrossar.',
-      'Desligue o fogo e acrescente o creme de leite. Misture até a canjica ficar doce.',
-      'Pronto, agora você já sabe como fazer canjica cremosa!'
-    ],
-    'gallery': [
-      'assets/images/chef.jpg',
-      'assets/images/chef.jpg',
-      'assets/images/chef.jpg',
-    ],
-    'comments': [
-      {
-        'user': 'hem_brinaa',
-        'text': 'Usei um xicara não soleou receita fiz e ficou maravilhosa obrigada',
-        'likes': 5,
-        'avatar': 'assets/images/chef.jpg',
-      },
-      {
-        'user': 'Maria Clara',
-        'text': 'Receita muito simples de entender, amei',
-        'likes': 3,
-        'avatar': 'assets/images/chef.jpg',
-      },
-      {
-        'user': 'Danilo Belém',
-        'text': 'Estou começando agora e adoro, me faz!',
-        'likes': 2,
-        'avatar': 'assets/images/chef.jpg',
-      },
-      {
-        'user': 'Ana Paula',
-        'text': 'Bom dia de fiz para meu restaurante, é um sucesso',
-        'likes': 8,
-        'avatar': 'assets/images/chef.jpg',
-      },
-      {
-        'user': 'hemchrsz',
-        'text': 'Fico contente que deu certo!',
-        'likes': 12,
-        'avatar': 'assets/images/chef.jpg',
-      },
-    ]
-  };
+  // ✨ REMOVIDO o mapa de 'recipe' mock
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildRecipeHeader(),
-                _buildNutritionalInfo(),
-                _buildIngredientsSection(),
-                if (showFullIngredients) _buildFullRecipeContent(),
-                SizedBox(height: 20),
-                _buildCookButton(),
-                if (!showFullIngredients) ...[
-                  SizedBox(height: 30),
-                  _buildGallerySection(),
-                  SizedBox(height: 30),
-                  _buildCommentsSection(),
-                ],
-                SizedBox(height: 100),
-              ],
-            ),
+    // ✨ LÓGICA: Busca a receita real usando o provider
+    final recipeAsync = ref.watch(recipeDetailProvider(int.parse(widget.recipeId)));
+
+    return recipeAsync.when(
+      data: (recipe) {
+        // ✨ A UI principal é construída com a receita real
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: CustomScrollView(
+            slivers: [
+              _buildSliverAppBar(recipe),
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildRecipeHeader(recipe),
+                    // ✨ MUDANÇA: UI refatorada para usar dados reais do model
+                    _buildRecipeInfo(recipe),
+                    _buildIngredientsSection(recipe),
+                    if (showFullIngredients) _buildFullRecipeContent(recipe),
+                    SizedBox(height: 20),
+                    _buildCookButton(),
+                    if (!showFullIngredients) ...[
+                      SizedBox(height: 30),
+                      // ✨ MUDANÇA: Galeria e Comentários removidos
+                      _buildCommentsButton(recipe),
+                    ],
+                    SizedBox(height: 100),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        );
+      },
+      loading: () => Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Color(0xFFFA9500))),
+      ),
+      error: (err, stack) => Scaffold(
+        appBar: AppBar(title: Text('Erro')),
+        body: Center(child: Text('Erro ao carregar receita: $err')),
       ),
     );
   }
 
-  Widget _buildSliverAppBar() {
+  Widget _buildSliverAppBar(Recipe recipe) {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
@@ -126,33 +84,33 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             color: Color(0xFF7CB342),
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+          child: Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
       ),
       actions: [
         Container(
           margin: EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isBookmarked ? Color(0xFFFA9500) : Color(0xFF3C4D18),
+            // ✨ LÓGICA: Usa o 'isSaved' real da receita
+            color: recipe.isSaved ? Color(0xFFFA9500) : Color(0xFF3C4D18),
             shape: BoxShape.circle,
           ),
           child: IconButton(
             icon: Icon(
-              isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+              recipe.isSaved ? Icons.bookmark : Icons.bookmark_border,
               color: Colors.white,
               size: 20,
             ),
             onPressed: () {
-              if (!isBookmarked) {
+              if (!recipe.isSaved) {
                 _showBookmarkModal();
               } else {
-                setState(() {
-                  isBookmarked = false;
-                });
+                // TODO: Adicionar lógica para remover o save
               }
             },
           ),
         ),
+        // TODO: Adicionar lógica real de avaliação
         Container(
           margin: EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -169,7 +127,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         background: Container(
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: AssetImage(recipe['image']),
+              // ✨ LÓGICA: Usa a imagem real da receita
+              image: NetworkImage(recipe.image ?? 'https://via.placeholder.com/400'),
               fit: BoxFit.cover,
             ),
           ),
@@ -178,10 +137,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.7),
-                ],
+                colors: [ Colors.transparent, Colors.black.withOpacity(0.7) ],
               ),
             ),
             padding: EdgeInsets.all(20),
@@ -190,7 +146,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  recipe['name'],
+                  recipe.title, // ✨ LÓGICA: Usa o título real
                   style: TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w700,
@@ -206,14 +162,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildRecipeHeader() {
+  Widget _buildRecipeHeader(Recipe recipe) {
     return Padding(
       padding: EdgeInsets.all(20),
       child: Row(
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundImage: AssetImage(recipe['authorImage']),
+            backgroundImage: NetworkImage(recipe.userImage ?? 'https://via.placeholder.com/50'),
           ),
           SizedBox(width: 12),
           Expanded(
@@ -221,7 +177,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  recipe['author'],
+                  recipe.userName ?? 'Chef Saborê', // ✨ LÓGICA
                   style: TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w600,
@@ -229,8 +185,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     color: Color(0xFF3C4D18),
                   ),
                 ),
+                // TODO: O model não tem 'recipesCount' do usuário,
+                // você precisaria de um provider de 'UserDetails' para isso.
                 Text(
-                  recipe['recipesCount'],
+                  'Autor(a) da receita',
                   style: TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w400,
@@ -253,7 +211,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 Icon(Icons.star, color: Colors.white, size: 16),
                 SizedBox(width: 4),
                 Text(
-                  '${recipe['rating']}',
+                  '${recipe.averageRating ?? 0.0}', // ✨ LÓGICA
                   style: TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w600,
@@ -268,38 +226,54 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildNutritionalInfo() {
+  // ✨ UI ATUALIZADA: Mostra dados reais do Model
+  Widget _buildRecipeInfo(Recipe recipe) {
+    // Lógica para extrair a categoria e estado
+    String category = recipe.category ?? 'Geral';
+    String state = 'N/A';
+    if(category.contains(' - ')) {
+      var parts = category.split(' - ');
+      category = parts[0];
+      state = parts[1];
+    }
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Color(0xFFF5F5F5),
+        color: Color(0xFFFFF3E0), // ✨ Cor de card
         borderRadius: BorderRadius.circular(15),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNutritionalItem(
-            Icons.local_fire_department,
-            '${recipe['calories']}',
-            'Calorias',
+          _buildInfoItem(
+            Icons.access_time,
+            '${recipe.preparationTime}',
+            'Minutos',
           ),
-          _buildNutritionalItem(
-            Icons.grain,
-            recipe['salt'],
-            'Sal',
+          _buildInfoItem(
+            Icons.restaurant,
+            '${recipe.servings}',
+            'Porções',
           ),
-          _buildNutritionalItem(
-            Icons.opacity,
-            recipe['lactose'],
-            'Lactose',
+          if (state != 'N/A')
+            _buildInfoItem(
+              Icons.map,
+              state,
+              'Estado',
+            ),
+          _buildInfoItem(
+            Icons.category,
+            category,
+            'Categoria',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNutritionalItem(IconData icon, String value, String label) {
+  Widget _buildInfoItem(IconData icon, String value, String label) {
     return Column(
       children: [
         Icon(icon, color: Color(0xFFFA9500), size: 24),
@@ -326,10 +300,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildIngredientsSection() {
+  // ✨ UI ATUALIZADA: Mostra List<String>
+  Widget _buildIngredientsSection(Recipe recipe) {
     final displayIngredients = showFullIngredients
-        ? recipe['ingredients']
-        : recipe['ingredients'].take(1).toList();
+        ? recipe.ingredients
+        : recipe.ingredients.take(3).toList(); // Mostra 3 por padrão
 
     return Padding(
       padding: EdgeInsets.all(20),
@@ -350,29 +325,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             margin: EdgeInsets.only(bottom: 12),
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Color(0xFFF5F5F5),
+              color: Color(0xFFFFF3E0), // ✨ Cor de card
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                Text(
-                  ingredient['amount'],
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: Color(0xFFFA9500),
-                  ),
-                ),
-                Container(
-                  width: 2,
-                  height: 20,
-                  color: Color(0xFFFA9500),
-                  margin: EdgeInsets.symmetric(horizontal: 16),
-                ),
+                Icon(Icons.check_circle_outline, color: Color(0xFFFA9500), size: 20),
+                SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    ingredient['name'],
+                    ingredient, // ✨ LÓGICA: Mostra o ingrediente (String)
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontWeight: FontWeight.w500,
@@ -389,7 +351,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildFullRecipeContent() {
+  Widget _buildFullRecipeContent(Recipe recipe) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -406,7 +368,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           ),
           SizedBox(height: 16),
-          ...recipe['preparation'].asMap().entries.map((entry) {
+          ...recipe.steps.asMap().entries.map((entry) { // ✨ LÓGICA: usa 'steps'
             int index = entry.key;
             String step = entry.value;
             return Container(
@@ -476,7 +438,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              showFullIngredients ? 'Voltar' : 'Começar a cozinhar',
+              showFullIngredients ? 'Ocultar Preparo' : 'Começar a cozinhar',
               style: TextStyle(
                 fontFamily: 'Montserrat',
                 fontWeight: FontWeight.w600,
@@ -494,183 +456,48 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildGallerySection() {
+  // ✨ UI ATUALIZADA: Botão para ver comentários
+  Widget _buildCommentsButton(Recipe recipe) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Galeria',
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                  color: Color(0xFF3C4D18),
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'Ver tudo',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                    color: Color(0xFF3C4D18),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12),
-          Container(
-            height: 80,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: recipe['gallery'].length,
-              itemBuilder: (context, index) {
-                return Container(
-                  width: 80,
-                  margin: EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    image: DecorationImage(
-                      image: AssetImage(recipe['gallery'][index]),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                );
-              },
+          Text(
+            'Comentários',
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              color: Color(0xFF3C4D18),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCommentsSection() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Comentários',
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                  color: Color(0xFF3C4D18),
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'Ver tudo',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                    color: Color(0xFF3C4D18),
-                  ),
-                ),
-              ),
-            ],
-          ),
           SizedBox(height: 12),
-          ...recipe['comments'].take(5).map((comment) => _buildCommentItem(comment)).toList(),
-          SizedBox(height: 20),
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Comentar',
+          // TODO: Criar tela de comentários e navegar para ela
+          GestureDetector(
+            onTap: () {
+              // context.push('/recipe/${recipe.id}/comments');
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tela de comentários em breve!')));
+            },
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Ver ${recipe.commentsCount} comentários',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
-                      color: Colors.grey[500],
+                      color: Color(0xFF666666),
                     ),
                   ),
-                ),
-                Icon(Icons.favorite_border, color: Colors.grey[500]),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCommentItem(Map<String, dynamic> comment) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundImage: AssetImage(comment['avatar']),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  comment['user'],
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Color(0xFF3C4D18),
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  comment['text'],
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w400,
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    height: 1.3,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.favorite_border, size: 16, color: Colors.grey[500]),
-                    SizedBox(width: 4),
-                    Text(
-                      '${comment['likes']}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Text(
-                      'Reply',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  Icon(Icons.arrow_forward_ios, color: Colors.grey[500], size: 16),
+                ],
+              ),
             ),
           ),
         ],
@@ -688,6 +515,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       if (selectedBook != null) {
         setState(() {
           isBookmarked = true;
+          // TODO: Chamar provider para salvar
+          // ref.read(recipesProvider.notifier).toggleSave(int.parse(widget.recipeId));
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

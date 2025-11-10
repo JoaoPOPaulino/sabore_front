@@ -1,5 +1,5 @@
 import '../constants.dart';
-import '../models/recipe.dart';
+import '../models/models.dart';
 import 'api_service.dart';
 
 class RecipeService {

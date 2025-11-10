@@ -109,11 +109,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       final authService = ref.read(authServiceProvider);
 
+      // ✨ CORREÇÃO: Enviando TODOS os dados para o serviço
       await authService.updateProfile(
+        name: _nameController.text,
         username: _usernameController.text,
         profileImagePath: _profileImagePath,
+        profileImageBytes: _profileImageBytes,
+        coverImagePath: _coverImagePath,
+        coverImageBytes: _coverImageBytes,
       );
 
+      // Atualiza o provider local
       final currentData = ref.read(currentUserDataProvider);
       if (currentData != null) {
         ref.read(currentUserDataProvider.notifier).state = {
@@ -160,7 +166,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFFF8F0),
+      // ✨ MUDANÇA: Fundo principal do app
+      backgroundColor: Color(0xFFFAFAFA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -173,7 +180,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.arrow_back_ios_new,
+              Icons.arrow_back, // Ícone padrão
               color: Colors.white,
               size: 20,
             ),
@@ -192,9 +199,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Foto de Capa
+            // ✨ MUDANÇA: Stack agora controla a sobreposição
             Stack(
+              clipBehavior: Clip.none, // Permite o overflow
+              alignment: Alignment.center,
               children: [
+                // Foto de Capa
                 GestureDetector(
                   onTap: _pickCoverImage,
                   child: Container(
@@ -206,6 +216,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     child: _buildCoverImagePreview(),
                   ),
                 ),
+                // Botão de editar capa
                 Positioned(
                   top: 16,
                   right: 16,
@@ -232,69 +243,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     ),
                   ),
                 ),
+
+                // ✨ MUDANÇA: Foto de Perfil sobreposta via Positioned
+                Positioned(
+                  bottom: -60, // Puxa para baixo, sobrepondo
+                  child: _buildProfileImageEdit(),
+                ),
               ],
             ),
 
-            // Foto de Perfil sobreposta
-            Transform.translate(
-              offset: Offset(0, -50),
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: _pickProfileImage,
-                    child: Stack(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: _buildProfileImagePreview(),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Color(0xFFFA9500),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
-                            ),
-                            child: Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Toque para alterar foto de perfil',
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 12,
-                      color: Color(0xFF999999),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // Espaço para compensar a foto de perfil sobreposta
+            SizedBox(height: 70),
 
             // Formulário
             Padding(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 20),
               child: Column(
                 children: [
                   // Campo Nome
@@ -357,7 +320,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                     decoration: BoxDecoration(
-                      color: Color(0xFFF5F5F5),
+                      color: Color(0xFFF5F5F5), // Fundo cinza padrão
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: Row(
@@ -424,6 +387,62 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // ✨ NOVO: Widget extraído para clareza
+  Widget _buildProfileImageEdit() {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: _pickProfileImage,
+          child: Stack(
+            children: [
+              Container(
+                padding: EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: _buildProfileImagePreview(),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFFA9500),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                  ),
+                  child: Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Toque para alterar foto de perfil',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontSize: 12,
+            color: Color(0xFF999999),
+          ),
+        ),
+      ],
     );
   }
 

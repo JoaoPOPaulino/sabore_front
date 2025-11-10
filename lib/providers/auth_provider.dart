@@ -4,7 +4,7 @@ import '../services/auth_service.dart';
 import '../services/mock_auth_service.dart';
 import '../services/api_service.dart';
 import '../constants.dart';
-import '../models/recipe.dart';
+import '../models/models.dart';
 
 // Providers
 final authServiceProvider = Provider<dynamic>((ref) {
@@ -21,14 +21,11 @@ final isFirstLoginProvider = StateProvider<bool>((ref) {
   return true;
 });
 
-// Provider para dados do usuário atual
 final currentUserDataProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
 
-// Provider para o usuário atual
 final currentUserProvider = FutureProvider<User?>((ref) async {
   final authState = ref.watch(authProvider);
   if (!authState.isAuthenticated) return null;
-
   try {
     final authService = ref.read(authServiceProvider);
     final userData = await authService.getCurrentUser();
@@ -39,7 +36,6 @@ final currentUserProvider = FutureProvider<User?>((ref) async {
   }
 });
 
-// Estado de autenticação
 class AuthState {
   final bool isAuthenticated;
   final bool isLoading;
@@ -88,32 +84,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> checkAuthStatus() async {
     print('🔍 Checking auth status...');
-
     try {
       final hasToken = await _apiService.hasToken();
-
       if (hasToken) {
         print('🔑 Token found, validating...');
-
         try {
           final userData = await _authService.getCurrentUser();
           ref.read(currentUserDataProvider.notifier).state = userData;
           state = state.copyWith(isAuthenticated: true);
-
-          // ✅ VERIFICAR SE TEM USERNAME PARA DETERMINAR PRIMEIRO LOGIN
           final hasUsername = userData['username'] != null &&
               userData['username'].toString().isNotEmpty;
-
           final isFirst = !hasUsername;
           await storage.write(
               key: StorageKeys.isFirstLogin,
               value: isFirst ? 'true' : 'false'
           );
           ref.read(isFirstLoginProvider.notifier).state = isFirst;
-
           print('✅ User authenticated. Has username: $hasUsername, First login: $isFirst');
         } catch (e) {
-          print('❌ Token invalid, logging out');
+          print('❌ Token invalid, logging out: $e');
           await logout();
         }
       } else {
@@ -129,13 +118,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> login(String email, String password) async {
     print('🔐 Attempting login with: $email');
     state = state.copyWith(isLoading: true, error: null);
-
     try {
       final response = await _authService.login(
         email: email,
         password: password,
       );
-
       final token = response['token'] ?? response['access'];
       if (token != null) {
         await _apiService.saveToken(token);
@@ -143,58 +130,34 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
         if (response['user'] != null) {
           ref.read(currentUserDataProvider.notifier).state = response['user'];
-
-          // ✅ VERIFICAR SE O USUÁRIO TEM USERNAME
           final hasUsername = response['user']['username'] != null &&
               response['user']['username'].toString().isNotEmpty;
-
           final isFirstLogin = !hasUsername;
-
           await storage.write(
               key: StorageKeys.isFirstLogin,
               value: isFirstLogin ? 'true' : 'false'
           );
-
           ref.read(isFirstLoginProvider.notifier).state = isFirstLogin;
-
-          print('✅ Login successful. Username: ${response['user']['username']}, First login: $isFirstLogin');
         }
-
-        state = state.copyWith(
-          isAuthenticated: true,
-          isLoading: false,
-        );
-
+        state = state.copyWith(isAuthenticated: true, isLoading: false);
         print('✅ Login successful');
       } else {
         throw Exception('Token não recebido do servidor');
       }
     } on ApiException catch (e) {
       print('❌ Login error: ${e.message}');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.message,
-      );
+      state = state.copyWith(isLoading: false, error: e.message);
       throw ApiException(statusCode: e.statusCode, message: e.message);
     } catch (e) {
       print('❌ Login error: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Erro no login. Tente novamente.',
-      );
+      state = state.copyWith(isLoading: false, error: 'Erro no login. Tente novamente.');
       rethrow;
     }
   }
 
-  Future<void> signup(
-      String name,
-      String email,
-      String phone,
-      String password,
-      ) async {
+  Future<void> signup(String name, String email, String phone, String password) async {
     print('📝 Attempting signup with: $email');
     state = state.copyWith(isLoading: true, error: null);
-
     try {
       final response = await _authService.register(
         name: name,
@@ -202,61 +165,47 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
         phone: phone.isNotEmpty ? phone : null,
       );
-
       final token = response['token'] ?? response['access'];
       if (token != null) {
         await _apiService.saveToken(token);
-        // ✅ NO SIGNUP, SEMPRE É PRIMEIRO LOGIN (USUÁRIO NOVO)
         await storage.write(key: StorageKeys.isFirstLogin, value: 'true');
         await storage.write(key: StorageKeys.userEmail, value: email);
-
         if (response['user'] != null) {
           ref.read(currentUserDataProvider.notifier).state = response['user'];
         }
-
-        state = state.copyWith(
-          isAuthenticated: true,
-          isLoading: false,
-        );
+        state = state.copyWith(isAuthenticated: true, isLoading: false);
         ref.read(isFirstLoginProvider.notifier).state = true;
-
         print('✅ Signup successful');
       } else {
         throw Exception('Token não recebido do servidor');
       }
     } on ApiException catch (e) {
       print('❌ Signup error: ${e.message}');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.message,
-      );
+      state = state.copyWith(isLoading: false, error: e.message);
       throw ApiException(statusCode: e.statusCode, message: e.message);
     } catch (e) {
       print('❌ Signup error: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Erro no cadastro. Tente novamente.',
-      );
+      state = state.copyWith(isLoading: false, error: 'Erro no cadastro. Tente novamente.');
       rethrow;
     }
   }
 
   Future<void> logout() async {
     print('🚪 Logging out...');
-
     try {
-      await _authService.logout();
+      if (!USE_MOCK_SERVICES) {
+        await _authService.logout();
+      }
     } catch (e) {
       print('❌ Logout error: $e');
     } finally {
+      // await _apiService.deleteToken();
       await storage.delete(key: StorageKeys.jwt);
       await storage.delete(key: StorageKeys.isFirstLogin);
       await storage.delete(key: StorageKeys.userEmail);
-
       ref.read(currentUserDataProvider.notifier).state = null;
       state = state.copyWith(isAuthenticated: false);
       ref.read(isFirstLoginProvider.notifier).state = true;
-
       print('✅ Logout complete');
     }
   }
@@ -267,14 +216,67 @@ class AuthNotifier extends StateNotifier<AuthState> {
     ref.read(isFirstLoginProvider.notifier).state = false;
   }
 
-  Future<void> forceLogin() async {
-    print('🧪 Force login for testing...');
-    final fakeToken = 'fake-jwt-token-for-testing';
-    await _apiService.saveToken(fakeToken);
-    await storage.write(key: StorageKeys.isFirstLogin, value: 'false');
+  // Funções de Seguir
+  Future<bool> toggleFollow(int userIdToFollow) async {
+    final authService = ref.read(authServiceProvider);
+    final isFollowing = await authService.toggleFollow(userIdToFollow);
 
-    state = state.copyWith(isAuthenticated: true);
-    ref.read(isFirstLoginProvider.notifier).state = false;
-    print('✅ Force login complete');
+    // Invalida os providers para forçar a UI a recarregar
+    ref.invalidate(userProfileProvider(userIdToFollow));
+    ref.invalidate(userProfileProvider(ref.read(currentUserDataProvider)!['id']));
+    ref.invalidate(followersProvider(userIdToFollow));
+    ref.invalidate(followingProvider(ref.read(currentUserDataProvider)!['id']));
+
+    return isFollowing;
   }
 }
+
+// ================== NOVOS PROVIDERS (IDs como int) ==================
+
+final userProfileProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, int>((ref, userId) async {
+  final currentUserId = (ref.watch(currentUserDataProvider) as Map<String, dynamic>?)?['id'] as int?;
+  if (userId == currentUserId) {
+    final currentUserData = ref.watch(currentUserDataProvider);
+    if (currentUserData != null) {
+      return currentUserData;
+    }
+  }
+
+  final authService = ref.watch(authServiceProvider);
+  return authService.getUserById(userId);
+});
+
+final searchUsersProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>((ref, query) async {
+  if (query.isEmpty) {
+    return [];
+  }
+  final authService = ref.watch(authServiceProvider);
+  return authService.searchUsers(query);
+});
+
+// Provedores para listas de seguidores/seguindo
+final followersProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, int>((ref, userId) async {
+  final authService = ref.watch(authServiceProvider);
+  return authService.getFollowers(userId);
+});
+
+final followingProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, int>((ref, userId) async {
+  final authService = ref.watch(authServiceProvider);
+  return authService.getFollowing(userId);
+});
+
+// Provider para o estado de "seguir"
+final followStateProvider = StateProvider.autoDispose.family<bool, int>((ref, userId) {
+  final currentUserId = ref.watch(currentUserDataProvider)?['id'];
+  if (currentUserId == null) return false;
+
+  // Assiste à lista de "seguindo" do usuário logado
+  final followingListAsync = ref.watch(followingProvider(currentUserId));
+
+  // Retorna true se o userId estiver na lista de "seguindo"
+  return followingListAsync.when(
+    data: (list) => list.any((user) => user['id'] == userId),
+    loading: () => false, // TODO: Poderia guardar o estado anterior
+    error: (e,s) => false,
+  );
+});

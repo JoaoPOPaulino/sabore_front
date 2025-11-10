@@ -13,136 +13,140 @@ class UserInfoScreen extends ConsumerWidget {
 
     if (userData == null) {
       return Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFFFA9500))),
       );
     }
 
     return Scaffold(
-      backgroundColor: Color(0xFFFFF8F0),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: GestureDetector(
-          onTap: () => context.pop(),
-          child: Container(
-            margin: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Color(0xFF7CB342),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.arrow_back_ios_new,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-        ),
-        title: Text(
-          'Informações',
-          style: TextStyle(
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
-            color: Color(0xFF3C4D18),
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Column(
-                children: [
-                  ProfileImageWidget(userData: userData, radius: 50),
-                  SizedBox(height: 16),
-                  Text(
-                    userData['name'] ?? 'Usuário',
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 24,
-                      color: Color(0xFF3C4D18),
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    '@${userData['username'] ?? 'username'}',
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 16,
-                      color: Color(0xFF666666),
-                    ),
-                  ),
-                ],
+      backgroundColor: Color(0xFFFAFAFA),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: Color(0xFFFAFAFA),
+            elevation: 0,
+            pinned: true,
+            // ✨ CORREÇÃO AQUI: Aumentado de 250 para 260
+            expandedHeight: 260.0,
+            leading: GestureDetector(
+              onTap: () => context.pop(),
+              child: Container(
+                margin: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Color(0xFF7CB342),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.arrow_back, // Ícone padrão
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
-
-            SizedBox(height: 30),
-
-            _buildInfoSection(
-              'Email',
-              userData['email'] ?? 'Não informado',
-              Icons.email_outlined,
-            ),
-
-            _buildInfoSection(
-              'Telefone',
-              userData['phone'] ?? 'Não informado',
-              Icons.phone_outlined,
-            ),
-
-            _buildInfoSection(
-              'Username',
-              userData['username'] ?? 'Não definido',
-              Icons.alternate_email,
-            ),
-
-            _buildInfoSection(
-              'Membro desde',
-              'Recentemente',
-              Icons.calendar_today_outlined,
-            ),
-
-            SizedBox(height: 30),
-
-            Text(
-              'Estatísticas',
+            title: Text(
+              'Informações',
               style: TextStyle(
                 fontFamily: 'Montserrat',
                 fontWeight: FontWeight.w700,
-                fontSize: 18,
+                fontSize: 20,
                 color: Color(0xFF3C4D18),
               ),
             ),
-            SizedBox(height: 12),
+            flexibleSpace: FlexibleSpaceBar(
+              background: Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 80.0), // Ajusta para baixo do appbar
+                  child: Column(
+                    children: [
+                      ProfileImageWidget(userData: userData, radius: 50),
+                      SizedBox(height: 16),
+                      Text(
+                        userData['name'] ?? 'Usuário',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 24,
+                          color: Color(0xFF3C4D18),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '@${userData['username'] ?? 'username'}',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 16,
+                          color: Color(0xFF666666),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
 
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard('0', 'Receitas\npublicadas'),
+          // O resto do seu conteúdo
+          SliverPadding(
+            padding: EdgeInsets.all(20),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildInfoSection(
+                  'Email',
+                  userData['email'] ?? 'Não informado',
+                  Icons.email_outlined,
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard('0', 'Total de\nseguidores'),
+                _buildInfoSection(
+                  'Telefone',
+                  userData['phone'] ?? 'Não informado',
+                  Icons.phone_outlined,
                 ),
-              ],
+                _buildInfoSection(
+                  'Username',
+                  userData['username'] ?? 'Não definido',
+                  Icons.alternate_email,
+                ),
+                _buildInfoSection(
+                  'Membro desde',
+                  'Recentemente', // TODO: Formatar data
+                  Icons.calendar_today_outlined,
+                ),
+                SizedBox(height: 30),
+                Text(
+                  'Estatísticas',
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    color: Color(0xFF3C4D18),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard('0', 'Receitas\npublicadas'),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard('0', 'Total de\nseguidores'),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard('0', 'Receitas\nsalvas'),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard('⭐', 'Avaliação\nmédia'),
+                    ),
+                  ],
+                ),
+              ]),
             ),
-            SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard('0', 'Receitas\nsalvas'),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard('⭐', 'Avaliação\nmédia'),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -1,13 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/recipe.dart';
+import 'package:sabore_app/services/mock_recipe_service.dart';
+import '../models/models.dart';
 import '../services/recipe_service.dart';
+import '../constants.dart';
 
 // Providers de serviços
-final recipeServiceProvider = Provider((ref) => RecipeService());
-final recipeBookServiceProvider = Provider((ref) => RecipeBookService());
-final reviewServiceProvider = Provider((ref) => ReviewService());
+final recipeServiceProvider = Provider<dynamic>((ref) {
+  return USE_MOCK_SERVICES ? MockRecipeService() : RecipeService();
+});
 
-// ========== ESTADO DAS RECEITAS ==========
+final recipeBookServiceProvider = Provider((ref) => MockRecipeBookService());
+final reviewServiceProvider = Provider((ref) => MockReviewService());
+
+// ========== ESTADO DAS RECEITAS (Notifier) ==========
 class RecipesState {
   final List<Recipe> recipes;
   final bool isLoading;
@@ -40,13 +45,11 @@ class RecipesState {
   }
 }
 
-// ========== NOTIFIER DE RECEITAS ==========
 class RecipesNotifier extends StateNotifier<RecipesState> {
-  final RecipeService _recipeService;
+  final dynamic _recipeService;
 
   RecipesNotifier(this._recipeService) : super(RecipesState());
 
-  /// Carregar receitas
   Future<void> loadRecipes({
     String? category,
     String? search,
@@ -57,14 +60,12 @@ class RecipesNotifier extends StateNotifier<RecipesState> {
     } else {
       state = state.copyWith(isLoading: true, error: null);
     }
-
     try {
       final recipes = await _recipeService.getRecipes(
         category: category,
         search: search,
         page: refresh ? 1 : state.currentPage,
       );
-
       if (refresh) {
         state = state.copyWith(
           recipes: recipes,
@@ -81,14 +82,10 @@ class RecipesNotifier extends StateNotifier<RecipesState> {
         );
       }
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  /// Adicionar receita
   Future<void> addRecipe(Recipe recipe) async {
     try {
       final newRecipe = await _recipeService.createRecipe(recipe);
@@ -101,11 +98,10 @@ class RecipesNotifier extends StateNotifier<RecipesState> {
     }
   }
 
-  /// Atualizar receita
   Future<void> updateRecipe(int id, Recipe recipe) async {
     try {
       final updatedRecipe = await _recipeService.updateRecipe(id, recipe);
-      final updatedList = state.recipes.map((r) {
+      final List<Recipe> updatedList = state.recipes.map<Recipe>((r) {
         return r.id == id ? updatedRecipe : r;
       }).toList();
       state = state.copyWith(recipes: updatedList);
@@ -115,7 +111,6 @@ class RecipesNotifier extends StateNotifier<RecipesState> {
     }
   }
 
-  /// Deletar receita
   Future<void> deleteRecipe(int id) async {
     try {
       await _recipeService.deleteRecipe(id);
@@ -127,9 +122,8 @@ class RecipesNotifier extends StateNotifier<RecipesState> {
     }
   }
 
-  /// Toggle curtir receita
   Future<void> toggleLike(int id) async {
-    // Atualiza UI otimisticamente
+    final originalList = state.recipes;
     final updatedList = state.recipes.map((r) {
       if (r.id == id) {
         return r.copyWith(
@@ -141,143 +135,49 @@ class RecipesNotifier extends StateNotifier<RecipesState> {
     }).toList();
     state = state.copyWith(recipes: updatedList);
 
-    // Faz a chamada à API
     try {
-      final recipe = state.recipes.firstWhere((r) => r.id == id);
+      final recipe = updatedList.firstWhere((r) => r.id == id);
       if (recipe.isLiked) {
         await _recipeService.likeRecipe(id);
       } else {
         await _recipeService.unlikeRecipe(id);
       }
     } catch (e) {
-      // Reverte se falhar
-      final revertedList = state.recipes.map((r) {
-        if (r.id == id) {
-          return r.copyWith(
-            isLiked: !r.isLiked,
-            likesCount: r.isLiked ? r.likesCount + 1 : r.likesCount - 1,
-          );
-        }
-        return r;
-      }).toList();
-      state = state.copyWith(recipes: revertedList, error: e.toString());
-    }
-  }
-
-  /// Toggle salvar receita
-  Future<void> toggleSave(int id) async {
-    final updatedList = state.recipes.map((r) {
-      if (r.id == id) {
-        return r.copyWith(isSaved: !r.isSaved);
-      }
-      return r;
-    }).toList();
-    state = state.copyWith(recipes: updatedList);
-
-    try {
-      await _recipeService.saveRecipe(id);
-    } catch (e) {
-      // Reverte se falhar
-      final revertedList = state.recipes.map((r) {
-        if (r.id == id) {
-          return r.copyWith(isSaved: !r.isSaved);
-        }
-        return r;
-      }).toList();
-      state = state.copyWith(recipes: revertedList, error: e.toString());
+      state = state.copyWith(recipes: originalList, error: e.toString());
     }
   }
 }
 
-// Provider principal de receitas
 final recipesProvider = StateNotifierProvider<RecipesNotifier, RecipesState>((ref) {
   final service = ref.watch(recipeServiceProvider);
   return RecipesNotifier(service);
 });
 
-// ========== PROVIDER PARA RECEITA ESPECÍFICA ==========
-final recipeDetailProvider = FutureProvider.family<Recipe, int>((ref, id) async {
+// ========== PROVIDERS DE LEITURA (Future) ==========
+
+final recipeDetailProvider = FutureProvider.autoDispose.family<Recipe, int>((ref, id) async {
   final service = ref.watch(recipeServiceProvider);
   return await service.getRecipeById(id);
 });
 
-// ========== PROVIDER PARA RECEITAS DO USUÁRIO ==========
-final userRecipesProvider = FutureProvider.family<List<Recipe>, int>((ref, userId) async {
+final userRecipesProvider = FutureProvider.autoDispose.family<List<Recipe>, int>((ref, userId) async {
   final service = ref.watch(recipeServiceProvider);
   return await service.getUserRecipes(userId);
 });
 
-// ========== ESTADO DOS LIVROS DE RECEITAS ==========
-class RecipeBooksState {
-  final List<RecipeBook> books;
-  final bool isLoading;
-  final String? error;
-
-  RecipeBooksState({
-    this.books = const [],
-    this.isLoading = false,
-    this.error,
-  });
-
-  RecipeBooksState copyWith({
-    List<RecipeBook>? books,
-    bool? isLoading,
-    String? error,
-  }) {
-    return RecipeBooksState(
-      books: books ?? this.books,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-    );
-  }
+// ========== PROVIDERS MOCKADOS (Exemplo) ==========
+class MockRecipeBookService {
+  Future<List<RecipeBook>> getRecipeBooks() async => [];
+  Future<void> addRecipeToBook(int bookId, int recipeId) async {}
+}
+class MockReviewService {
+  Future<List<Review>> getRecipeReviews(int recipeId) async => [];
 }
 
-// ========== NOTIFIER DE LIVROS DE RECEITAS ==========
-class RecipeBooksNotifier extends StateNotifier<RecipeBooksState> {
-  final RecipeBookService _service;
-
-  RecipeBooksNotifier(this._service) : super(RecipeBooksState());
-
-  Future<void> loadBooks() async {
-    state = state.copyWith(isLoading: true, error: null);
-
-    try {
-      final books = await _service.getRecipeBooks();
-      state = state.copyWith(books: books, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
-  Future<void> createBook(RecipeBook book) async {
-    try {
-      final newBook = await _service.createRecipeBook(book);
-      state = state.copyWith(books: [...state.books, newBook]);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-      rethrow;
-    }
-  }
-
-  Future<void> addRecipeToBook(int bookId, int recipeId) async {
-    try {
-      await _service.addRecipeToBook(bookId, recipeId);
-      // Recarrega os livros para atualizar a contagem
-      await loadBooks();
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-      rethrow;
-    }
-  }
-}
-
-final recipeBooksProvider = StateNotifierProvider<RecipeBooksNotifier, RecipeBooksState>((ref) {
-  final service = ref.watch(recipeBookServiceProvider);
-  return RecipeBooksNotifier(service);
+final recipeBooksProvider = FutureProvider<List<RecipeBook>>((ref) async {
+  return ref.watch(recipeBookServiceProvider).getRecipeBooks();
 });
 
-// ========== PROVIDER PARA REVIEWS ==========
 final recipeReviewsProvider = FutureProvider.family<List<Review>, int>((ref, recipeId) async {
-  final service = ref.watch(reviewServiceProvider);
-  return await service.getRecipeReviews(recipeId);
+  return ref.watch(reviewServiceProvider).getRecipeReviews(recipeId);
 });
