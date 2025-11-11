@@ -6,7 +6,6 @@ import '../services/api_service.dart';
 import '../constants.dart';
 import '../models/models.dart';
 
-// Providers
 final authServiceProvider = Provider<dynamic>((ref) {
   return USE_MOCK_SERVICES ? MockAuthService() : AuthService();
 });
@@ -199,7 +198,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       print('❌ Logout error: $e');
     } finally {
-      // await _apiService.deleteToken();
       await storage.delete(key: StorageKeys.jwt);
       await storage.delete(key: StorageKeys.isFirstLogin);
       await storage.delete(key: StorageKeys.userEmail);
@@ -215,33 +213,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await storage.write(key: StorageKeys.isFirstLogin, value: 'false');
     ref.read(isFirstLoginProvider.notifier).state = false;
   }
-
-  // Funções de Seguir
-  Future<bool> toggleFollow(int userIdToFollow) async {
-    final authService = ref.read(authServiceProvider);
-    final isFollowing = await authService.toggleFollow(userIdToFollow);
-
-    // Invalida os providers para forçar a UI a recarregar
-    ref.invalidate(userProfileProvider(userIdToFollow));
-    ref.invalidate(userProfileProvider(ref.read(currentUserDataProvider)!['id']));
-    ref.invalidate(followersProvider(userIdToFollow));
-    ref.invalidate(followingProvider(ref.read(currentUserDataProvider)!['id']));
-
-    return isFollowing;
-  }
 }
 
-// ================== NOVOS PROVIDERS (IDs como int) ==================
-
 final userProfileProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, int>((ref, userId) async {
-  final currentUserId = (ref.watch(currentUserDataProvider) as Map<String, dynamic>?)?['id'] as int?;
+  final currentUserId = (ref.watch(currentUserDataProvider))?['id'];
   if (userId == currentUserId) {
     final currentUserData = ref.watch(currentUserDataProvider);
     if (currentUserData != null) {
       return currentUserData;
     }
   }
-
   final authService = ref.watch(authServiceProvider);
   return authService.getUserById(userId);
 });
@@ -254,7 +235,6 @@ final searchUsersProvider = FutureProvider.autoDispose.family<List<Map<String, d
   return authService.searchUsers(query);
 });
 
-// Provedores para listas de seguidores/seguindo
 final followersProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, int>((ref, userId) async {
   final authService = ref.watch(authServiceProvider);
   return authService.getFollowers(userId);
@@ -265,18 +245,23 @@ final followingProvider = FutureProvider.autoDispose.family<List<Map<String, dyn
   return authService.getFollowing(userId);
 });
 
-// Provider para o estado de "seguir"
+final followersCountProvider = FutureProvider.autoDispose.family<int, int>((ref, userId) async {
+  final followers = await ref.watch(followersProvider(userId).future);
+  return followers.length;
+});
+
+final followingCountProvider = FutureProvider.autoDispose.family<int, int>((ref, userId) async {
+  final following = await ref.watch(followingProvider(userId).future);
+  return following.length;
+});
+
 final followStateProvider = StateProvider.autoDispose.family<bool, int>((ref, userId) {
   final currentUserId = ref.watch(currentUserDataProvider)?['id'];
   if (currentUserId == null) return false;
-
-  // Assiste à lista de "seguindo" do usuário logado
   final followingListAsync = ref.watch(followingProvider(currentUserId));
-
-  // Retorna true se o userId estiver na lista de "seguindo"
   return followingListAsync.when(
     data: (list) => list.any((user) => user['id'] == userId),
-    loading: () => false, // TODO: Poderia guardar o estado anterior
-    error: (e,s) => false,
+    loading: () => false,
+    error: (e, s) => false,
   );
 });

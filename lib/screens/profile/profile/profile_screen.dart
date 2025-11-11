@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sabore_app/models/models.dart';
 import 'package:sabore_app/providers/recipe_provider.dart';
 import 'package:sabore_app/providers/auth_provider.dart';
+import 'package:sabore_app/providers/recipe_book_provider.dart';
 import 'package:sabore_app/widgets/profile_image_widget.dart';
 import 'package:sabore_app/widgets/select_recipe_book_modal.dart';
 import 'package:share_plus/share_plus.dart';
@@ -21,14 +22,15 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String selectedTab = 'Receitas';
+  bool _isFollowLoading = false;
 
-  // Mocks para abas não implementadas
   final List<String> _mockGalleryImages = [
     'assets/images/chef.jpg',
     'assets/images/chef.jpg',
     'assets/images/chef.jpg',
     'assets/images/chef.jpg',
   ];
+
   final List<Map<String, dynamic>> _mockReviews = [
     {
       'authorName': 'Carlos Souza',
@@ -40,12 +42,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Converte o ID da rota (String) para int
     final int userIdAsInt = int.tryParse(widget.userId) ?? 0;
-
-    // Busca o perfil do usuário (seu ou de outro)
     final profileDataAsync = ref.watch(userProfileProvider(userIdAsInt));
-    // Pega o ID do usuário logado para comparar
     final currentUserId = (ref.watch(currentUserDataProvider))?['id'];
     final bool isOwnProfile = userIdAsInt == currentUserId;
 
@@ -59,7 +57,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: _buildHeaderWithProfile(profileData, isOwnProfile),
               ),
               SliverToBoxAdapter(
-                child: _buildStatsSection(profileData, isOwnProfile),
+                child: _buildStatsSection(profileData, isOwnProfile, userIdAsInt),
               ),
               SliverToBoxAdapter(
                 child: _buildTabButtons(isOwnProfile),
@@ -178,7 +176,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           color: Colors.white.withOpacity(0.9),
           shape: BoxShape.circle,
           boxShadow: [
-            BoxShadow( color: Colors.black.withOpacity(0.2), blurRadius: 8, offset: Offset(0, 2), ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
           ],
         ),
         child: Icon(
@@ -247,7 +249,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         imageProvider = FileImage(File(mobilePath));
       }
     } else {
-      // Fallback se os dados estiverem malformados
       return Container(color: Color(0xFFFFF3E0));
     }
 
@@ -261,7 +262,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildStatsSection(Map<String, dynamic> userData, bool isOwnProfile) {
+  Widget _buildStatsSection(Map<String, dynamic> userData, bool isOwnProfile, int userIdAsInt) {
+    final followersCountAsync = ref.watch(followersCountProvider(userIdAsInt));
+    final followingCountAsync = ref.watch(followingCountProvider(userIdAsInt));
+    final currentUserId = ref.watch(currentUserDataProvider)?['id'] as int?;
+
     return Container(
       margin: EdgeInsets.fromLTRB(20, 80, 20, 0),
       child: Column(
@@ -287,10 +292,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           SizedBox(height: 20),
 
-          if (!isOwnProfile)
-            _buildFollowButtonWide(context)
-          else
-            _buildEditProfileButton(context),
+          if (!isOwnProfile) _buildFollowButton(context, userIdAsInt),
 
           SizedBox(height: 20),
 
@@ -312,9 +314,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               children: [
                 _buildStatColumn(userData['recipesCount'].toString(), 'Receitas'),
                 Container(height: 40, width: 1, color: Color(0xFFE0E0E0)),
-                _buildStatColumn(userData['followersCount'].toString(), 'Seguidores'),
+                followersCountAsync.when(
+                  data: (count) => _buildStatColumn(count.toString(), 'Seguidores'),
+                  loading: () => _buildStatColumn('...', 'Seguidores'),
+                  error: (_, __) => _buildStatColumn(userData['followersCount'].toString(), 'Seguidores'),
+                ),
                 Container(height: 40, width: 1, color: Color(0xFFE0E0E0)),
-                _buildStatColumn(userData['followingCount'].toString(), 'Seguindo'),
+                isOwnProfile && currentUserId != null
+                    ? ref.watch(followingCountProvider(currentUserId)).when(
+                  data: (count) => _buildStatColumn(count.toString(), 'Seguindo'),
+                  loading: () => _buildStatColumn('...', 'Seguindo'),
+                  error: (_, __) => _buildStatColumn(userData['followingCount'].toString(), 'Seguindo'),
+                )
+                    : followingCountAsync.when(
+                  data: (count) => _buildStatColumn(count.toString(), 'Seguindo'),
+                  loading: () => _buildStatColumn('...', 'Seguindo'),
+                  error: (_, __) => _buildStatColumn(userData['followingCount'].toString(), 'Seguindo'),
+                ),
               ],
             ),
           ),
@@ -323,41 +339,290 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildEditProfileButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () => context.push('/edit-profile'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFFFA9500),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-          padding: EdgeInsets.symmetric(vertical: 14),
+  Widget _buildFollowButton(BuildContext context, int userIdAsInt) {
+    final isFollowing = ref.watch(followStateProvider(userIdAsInt));
+
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            child: ElevatedButton(
+              onPressed: _isFollowLoading ? null : () => _handleFollowToggle(userIdAsInt),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isFollowing ? Colors.white : Color(0xFF7CB342),
+                foregroundColor: isFollowing ? Color(0xFF7CB342) : Colors.white,
+                side: BorderSide(
+                  color: Color(0xFF7CB342),
+                  width: 2,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 16),
+                elevation: isFollowing ? 0 : 4,
+                shadowColor: Color(0xFF7CB342).withOpacity(0.3),
+              ),
+              child: _isFollowLoading
+                  ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isFollowing ? Color(0xFF7CB342) : Colors.white,
+                  ),
+                ),
+              )
+                  : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isFollowing ? Icons.check_circle : Icons.person_add,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    isFollowing ? 'Seguindo' : 'Seguir',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        child: Text(
-          'Editar Perfil',
-          style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.w600, fontSize: 16, color: Colors.white),
+
+        SizedBox(width: 12),
+
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFFA9500), Color(0xFFFF6B35)],
+            ),
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xFFFA9500).withOpacity(0.3),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(25),
+              onTap: _handleMessage,
+              child: Container(
+                padding: EdgeInsets.all(16),
+                child: Icon(
+                  Icons.chat_bubble_outline,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildFollowButtonWide(BuildContext context) {
-    bool isFollowing = false; // TODO: Lógica real de seguir
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () { /* TODO: Lógica de seguir */ },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isFollowing ? Colors.white : Color(0xFF7CB342),
-          foregroundColor: isFollowing ? Color(0xFF7CB342) : Colors.white,
-          side: isFollowing ? BorderSide(color: Color(0xFF7CB342), width: 2) : BorderSide.none,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-          padding: EdgeInsets.symmetric(vertical: 14),
-        ),
-        child: Text(
-          isFollowing ? 'Seguindo' : 'Seguir',
-          style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.w600, fontSize: 16),
-        ),
+  Future<void> _handleFollowToggle(int userIdToFollow) async {
+    final authService = ref.read(authServiceProvider);
+    final currentUserId = ref.read(currentUserDataProvider)?['id'] as int?;
+
+    if (currentUserId == null) return;
+
+    setState(() {
+      _isFollowLoading = true;
+    });
+
+    try {
+      final isNowFollowing = await authService.toggleFollow(userIdToFollow);
+
+      ref.invalidate(followersCountProvider(userIdToFollow));
+      ref.invalidate(followingCountProvider(currentUserId));
+      ref.invalidate(followersProvider(userIdToFollow));
+      ref.invalidate(followingProvider(currentUserId));
+      ref.invalidate(followStateProvider(userIdToFollow));
+      ref.invalidate(userProfileProvider(userIdToFollow));
+      ref.invalidate(userProfileProvider(currentUserId));
+
+      if (mounted) {
+        setState(() {
+          _isFollowLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  isNowFollowing ? Icons.check_circle : Icons.remove_circle_outline,
+                  color: Colors.white,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    isNowFollowing
+                        ? 'Você começou a seguir este chef!'
+                        : 'Você deixou de seguir este chef',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: isNowFollowing ? Color(0xFF7CB342) : Color(0xFF999999),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            margin: EdgeInsets.all(16),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isFollowLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao seguir/deixar de seguir'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _handleMessage() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildMessageModal(),
+    );
+  }
+
+  Widget _buildMessageModal() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            margin: EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Color(0xFFE0E0E0),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          SizedBox(height: 20),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Enviar Mensagem',
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF3C4D18),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          Divider(),
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFFFF3E0),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.chat_bubble_outline,
+                        size: 64,
+                        color: Color(0xFFFA9500),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    Text(
+                      'Mensagens em Breve!',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF3C4D18),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Estamos trabalhando nesta funcionalidade.\nEm breve você poderá conversar com outros chefs!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 14,
+                        color: Color(0xFF999999),
+                        height: 1.5,
+                      ),
+                    ),
+                    SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFFA9500),
+                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      child: Text(
+                        'Entendi',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -397,7 +662,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           SizedBox(width: 8),
           Expanded(child: _buildTabButton('Galeria')),
           SizedBox(width: 8),
-
           if (isOwnProfile) ...[
             Expanded(child: _buildTabButton('Salvos')),
           ] else ...[
@@ -450,7 +714,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     switch (selectedTab) {
       case 'Receitas':
         final userRecipes = ref.watch(userRecipesProvider(userId));
-
         return userRecipes.when(
           data: (recipes) {
             if (recipes.isEmpty) {
@@ -478,23 +741,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
         );
-
       case 'Galeria':
         return _buildGalleryGrid();
-
       case 'Avaliações':
         return _buildReviewsList();
-
       case 'Salvos':
         if (!isOwnProfile) return SliverToBoxAdapter();
 
-        // TODO: Substituir por um provider real de receitas salvas
-        return _buildEmptyStateSliver(
-          icon: Icons.bookmark_border,
-          title: 'Nenhuma receita salva',
-          subtitle: 'Suas receitas favoritas aparecerão aqui.',
-        );
+        final currentUserId = ref.watch(currentUserDataProvider)?['id'] as int?;
+        if (currentUserId == null) {
+          return _buildEmptyStateSliver(
+            icon: Icons.bookmark_border,
+            title: 'Erro',
+            subtitle: 'Não foi possível carregar receitas salvas.',
+          );
+        }
 
+        final savedRecipesAsync = ref.watch(savedRecipesProvider(currentUserId));
+
+        return savedRecipesAsync.when(
+          data: (recipes) {
+            if (recipes.isEmpty) {
+              return _buildEmptyStateSliver(
+                icon: Icons.bookmark_border,
+                title: 'Nenhuma receita salva',
+                subtitle: 'Suas receitas favoritas aparecerão aqui.',
+              );
+            }
+            return _buildRecipesList(recipes);
+          },
+          loading: () => SliverToBoxAdapter(
+            child: Container(
+              height: 200,
+              child: Center(child: CircularProgressIndicator(color: Color(0xFFFA9500))),
+            ),
+          ),
+          error: (err, stack) => _buildEmptyStateSliver(
+            icon: Icons.error_outline,
+            title: 'Erro ao carregar',
+            subtitle: 'Não foi possível carregar as receitas salvas.',
+          ),
+        );
       default:
         return SliverToBoxAdapter(child: SizedBox.shrink());
     }
@@ -599,9 +886,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Row(
                 children: List.generate(5, (i) {
                   return Icon(
-                    i < (review['rating'] as double).floor()
-                        ? Icons.star
-                        : Icons.star_border,
+                    i < (review['rating'] as double).floor() ? Icons.star : Icons.star_border,
                     color: Color(0xFFFA9500),
                     size: 18,
                   );
@@ -699,7 +984,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       String author,
       double rating,
       String imagePath,
-      int recipeId, { // Mudado para int
+      int recipeId, {
         bool isPopular = false,
       }) {
     ImageProvider imageProvider;
@@ -712,7 +997,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return GestureDetector(
       onTap: () {
         print('🍳 Recipe tapped: $title');
-        context.push('/recipe/$recipeId'); // Envia o int como string
+        context.push('/recipe/$recipeId');
       },
       child: Container(
         height: 140,
@@ -804,7 +1089,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             Padding(
               padding: EdgeInsets.only(right: 12),
-              child: _buildBookmarkButton(title),
+              child: _buildBookmarkButton(title, recipeId),
             ),
           ],
         ),
@@ -812,14 +1097,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildBookmarkButton(String title) {
+  Widget _buildBookmarkButton(String title, int recipeId) {
+    final currentUserId = ref.watch(currentUserDataProvider)?['id'] as int?;
+
+    if (currentUserId == null) {
+      return Container();
+    }
+
+    final isSavedAsync = ref.watch(
+      isRecipeSavedProvider(RecipeSaveParams(userId: currentUserId, recipeId: recipeId)),
+    );
+
     return GestureDetector(
       onTap: () {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => SelectRecipeBookModal(),
+          builder: (context) => SelectRecipeBookModal(recipeId: recipeId),
         ).then((selectedBook) {
           if (selectedBook != null) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -849,10 +1144,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ],
         ),
-        child: Icon(
-          Icons.bookmark_border,
-          color: Color(0xFFFA9500),
-          size: 20,
+        child: isSavedAsync.when(
+          data: (isSaved) => Icon(
+            isSaved ? Icons.bookmark : Icons.bookmark_border,
+            color: Color(0xFFFA9500),
+            size: 20,
+          ),
+          loading: () => Icon(
+            Icons.bookmark_border,
+            color: Color(0xFFFA9500),
+            size: 20,
+          ),
+          error: (_, __) => Icon(
+            Icons.bookmark_border,
+            color: Color(0xFFFA9500),
+            size: 20,
+          ),
         ),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../../providers/auth_provider.dart';
+import '../../providers/recipe_book_provider.dart';
 import '../../widgets/select_recipe_book_modal.dart';
 import '../../widgets/profile_image_widget.dart';
 import '../../widgets/phone_verification_banner.dart';
@@ -54,7 +55,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       backgroundColor: Color(0xFFFAFAFA),
       body: Stack(
         children: [
-          // Background gradient sutil
           Container(
             height: 300,
             decoration: BoxDecoration(
@@ -76,58 +76,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ✨ Header com saudação
                   _buildHeader(userData, firstName),
-
                   SizedBox(height: 20),
-
-                  // ✅ Banner de verificação
                   PhoneVerificationBanner(),
-
                   SizedBox(height: 24),
-
-                  // ✨ Search Bar
                   _buildSearchBar(),
-
                   SizedBox(height: 24),
-
-                  // ✨ Categorias em chips
                   _buildCategoriesSection(),
-
                   SizedBox(height: 32),
-
-                  // ✨ Receita do Dia (Featured)
                   _buildFeaturedRecipe(),
-
                   SizedBox(height: 32),
-
-                  // Carrossel de Estados
                   InfiniteStatesCarousel(),
-
                   SizedBox(height: 32),
-
-                  // ✨ Receitas Populares
                   _buildPopularRecipesSection(),
-
                   SizedBox(height: 32),
-
-                  // ✨ Novas Receitas
                   _buildNewRecipesSection(),
-
                   SizedBox(height: 20),
                 ],
               ),
             ),
           ),
 
-          // Bottom Navigation Bar
           _buildBottomNavigationBar(userData),
         ],
       ),
     );
   }
 
-  // ✨ HEADER COM SAUDAÇÃO
   Widget _buildHeader(Map<String, dynamic>? userData, String firstName) {
     return Row(
       children: [
@@ -185,7 +160,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
-  // ✨ SEARCH BAR
   Widget _buildSearchBar() {
     return GestureDetector(
       onTap: () {
@@ -233,7 +207,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
-  // ✨ CATEGORIAS EM CHIPS
   Widget _buildCategoriesSection() {
     final categories = [
       {'name': 'Juninas', 'icon': '🎉', 'color': Color(0xFFFA9500)},
@@ -317,7 +290,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
-  // ✨ RECEITA DESTACADA (FEATURED)
   Widget _buildFeaturedRecipe() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,7 +368,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 borderRadius: BorderRadius.circular(25),
                 child: Stack(
                   children: [
-                    // Imagem
                     Container(
                       decoration: BoxDecoration(
                         image: DecorationImage(
@@ -405,7 +376,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                         ),
                       ),
                     ),
-                    // Gradiente
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -418,7 +388,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                         ),
                       ),
                     ),
-                    // Conteúdo
                     Padding(
                       padding: EdgeInsets.all(20),
                       child: Column(
@@ -466,11 +435,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                         ],
                       ),
                     ),
-                    // Bookmark
                     Positioned(
                       top: 16,
                       right: 16,
-                      child: _buildBookmarkButton('Canjica zero lactose'),
+                      child: _buildBookmarkButton('Canjica zero lactose', 2),
                     ),
                   ],
                 ),
@@ -500,7 +468,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
-  // ✨ RECEITAS POPULARES
   Widget _buildPopularRecipesSection() {
     return Column(
       children: [
@@ -547,7 +514,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           'Chef Ana',
           4.8,
           'assets/images/chef.jpg',
-          '1',
+          1,
           isPopular: true,
         ),
         SizedBox(height: 12),
@@ -558,14 +525,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           'Chef Carlos',
           4.9,
           'assets/images/chef.jpg',
-          '3',
+          3,
           isPopular: true,
         ),
       ],
     );
   }
 
-  // ✨ NOVAS RECEITAS
   Widget _buildNewRecipesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,9 +550,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildSmallRecipeCard('Pizza Margherita', 'assets/images/chef.jpg', '4'),
-              _buildSmallRecipeCard('Tapioca Recheada', 'assets/images/chef.jpg', '5'),
-              _buildSmallRecipeCard('Pão de Queijo', 'assets/images/chef.jpg', '6'),
+              _buildSmallRecipeCard('Pizza Margherita', 'assets/images/chef.jpg', 4),
+              _buildSmallRecipeCard('Tapioca Recheada', 'assets/images/chef.jpg', 5),
+              _buildSmallRecipeCard('Pão de Queijo', 'assets/images/chef.jpg', 6),
             ],
           ),
         ),
@@ -594,7 +560,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
-  // ✨ CARD DE RECEITA MELHORADO
   Widget _buildRecipeCard(
       String title,
       String time,
@@ -602,7 +567,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       String author,
       double rating,
       String imagePath,
-      String recipeId, {
+      int recipeId, {
         bool isPopular = false,
       }) {
     return GestureDetector(
@@ -625,7 +590,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         ),
         child: Row(
           children: [
-            // Imagem
             Container(
               width: 120,
               decoration: BoxDecoration(
@@ -667,7 +631,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 ],
               ),
             ),
-            // Info
             Expanded(
               child: Padding(
                 padding: EdgeInsets.all(16),
@@ -731,10 +694,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 ),
               ),
             ),
-            // Bookmark
             Padding(
               padding: EdgeInsets.only(right: 12),
-              child: _buildBookmarkButton(title),
+              child: _buildBookmarkButton(title, recipeId),
             ),
           ],
         ),
@@ -742,8 +704,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
-  // ✨ CARD PEQUENO DE RECEITA
-  Widget _buildSmallRecipeCard(String title, String imagePath, String recipeId) {
+  Widget _buildSmallRecipeCard(String title, String imagePath, int recipeId) {
     return GestureDetector(
       onTap: () {
         print('🍳 Small recipe tapped: $title');
@@ -831,55 +792,79 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
-  // ✨ BOTÃO DE BOOKMARK
-  Widget _buildBookmarkButton(String title) {
-    return GestureDetector(
-      onTap: () {
-        print('🔖 Bookmark tapped: $title');
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => SelectRecipeBookModal(),
-        ).then((selectedBook) {
-          if (selectedBook != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Receita salva em "${selectedBook['title']}"!'),
-                backgroundColor: Color(0xFF7CB342),
-                duration: Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+  Widget _buildBookmarkButton(String title, int recipeId) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final currentUserId = ref.watch(currentUserDataProvider)?['id'] as int?;
+
+        if (currentUserId == null) {
+          return Container();
+        }
+
+        final isSavedAsync = ref.watch(
+          isRecipeSavedProvider(RecipeSaveParams(userId: currentUserId, recipeId: recipeId)),
+        );
+
+        return GestureDetector(
+          onTap: () {
+            print('🔖 Bookmark tapped: $title');
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => SelectRecipeBookModal(recipeId: recipeId),
+            ).then((selectedBook) {
+              if (selectedBook != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Receita salva em "${selectedBook['title']}"!'),
+                    backgroundColor: Color(0xFF7CB342),
+                    duration: Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
+              }
+            });
+          },
+          child: Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Color(0xFFFFF3E0),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
                 ),
-              ),
-            );
-          }
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Color(0xFFFFF3E0),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: Offset(0, 2),
+              ],
             ),
-          ],
-        ),
-        child: Icon(
-          Icons.bookmark_border,
-          color: Color(0xFFFA9500),
-          size: 20,
-        ),
-      ),
+            child: isSavedAsync.when(
+              data: (isSaved) => Icon(
+                isSaved ? Icons.bookmark : Icons.bookmark_border,
+                color: Color(0xFFFA9500),
+                size: 20,
+              ),
+              loading: () => Icon(
+                Icons.bookmark_border,
+                color: Color(0xFFFA9500),
+                size: 20,
+              ),
+              error: (_, __) => Icon(
+                Icons.bookmark_border,
+                color: Color(0xFFFA9500),
+                size: 20,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  // ✨ BOTTOM NAVIGATION BAR
   Widget _buildBottomNavigationBar(Map<String, dynamic>? userData) {
     return Positioned(
       left: 0,
@@ -967,7 +952,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 }
-// ✨ CARROSSEL DE ESTADOS MELHORADO
+
 class InfiniteStatesCarousel extends StatefulWidget {
   const InfiniteStatesCarousel({Key? key}) : super(key: key);
 
@@ -1027,7 +1012,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1079,7 +1063,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
         ),
         SizedBox(height: 16),
 
-        // Carrossel
         Container(
           height: 160,
           child: PageView.builder(
@@ -1106,7 +1089,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
                     print('🗺️ State tapped: ${state['name']}');
                     context.push('/states');
 
-                    // Reinicia timer após 5 segundos
                     Timer(Duration(seconds: 5), () {
                       if (mounted) {
                         _timer = Timer.periodic(Duration(seconds: 3), (timer) {
@@ -1137,7 +1119,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
                       borderRadius: BorderRadius.circular(20),
                       child: Stack(
                         children: [
-                          // Imagem
                           Container(
                             decoration: BoxDecoration(
                               image: DecorationImage(
@@ -1146,7 +1127,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
                               ),
                             ),
                           ),
-                          // Gradiente
                           Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
@@ -1159,7 +1139,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
                               ),
                             ),
                           ),
-                          // Badge de destaque
                           if (isCenter)
                             Positioned(
                               top: 12,
@@ -1187,7 +1166,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
                                 ),
                               ),
                             ),
-                          // Conteúdo
                           Positioned(
                             bottom: 12,
                             left: 12,
@@ -1195,7 +1173,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Emoji do estado
                                 Text(
                                   state['emoji']!,
                                   style: TextStyle(fontSize: 24),
@@ -1245,7 +1222,6 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
 
         SizedBox(height: 12),
 
-        // Indicadores de página melhorados
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(states.length, (index) {

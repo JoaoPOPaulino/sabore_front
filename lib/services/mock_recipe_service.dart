@@ -320,4 +320,111 @@ class MockRecipeService {
   Future<void> likeRecipe(int id) async { print('✅ [MOCK] Receita $id curtida'); }
   Future<void> unlikeRecipe(int id) async { print('✅ [MOCK] Receita $id descurtida'); }
   Future<void> saveRecipe(int id) async { print('✅ [MOCK] Receita $id salva'); }
+
+  static final Map<int, List<Map<String, dynamic>>> _savedRecipesByUser = {
+    1: [
+      {'recipeId': 2, 'bookTitle': 'Festa Junina', 'savedAt': DateTime.now().subtract(Duration(days: 5))},
+      {'recipeId': 6, 'bookTitle': 'Sobremesas', 'savedAt': DateTime.now().subtract(Duration(days: 2))},
+    ],
+    4: [
+      {'recipeId': 1, 'bookTitle': 'Festa Junina', 'savedAt': DateTime.now().subtract(Duration(days: 10))},
+    ],
+  };
+
+  static final Map<int, List<String>> _recipeBooksByUser = {
+    1: ['Festa Junina', 'Sobremesas', 'Favoritas'],
+    2: ['Minhas Receitas'],
+    4: ['Festa Junina', 'Vegano', 'Doces'],
+  };
+
+  Future<List<String>> getUserRecipeBooks(int userId) async {
+    await _simulateNetworkDelay();
+    return _recipeBooksByUser[userId] ?? ['Favoritas'];
+  }
+
+  Future<void> createRecipeBook(int userId, String bookName) async {
+    await _simulateNetworkDelay();
+    if (!_recipeBooksByUser.containsKey(userId)) {
+      _recipeBooksByUser[userId] = [];
+    }
+    _recipeBooksByUser[userId]!.add(bookName);
+    print('✅ [MOCK] Livro "$bookName" criado para usuário $userId');
+  }
+
+  Future<void> saveRecipeToBook(int userId, int recipeId, String bookTitle) async {
+    await _simulateNetworkDelay();
+
+    if (!_savedRecipesByUser.containsKey(userId)) {
+      _savedRecipesByUser[userId] = [];
+    }
+
+    final existingIndex = _savedRecipesByUser[userId]!.indexWhere(
+          (saved) => saved['recipeId'] == recipeId && saved['bookTitle'] == bookTitle,
+    );
+
+    if (existingIndex == -1) {
+      _savedRecipesByUser[userId]!.add({
+        'recipeId': recipeId,
+        'bookTitle': bookTitle,
+        'savedAt': DateTime.now(),
+      });
+      print('✅ [MOCK] Receita $recipeId salva em "$bookTitle" para usuário $userId');
+    }
+  }
+
+  Future<void> unsaveRecipeFromBook(int userId, int recipeId, String bookTitle) async {
+    await _simulateNetworkDelay();
+
+    if (_savedRecipesByUser.containsKey(userId)) {
+      _savedRecipesByUser[userId]!.removeWhere(
+            (saved) => saved['recipeId'] == recipeId && saved['bookTitle'] == bookTitle,
+      );
+      print('✅ [MOCK] Receita $recipeId removida de "$bookTitle" para usuário $userId');
+    }
+  }
+
+  Future<List<Recipe>> getSavedRecipes(int userId) async {
+    await _simulateNetworkDelay();
+
+    final savedRecipeIds = (_savedRecipesByUser[userId] ?? [])
+        .map((saved) => saved['recipeId'] as int)
+        .toSet()
+        .toList();
+
+    final savedRecipes = _recipes.where((r) => savedRecipeIds.contains(r.id)).toList();
+    print('✅ [MOCK] ${savedRecipes.length} receitas salvas encontradas para usuário $userId');
+    return savedRecipes;
+  }
+
+  Future<Map<String, List<Recipe>>> getSavedRecipesByBook(int userId) async {
+    await _simulateNetworkDelay();
+
+    final Map<String, List<Recipe>> recipesByBook = {};
+    final userSaved = _savedRecipesByUser[userId] ?? [];
+
+    for (var saved in userSaved) {
+      final bookTitle = saved['bookTitle'] as String;
+      final recipeId = saved['recipeId'] as int;
+
+      try {
+        final recipe = _recipes.firstWhere((r) => r.id == recipeId);
+
+        if (!recipesByBook.containsKey(bookTitle)) {
+          recipesByBook[bookTitle] = [];
+        }
+        recipesByBook[bookTitle]!.add(recipe);
+      } catch (e) {
+        print('⚠️ Receita $recipeId não encontrada');
+      }
+    }
+
+    return recipesByBook;
+  }
+
+  Future<bool> isRecipeSaved(int userId, int recipeId) async {
+    await _simulateNetworkDelay();
+
+    final userSaved = _savedRecipesByUser[userId] ?? [];
+    return userSaved.any((saved) => saved['recipeId'] == recipeId);
+  }
 }
