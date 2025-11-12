@@ -17,9 +17,9 @@ class MockAuthService {
       'coverImageBytes': null,
       'emailVerified': true,
       'phoneVerified': true,
-      'recipesCount': 3,
-      'followersCount': 2,
-      'followingCount': 4,
+      'recipesCount': 5,
+      'followersCount': 8,
+      'followingCount': 6,
     },
     {
       'id': 2,
@@ -32,11 +32,11 @@ class MockAuthService {
       'profileImageBytes': null,
       'coverImage': null,
       'coverImageBytes': null,
-      'emailVerified': false,
+      'emailVerified': true,
       'phoneVerified': false,
-      'recipesCount': 0,
-      'followersCount': 1,
-      'followingCount': 2,
+      'recipesCount': 3,
+      'followersCount': 5,
+      'followingCount': 4,
     },
     {
       'id': 3,
@@ -50,10 +50,10 @@ class MockAuthService {
       'coverImage': null,
       'coverImageBytes': null,
       'emailVerified': true,
-      'phoneVerified': false,
-      'recipesCount': 0,
-      'followersCount': 0,
-      'followingCount': 0,
+      'phoneVerified': true,
+      'recipesCount': 2,
+      'followersCount': 4,
+      'followingCount': 5,
     },
     {
       'id': 4,
@@ -68,9 +68,9 @@ class MockAuthService {
       'coverImageBytes': null,
       'emailVerified': true,
       'phoneVerified': true,
-      'recipesCount': 2,
-      'followersCount': 4,
-      'followingCount': 4,
+      'recipesCount': 4,
+      'followersCount': 12,
+      'followingCount': 8,
     },
     {
       'id': 5,
@@ -84,10 +84,10 @@ class MockAuthService {
       'coverImage': null,
       'coverImageBytes': null,
       'emailVerified': true,
-      'phoneVerified': false,
-      'recipesCount': 0,
-      'followersCount': 0,
-      'followingCount': 0,
+      'phoneVerified': true,
+      'recipesCount': 2,
+      'followersCount': 6,
+      'followingCount': 3,
     },
     {
       'id': 6,
@@ -102,9 +102,9 @@ class MockAuthService {
       'coverImageBytes': null,
       'emailVerified': true,
       'phoneVerified': true,
-      'recipesCount': 2,
-      'followersCount': 3,
-      'followingCount': 2,
+      'recipesCount': 3,
+      'followersCount': 9,
+      'followingCount': 7,
     },
     {
       'id': 7,
@@ -119,9 +119,9 @@ class MockAuthService {
       'coverImageBytes': null,
       'emailVerified': true,
       'phoneVerified': true,
-      'recipesCount': 0,
-      'followersCount': 0,
-      'followingCount': 6,
+      'recipesCount': 1,
+      'followersCount': 2,
+      'followingCount': 9,
     },
     {
       'id': 8,
@@ -137,7 +137,7 @@ class MockAuthService {
       'emailVerified': true,
       'phoneVerified': true,
       'recipesCount': 0,
-      'followersCount': 0,
+      'followersCount': 15,
       'followingCount': 0,
     },
     {
@@ -151,11 +151,11 @@ class MockAuthService {
       'profileImageBytes': null,
       'coverImage': null,
       'coverImageBytes': null,
-      'emailVerified': false,
+      'emailVerified': true,
       'phoneVerified': false,
-      'recipesCount': 0,
-      'followersCount': 0,
-      'followingCount': 0,
+      'recipesCount': 2,
+      'followersCount': 3,
+      'followingCount': 6,
     },
     {
       'id': 10,
@@ -170,9 +170,9 @@ class MockAuthService {
       'coverImageBytes': null,
       'emailVerified': true,
       'phoneVerified': true,
-      'recipesCount': 2,
-      'followersCount': 3,
-      'followingCount': 2,
+      'recipesCount': 3,
+      'followersCount': 7,
+      'followingCount': 5,
     },
   ];
 
@@ -180,15 +180,18 @@ class MockAuthService {
   final Map<String, DateTime> _codeExpiration = {};
   static int? _currentUserId;
 
-  // Mapa de Seguidores: A Chave (int) é o ID do usuário, a Lista (int) é quem ELE SEGUE
+  // ✅ MAPA DE SEGUIDORES REALISTA E COERENTE
   static final Map<int, List<int>> _followingMap = {
-    1: [4, 6, 10, 20],
-    2: [4, 1],
-    4: [1, 2, 6, 10, 20],
-    6: [4, 10, 20],
-    10: [4, 6, 20],
-    20: [4, 10],
-    7: [1, 4, 6, 10, 20],
+    1: [4, 6, 10, 2, 3, 5],           // João segue 6 pessoas
+    2: [1, 4, 6, 10],                 // Maria segue 4 pessoas
+    3: [1, 4, 6, 2, 10],              // Carlos segue 5 pessoas
+    4: [1, 2, 3, 5, 6, 9, 10, 7],     // Ana (popular) segue 8 pessoas
+    5: [1, 4, 6],                     // Rafael segue 3 pessoas
+    6: [1, 2, 4, 5, 10, 3, 7],        // Juliana segue 7 pessoas
+    7: [1, 2, 3, 4, 5, 6, 9, 10, 8],  // Teste segue 9 pessoas
+    8: [],                             // Admin não segue ninguém
+    9: [1, 4, 6, 2, 10, 5],           // Pedro segue 6 pessoas
+    10: [1, 4, 6, 2, 5],              // Fernanda segue 5 pessoas
   };
 
   String _generateCode() {
@@ -259,15 +262,21 @@ class MockAuthService {
       throw Exception('Email já cadastrado');
     }
     final newUser = {
-      'id': _users.length + 1, // ✨ CORREÇÃO: ID como int
+      'id': _users.length + 1,
       'name': name,
       'email': email.toLowerCase(),
       'password': password,
       'phone': phone,
       'username': null,
-      'profileImage': null, 'profileImageBytes': null, 'coverImage': null, 'coverImageBytes': null,
-      'emailVerified': false, 'phoneVerified': false,
-      'recipesCount': 0, 'followersCount': 0, 'followingCount': 0,
+      'profileImage': null,
+      'profileImageBytes': null,
+      'coverImage': null,
+      'coverImageBytes': null,
+      'emailVerified': false,
+      'phoneVerified': false,
+      'recipesCount': 0,
+      'followersCount': 0,
+      'followingCount': 0,
     };
     _users.add(newUser);
     _currentUserId = newUser['id'] as int?;
@@ -320,7 +329,7 @@ class MockAuthService {
     return results.map((user) => _mapUserToResponse(user)).toList();
   }
 
-  Future<Map<String, dynamic>> getUserById(int userId) async { // ✨ CORREÇÃO: ID como int
+  Future<Map<String, dynamic>> getUserById(int userId) async {
     await _simulateNetworkDelay();
     try {
       final user = _users.firstWhere((u) => u['id'] == userId);
@@ -359,14 +368,10 @@ class MockAuthService {
   }) async {
     await _simulateNetworkDelay();
     if (_currentUserId == null) throw Exception('Nenhum usuário autenticado');
-
     final userIndex = _users.indexWhere((u) => u['id'] == _currentUserId);
     if (userIndex == -1) throw Exception('Usuário não encontrado');
-
-    // ✅ Atualizar TODOS os campos
     if (name != null) _users[userIndex]['name'] = name;
     if (username != null) _users[userIndex]['username'] = username;
-
     if (profileImagePath != null) {
       _users[userIndex]['profileImage'] = profileImagePath;
       _users[userIndex]['profileImageBytes'] = null;
@@ -375,7 +380,6 @@ class MockAuthService {
       _users[userIndex]['profileImageBytes'] = profileImageBytes;
       _users[userIndex]['profileImage'] = null;
     }
-
     if (coverImagePath != null) {
       _users[userIndex]['coverImage'] = coverImagePath;
       _users[userIndex]['coverImageBytes'] = null;
@@ -384,15 +388,14 @@ class MockAuthService {
       _users[userIndex]['coverImageBytes'] = coverImageBytes;
       _users[userIndex]['coverImage'] = null;
     }
-
-    print('✅ Perfil atualizado no mock service para usuário $_currentUserId');
   }
+
   Future<void> logout() async {
     await _simulateNetworkDelay();
     _currentUserId = null;
   }
 
-  Map<String, dynamic>? getUserByEmail(String email){
+  Map<String, dynamic>? getUserByEmail(String email) {
     try {
       return _users.firstWhere((u) => u['email'] == email.toLowerCase());
     } catch (e) {
@@ -400,7 +403,7 @@ class MockAuthService {
     }
   }
 
-  Future<bool> resetPassword (String email, String newPassword) async {
+  Future<bool> resetPassword(String email, String newPassword) async {
     await Future.delayed(Duration(milliseconds: 500));
     final userIndex = _users.indexWhere((u) => u['email'] == email.toLowerCase());
     if (userIndex != -1) {
@@ -430,8 +433,6 @@ class MockAuthService {
     print('📨 Código de recuperação enviado para $destination: $code');
   }
 
-  // == NOVAS FUNÇÕES DE SEGUIR ==
-
   Future<List<Map<String, dynamic>>> getFollowing(int userId) async {
     await _simulateNetworkDelay();
     final followingIds = _followingMap[userId] ?? [];
@@ -457,7 +458,11 @@ class MockAuthService {
     await _simulateNetworkDelay();
     if (_currentUserId == null) throw Exception('Usuário não está logado');
 
-    final currentUserFollowing = _followingMap[_currentUserId] ?? [];
+    if (!_followingMap.containsKey(_currentUserId)) {
+      _followingMap[_currentUserId!] = [];
+    }
+
+    final currentUserFollowing = _followingMap[_currentUserId]!;
 
     if (currentUserFollowing.contains(userIdToFollow)) {
       currentUserFollowing.remove(userIdToFollow);
@@ -467,9 +472,6 @@ class MockAuthService {
       print('✅ [MOCK] Usuário $_currentUserId começou a seguir $userIdToFollow');
     }
 
-    _followingMap[_currentUserId!] = currentUserFollowing;
-
-    // Atualiza contagens (simulação)
     await _updateFollowCounts(_currentUserId!, userIdToFollow);
 
     return currentUserFollowing.contains(userIdToFollow);
@@ -483,5 +485,4 @@ class MockAuthService {
     final followers = await getFollowers(targetUserId);
     _users[targetUserIndex]['followersCount'] = followers.length;
   }
-
 }

@@ -27,6 +27,7 @@ import 'screens/profile/setup_complete_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'providers/auth_provider.dart';
 import 'screens/recipe/recipe_detail_screen.dart';
+import 'screens/recipe/recipe_comments_screen.dart';
 
 void main() {
   runApp(ProviderScope(child: MyApp()));
@@ -224,6 +225,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/recipe/:id/comments',
+        builder: (context, state) {
+          final recipeId = state.pathParameters['id']!;
+          final extra = state.extra as Map<String, dynamic>?;
+
+          return RecipeCommentsScreen(
+            recipeId: recipeId,
+            recipeTitle: extra?['recipeTitle'] ?? 'Receita',
+            recipeAuthorId: extra?['recipeAuthorId'] ?? 0,
+          );
+        },
+      ),
+      GoRoute(
         path: '/add-recipe',
         builder: (context, state) => AddRecipeScreen(),
       ),
@@ -231,7 +245,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/recipe-success',
         builder: (context, state) => RecipeSuccessScreen(),
       ),
-
       // Test Route
       GoRoute(
         path: '/test',

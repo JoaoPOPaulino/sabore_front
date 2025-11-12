@@ -621,27 +621,73 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           SizedBox(height: 12),
           GestureDetector(
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Tela de comentários em breve!')),
+              // ✅ NAVEGAÇÃO PARA TELA DE COMENTÁRIOS
+              context.push(
+                '/recipe/${recipe.id}/comments',
+                extra: {
+                  'recipeTitle': recipe.title,
+                  'recipeAuthorId': recipe.userId,
+                },
               );
             },
             child: Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(25),
+                color: Color(0xFFFFF3E0),
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Ver ${recipe.commentsCount ?? 0} comentários',
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      color: Color(0xFF666666),
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFFA9500).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.chat_bubble_outline,
+                      color: Color(0xFFFA9500),
+                      size: 20,
                     ),
                   ),
-                  Icon(Icons.arrow_forward_ios, color: Colors.grey[500], size: 16),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ver todos os comentários',
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: Color(0xFF3C4D18),
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '${recipe.commentsCount ?? 0} comentários',
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 13,
+                            color: Color(0xFF999999),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: Color(0xFFFA9500),
+                    size: 18,
+                  ),
                 ],
               ),
             ),
