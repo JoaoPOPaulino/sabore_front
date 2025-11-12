@@ -8,6 +8,7 @@ import '../../providers/recipe_book_provider.dart';
 import '../../widgets/select_recipe_book_modal.dart';
 import '../../widgets/profile_image_widget.dart';
 import '../../widgets/phone_verification_banner.dart';
+import '../../providers/notification_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -50,6 +51,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     final userData = ref.watch(currentUserDataProvider);
     final firstName = userData?['name']?.toString().split(' ').first ?? 'Chef';
+
+    if (userData != null) {
+      print('🏠 HOME userData: ${userData.keys}');
+      print('🖼️ profileImage: ${userData['profileImage']}');
+      print('📸 profileImageBytes: ${userData['profileImageBytes'] != null ? 'HAS BYTES' : 'NO BYTES'}');
+    }
 
     return Scaffold(
       backgroundColor: Color(0xFFFAFAFA),
@@ -104,6 +111,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
   }
 
   Widget _buildHeader(Map<String, dynamic>? userData, String firstName) {
+    final unreadCountAsync = ref.watch(unreadNotificationCountProvider);
+
     return Row(
       children: [
         GestureDetector(
@@ -143,18 +152,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             ],
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: Color(0xFFFFF3E0),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: Icon(Icons.notifications_outlined, color: Color(0xFFFA9500)),
-            onPressed: () {
-              print('🔔 Notifications pressed');
-              context.push('/notifications');
-            },
-          ),
+        Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Color(0xFFFFF3E0),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(Icons.notifications_outlined, color: Color(0xFFFA9500)),
+                onPressed: () {
+                  print('🔔 Notifications pressed');
+                  context.push('/notifications');
+                },
+              ),
+            ),
+            // Badge de notificações não lidas
+            unreadCountAsync.when(
+              data: (count) {
+                if (count == 0) return SizedBox.shrink();
+
+                return Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    constraints: BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Center(
+                      child: Text(
+                        count > 99 ? '99+' : count.toString(),
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              loading: () => SizedBox.shrink(),
+              error: (_, __) => SizedBox.shrink(),
+            ),
+          ],
         ),
       ],
     );

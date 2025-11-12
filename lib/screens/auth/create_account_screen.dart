@@ -163,56 +163,120 @@ class CreateAccountScreen extends StatelessWidget {
 
   Widget _buildSocialButtons() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: _buildSocialButton(
-            text: 'Google',
-            icon: Icons.g_mobiledata,
-            iconColor: Colors.red,
-            onPressed: () {},
-          ),
+          child: _buildGoogleButton(),
         ),
         SizedBox(width: 12),
         Expanded(
-          child: _buildSocialButton(
-            text: 'Apple',
-            icon: Icons.apple,
-            iconColor: Colors.black,
-            onPressed: () {},
-          ),
+          child: _buildAppleButton(),
         ),
       ],
     );
   }
 
-  Widget _buildSocialButton({
-    required String text,
-    required IconData icon,
-    required Color iconColor,
-    required VoidCallback onPressed,
-  }) {
+  Widget _buildGoogleButton() {
     return SizedBox(
       height: 60,
-      child: ElevatedButton.icon(
+      child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+            side: BorderSide(color: Colors.grey.shade300, width: 1),
+          ),
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.1),
+          padding: EdgeInsets.symmetric(horizontal: 16),
+        ),
+        onPressed: () {
+          print('Google login pressed');
+        },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              child: Image.asset(
+                'assets/images/google_logo.png',
+                width: 24,
+                height: 24,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        'G',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Google',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppleButton() {
+    return SizedBox(
+      height: 60,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),
-          elevation: 8,
-          shadowColor: Colors.black.withOpacity(0.2),
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.3),
+          padding: EdgeInsets.symmetric(horizontal: 16),
         ),
-        onPressed: onPressed,
-        icon: Icon(icon, color: iconColor, size: 24),
-        label: Text(
-          text,
-          style: TextStyle(
-            color: Colors.black87,
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
+        onPressed: () {
+          print('Apple login pressed');
+        },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.apple,
+              size: 26,
+              color: Colors.white,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Apple',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
       ),
     );

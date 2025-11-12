@@ -5,120 +5,180 @@ import 'dart:typed_data';
 class MockAuthService {
   static final List<Map<String, dynamic>> _users = [
     {
-      'id': 1, // ✨ CORREÇÃO: ID como int
+      'id': 1,
       'name': 'João Pedro Silva',
       'email': 'joao@sabore.com',
       'password': '123456',
       'phone': '+5563999887766',
       'username': 'joaopedro',
-      'profileImage': null, 'profileImageBytes': null, 'coverImage': null, 'coverImageBytes': null,
-      'emailVerified': true, 'phoneVerified': true,
-      'recipesCount': 9, 'followersCount': 120, 'followingCount': 75,
+      'profileImage': null,
+      'profileImageBytes': null,
+      'coverImage': null,
+      'coverImageBytes': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+      'recipesCount': 3,
+      'followersCount': 2,
+      'followingCount': 4,
     },
     {
-      'id': 2, // ✨ CORREÇÃO: ID como int
+      'id': 2,
       'name': 'Maria Santos',
       'email': 'maria@sabore.com',
       'password': '123456',
       'phone': '+5511988776655',
       'username': 'mariasantos',
-      'profileImage': null, 'profileImageBytes': null, 'coverImage': null, 'coverImageBytes': null,
-      'emailVerified': false, 'phoneVerified': false,
-      'recipesCount': 3, 'followersCount': 45, 'followingCount': 30,
+      'profileImage': null,
+      'profileImageBytes': null,
+      'coverImage': null,
+      'coverImageBytes': null,
+      'emailVerified': false,
+      'phoneVerified': false,
+      'recipesCount': 0,
+      'followersCount': 1,
+      'followingCount': 2,
     },
     {
-      'id': 3, // ✨ CORREÇÃO: ID como int
+      'id': 3,
       'name': 'Carlos Eduardo',
       'email': 'carlos@sabore.com',
       'password': '123456',
       'phone': '+5521987654321',
       'username': 'carlosedu',
-      'profileImage': null, 'profileImageBytes': null, 'coverImage': null, 'coverImageBytes': null,
-      'emailVerified': true, 'phoneVerified': false,
-      'recipesCount': 0, 'followersCount': 12, 'followingCount': 15,
+      'profileImage': null,
+      'profileImageBytes': null,
+      'coverImage': null,
+      'coverImageBytes': null,
+      'emailVerified': true,
+      'phoneVerified': false,
+      'recipesCount': 0,
+      'followersCount': 0,
+      'followingCount': 0,
     },
     {
-      'id': 4, // ✨ CORREÇÃO: ID como int
+      'id': 4,
       'name': 'Ana Beatriz Costa',
       'email': 'ana@sabore.com',
       'password': '123456',
       'phone': '+5548991234567',
       'username': 'chefana',
-      'profileImage': 'assets/images/chef.jpg', 'profileImageBytes': null, 'coverImage': 'assets/images/chef.jpg', 'coverImageBytes': null,
-      'emailVerified': true, 'phoneVerified': true,
-      'recipesCount': 28, 'followersCount': 1500, 'followingCount': 130,
+      'profileImage': 'assets/images/chef.jpg',
+      'profileImageBytes': null,
+      'coverImage': 'assets/images/chef.jpg',
+      'coverImageBytes': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+      'recipesCount': 2,
+      'followersCount': 4,
+      'followingCount': 4,
     },
     {
-      'id': 5, // ✨ CORREÇÃO: ID como int
+      'id': 5,
       'name': 'Rafael Oliveira',
       'email': 'rafael@sabore.com',
       'password': '123456',
       'phone': '+5531987654321',
       'username': 'rafaoliveira',
-      'profileImage': null, 'profileImageBytes': null, 'coverImage': null, 'coverImageBytes': null,
-      'emailVerified': true, 'phoneVerified': false,
-      'recipesCount': 7, 'followersCount': 88, 'followingCount': 112,
+      'profileImage': null,
+      'profileImageBytes': null,
+      'coverImage': null,
+      'coverImageBytes': null,
+      'emailVerified': true,
+      'phoneVerified': false,
+      'recipesCount': 0,
+      'followersCount': 0,
+      'followingCount': 0,
     },
     {
-      'id': 6, // ✨ CORREÇÃO: ID como int
+      'id': 6,
       'name': 'Juliana Ferreira',
       'email': 'juliana@sabore.com',
       'password': '123456',
       'phone': '+5541988776655',
       'username': 'jugourmet',
-      'profileImage': null, 'profileImageBytes': null, 'coverImage': null, 'coverImageBytes': null,
-      'emailVerified': true, 'phoneVerified': true,
-      'recipesCount': 14, 'followersCount': 305, 'followingCount': 200,
+      'profileImage': null,
+      'profileImageBytes': null,
+      'coverImage': null,
+      'coverImageBytes': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+      'recipesCount': 2,
+      'followersCount': 3,
+      'followingCount': 2,
     },
     {
-      'id': 7, // ✨ CORREÇÃO: ID como int
+      'id': 7,
       'name': 'Usuario Teste',
       'email': 'test@example.com',
       'password': 'password123',
       'phone': '+5511999999999',
       'username': 'testusuario',
-      'profileImage': null, 'profileImageBytes': null, 'coverImage': null, 'coverImageBytes': null,
-      'emailVerified': true, 'phoneVerified': true,
-      'recipesCount': 2, 'followersCount': 5, 'followingCount': 10,
+      'profileImage': null,
+      'profileImageBytes': null,
+      'coverImage': null,
+      'coverImageBytes': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+      'recipesCount': 0,
+      'followersCount': 0,
+      'followingCount': 6,
     },
     {
-      'id': 8, // ✨ CORREÇÃO: ID como int
+      'id': 8,
       'name': 'Admin Saborê',
       'email': 'admin@sabore.com',
       'password': 'admin123',
       'phone': '+5563999000000',
       'username': 'admin',
-      'profileImage': null, 'profileImageBytes': null, 'coverImage': null, 'coverImageBytes': null,
-      'emailVerified': true, 'phoneVerified': true,
-      'recipesCount': 0, 'followersCount': 0, 'followingCount': 0,
+      'profileImage': null,
+      'profileImageBytes': null,
+      'coverImage': null,
+      'coverImageBytes': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+      'recipesCount': 0,
+      'followersCount': 0,
+      'followingCount': 0,
     },
     {
-      'id': 9, // ✨ CORREÇÃO: ID como int
+      'id': 9,
       'name': 'Pedro Henrique',
       'email': 'pedro@sabore.com',
       'password': '123456',
       'phone': '+5562988887777',
       'username': 'pedrohenri',
-      'profileImage': null, 'profileImageBytes': null, 'coverImage': null, 'coverImageBytes': null,
-      'emailVerified': false, 'phoneVerified': false,
-      'recipesCount': 1, 'followersCount': 10, 'followingCount': 2,
+      'profileImage': null,
+      'profileImageBytes': null,
+      'coverImage': null,
+      'coverImageBytes': null,
+      'emailVerified': false,
+      'phoneVerified': false,
+      'recipesCount': 0,
+      'followersCount': 0,
+      'followingCount': 0,
     },
     {
-      'id': 10, // ✨ CORREÇÃO: ID como int
+      'id': 10,
       'name': 'Fernanda Gomes',
       'email': 'fernanda@sabore.com',
       'password': '123456',
       'phone': '+5581987654321',
       'username': 'fezcozinha',
-      'profileImage': null, 'profileImageBytes': null, 'coverImage': null, 'coverImageBytes': null,
-      'emailVerified': true, 'phoneVerified': true,
-      'recipesCount': 42, 'followersCount': 5000, 'followingCount': 50,
+      'profileImage': null,
+      'profileImageBytes': null,
+      'coverImage': null,
+      'coverImageBytes': null,
+      'emailVerified': true,
+      'phoneVerified': true,
+      'recipesCount': 2,
+      'followersCount': 3,
+      'followingCount': 2,
     },
   ];
 
   final Map<String, String> _verificationCodes = {};
   final Map<String, DateTime> _codeExpiration = {};
-  static int? _currentUserId; // ✨ CORREÇÃO: ID como int
+  static int? _currentUserId;
 
   // Mapa de Seguidores: A Chave (int) é o ID do usuário, a Lista (int) é quem ELE SEGUE
   static final Map<int, List<int>> _followingMap = {
@@ -299,10 +359,14 @@ class MockAuthService {
   }) async {
     await _simulateNetworkDelay();
     if (_currentUserId == null) throw Exception('Nenhum usuário autenticado');
+
     final userIndex = _users.indexWhere((u) => u['id'] == _currentUserId);
     if (userIndex == -1) throw Exception('Usuário não encontrado');
+
+    // ✅ Atualizar TODOS os campos
     if (name != null) _users[userIndex]['name'] = name;
     if (username != null) _users[userIndex]['username'] = username;
+
     if (profileImagePath != null) {
       _users[userIndex]['profileImage'] = profileImagePath;
       _users[userIndex]['profileImageBytes'] = null;
@@ -311,6 +375,7 @@ class MockAuthService {
       _users[userIndex]['profileImageBytes'] = profileImageBytes;
       _users[userIndex]['profileImage'] = null;
     }
+
     if (coverImagePath != null) {
       _users[userIndex]['coverImage'] = coverImagePath;
       _users[userIndex]['coverImageBytes'] = null;
@@ -319,8 +384,9 @@ class MockAuthService {
       _users[userIndex]['coverImageBytes'] = coverImageBytes;
       _users[userIndex]['coverImage'] = null;
     }
-  }
 
+    print('✅ Perfil atualizado no mock service para usuário $_currentUserId');
+  }
   Future<void> logout() async {
     await _simulateNetworkDelay();
     _currentUserId = null;
@@ -417,4 +483,5 @@ class MockAuthService {
     final followers = await getFollowers(targetUserId);
     _users[targetUserIndex]['followersCount'] = followers.length;
   }
+
 }

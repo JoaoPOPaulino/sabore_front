@@ -12,7 +12,7 @@ final userRecipeBooksProvider = FutureProvider.autoDispose.family<List<String>, 
   return await recipeService.getUserRecipeBooks(userId);
 });
 
-final savedRecipesProvider = FutureProvider.autoDispose.family<List<Recipe>, int>((ref, userId) async {
+final savedRecipesProvider = FutureProvider.family<List<Recipe>, int>((ref, userId) async {
   final recipeService = ref.watch(recipeServiceProvider);
   return await recipeService.getSavedRecipes(userId);
 });
@@ -20,11 +20,6 @@ final savedRecipesProvider = FutureProvider.autoDispose.family<List<Recipe>, int
 final savedRecipesByBookProvider = FutureProvider.autoDispose.family<Map<String, List<Recipe>>, int>((ref, userId) async {
   final recipeService = ref.watch(recipeServiceProvider);
   return await recipeService.getSavedRecipesByBook(userId);
-});
-
-final isRecipeSavedProvider = FutureProvider.autoDispose.family<bool, RecipeSaveParams>((ref, params) async {
-  final recipeService = ref.watch(recipeServiceProvider);
-  return await recipeService.isRecipeSaved(params.userId, params.recipeId);
 });
 
 class RecipeSaveParams {
@@ -44,6 +39,11 @@ class RecipeSaveParams {
   @override
   int get hashCode => userId.hashCode ^ recipeId.hashCode;
 }
+
+final isRecipeSavedProvider = FutureProvider.family<bool, RecipeSaveParams>((ref, params) async {
+  final recipeService = ref.watch(recipeServiceProvider);
+  return await recipeService.isRecipeSaved(params.userId, params.recipeId);
+});
 
 final recipeBookActionsProvider = Provider<RecipeBookActions>((ref) {
   return RecipeBookActions(ref);

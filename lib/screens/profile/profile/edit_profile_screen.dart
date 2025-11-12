@@ -108,8 +108,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     try {
       final authService = ref.read(authServiceProvider);
+      final currentData = ref.read(currentUserDataProvider);
 
-      // ✨ CORREÇÃO: Enviando TODOS os dados para o serviço
+      if (currentData == null) {
+        throw Exception('Usuário não autenticado');
+      }
+
+      final userId = currentData['id'] as int;
+
+      // Atualizar no serviço
       await authService.updateProfile(
         name: _nameController.text,
         username: _usernameController.text,
@@ -119,25 +126,42 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         coverImageBytes: _coverImageBytes,
       );
 
-      // Atualiza o provider local
-      final currentData = ref.read(currentUserDataProvider);
-      if (currentData != null) {
-        ref.read(currentUserDataProvider.notifier).state = {
-          ...currentData,
-          'name': _nameController.text,
-          'username': _usernameController.text,
-          'profileImage': _profileImagePath,
-          'profileImageBytes': _profileImageBytes,
-          'coverImage': _coverImagePath,
-          'coverImageBytes': _coverImageBytes,
-        };
-      }
+      // Atualizar o provider local
+      ref.read(currentUserDataProvider.notifier).state = {
+        ...currentData,
+        'name': _nameController.text,
+        'username': _usernameController.text,
+        'profileImage': _profileImagePath,
+        'profileImageBytes': _profileImageBytes,
+        'coverImage': _coverImagePath,
+        'coverImageBytes': _coverImageBytes,
+      };
+
+      // ✅ ADICIONE ESTAS LINHAS - Invalidar o userProfileProvider
+      ref.invalidate(userProfileProvider(userId));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Perfil atualizado com sucesso!'),
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text(
+                  'Perfil atualizado com sucesso!',
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: Color(0xFF7CB342),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
         context.pop();
@@ -145,7 +169,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     } catch (e) {
       print('Error saving profile: $e');
       if (mounted) {
-        _showErrorMessage('Erro ao atualizar perfil');
+        _showErrorMessage('Erro ao atualizar perfil: ${e.toString()}');
       }
     } finally {
       if (mounted) {

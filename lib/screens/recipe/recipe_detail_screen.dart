@@ -1,19 +1,22 @@
-// lib/screens/recipe/recipe_detail_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // ✨ Importar
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sabore_app/models/models.dart'; // ✨ Importar
-import 'package:sabore_app/providers/recipe_provider.dart'; // ✨ Importar
+import 'package:sabore_app/models/models.dart';
+import 'package:sabore_app/providers/recipe_provider.dart';
+import 'package:sabore_app/providers/auth_provider.dart';
+import 'package:sabore_app/services/mock_notification_service.dart';
 import '../../widgets/select_recipe_book_modal.dart';
+import '../../providers/recipe_book_provider.dart';
 
-// ✨ Mudar para ConsumerStatefulWidget
+// Alias para facilitar o uso
+final recipeDetailProvider = recipeByIdProvider;
+
 class RecipeDetailScreen extends ConsumerStatefulWidget {
   final String recipeId;
 
   const RecipeDetailScreen({Key? key, required this.recipeId}) : super(key: key);
 
   @override
-  // ✨ Mudar para ConsumerState
   ConsumerState<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
 }
 
@@ -21,16 +24,101 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   bool isBookmarked = false;
   bool showFullIngredients = false;
 
-  // ✨ REMOVIDO o mapa de 'recipe' mock
+  // Controllers e estados para comentários
+  final TextEditingController _commentController = TextEditingController();
+  bool _isSubmittingComment = false;
+  double _userRating = 5.0;
+  List<Map<String, dynamic>> _comments = [];
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitComment() async {
+    if (_commentController.text.trim().isEmpty) return;
+
+    final currentUser = ref.read(currentUserDataProvider);
+    if (currentUser == null) return;
+
+    setState(() {
+      _isSubmittingComment = true;
+    });
+
+    await Future.delayed(Duration(milliseconds: 800));
+
+    final newComment = {
+      'id': DateTime.now().millisecondsSinceEpoch,
+      'userId': currentUser['id'],
+      'userName': currentUser['name'],
+      'userImage': currentUser['profileImage'],
+      'comment': _commentController.text.trim(),
+      'rating': _userRating,
+      'timestamp': DateTime.now(),
+    };
+
+    setState(() {
+      _comments.insert(0, newComment);
+      _isSubmittingComment = false;
+      _commentController.clear();
+    });
+
+    // 🔔 CRIAR NOTIFICAÇÃO DE COMENTÁRIO
+    try {
+      final recipeId = int.parse(widget.recipeId);
+      final recipe = await ref.read(recipeByIdProvider(recipeId).future);
+
+      if (recipe.userId != currentUser['id']) {
+        final notificationService = MockNotificationService();
+        notificationService.createCommentNotification(
+          targetUserId: recipe.userId,
+          fromUserId: currentUser['id'] as int,
+          fromUserName: currentUser['name'],
+          fromUserImage: currentUser['profileImage'],
+          recipeId: recipe.id,
+          recipeName: recipe.title,
+          commentText: newComment['comment'],
+        );
+      }
+    } catch (e) {
+      print('❌ Erro ao criar notificação: $e');
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text(
+                'Comentário adicionado com sucesso!',
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Color(0xFF7CB342),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // ✨ LÓGICA: Busca a receita real usando o provider
-    final recipeAsync = ref.watch(recipeDetailProvider(int.parse(widget.recipeId)));
+    final recipeId = int.parse(widget.recipeId);
+    final recipeAsync = ref.watch(recipeDetailProvider(recipeId));
 
     return recipeAsync.when(
       data: (recipe) {
-        // ✨ A UI principal é construída com a receita real
         return Scaffold(
           backgroundColor: Colors.white,
           body: CustomScrollView(
@@ -41,7 +129,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildRecipeHeader(recipe),
-                    // ✨ MUDANÇA: UI refatorada para usar dados reais do model
                     _buildRecipeInfo(recipe),
                     _buildIngredientsSection(recipe),
                     if (showFullIngredients) _buildFullRecipeContent(recipe),
@@ -49,7 +136,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                     _buildCookButton(),
                     if (!showFullIngredients) ...[
                       SizedBox(height: 30),
-                      // ✨ MUDANÇA: Galeria e Comentários removidos
                       _buildCommentsButton(recipe),
                     ],
                     SizedBox(height: 100),
@@ -64,13 +150,40 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         body: Center(child: CircularProgressIndicator(color: Color(0xFFFA9500))),
       ),
       error: (err, stack) => Scaffold(
-        appBar: AppBar(title: Text('Erro')),
-        body: Center(child: Text('Erro ao carregar receita: $err')),
+        appBar: AppBar(
+          title: Text('Erro'),
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red),
+              SizedBox(height: 16),
+              Text('Erro ao carregar receita'),
+              SizedBox(height: 8),
+              Text('$err', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildSliverAppBar(Recipe recipe) {
+    final currentUserId = ref.watch(currentUserDataProvider)?['id'] as int?;
+
+    // Verificar se a receita está salva
+    final isSavedAsync = currentUserId != null
+        ? ref.watch(isRecipeSavedProvider(RecipeSaveParams(
+      userId: currentUserId,
+      recipeId: recipe.id,
+    )))
+        : AsyncValue.data(false);
+
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
@@ -88,29 +201,56 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         ),
       ),
       actions: [
-        Container(
-          margin: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            // ✨ LÓGICA: Usa o 'isSaved' real da receita
-            color: recipe.isSaved ? Color(0xFFFA9500) : Color(0xFF3C4D18),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: Icon(
-              recipe.isSaved ? Icons.bookmark : Icons.bookmark_border,
-              color: Colors.white,
-              size: 20,
+        isSavedAsync.when(
+          data: (isSaved) => Container(
+            margin: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isSaved ? Color(0xFFFA9500) : Color(0xFF3C4D18),
+              shape: BoxShape.circle,
             ),
-            onPressed: () {
-              if (!recipe.isSaved) {
-                _showBookmarkModal();
-              } else {
-                // TODO: Adicionar lógica para remover o save
-              }
-            },
+            child: IconButton(
+              icon: Icon(
+                isSaved ? Icons.bookmark : Icons.bookmark_border,
+                color: Colors.white,
+                size: 20,
+              ),
+              onPressed: () {
+                if (!isSaved) {
+                  _showBookmarkModal(recipe.id);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Receita já está salva!'),
+                      backgroundColor: Color(0xFFFA9500),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          loading: () => Container(
+            margin: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Color(0xFF3C4D18),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Icon(Icons.bookmark_border, color: Colors.white, size: 20),
+              onPressed: null,
+            ),
+          ),
+          error: (_, __) => Container(
+            margin: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Color(0xFF3C4D18),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Icon(Icons.bookmark_border, color: Colors.white, size: 20),
+              onPressed: () => _showBookmarkModal(recipe.id),
+            ),
           ),
         ),
-        // TODO: Adicionar lógica real de avaliação
         Container(
           margin: EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -119,7 +259,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           ),
           child: IconButton(
             icon: Icon(Icons.star, color: Colors.white, size: 20),
-            onPressed: () {},
+            onPressed: () {
+              _showRatingDialog(recipe);
+            },
           ),
         ),
       ],
@@ -127,8 +269,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         background: Container(
           decoration: BoxDecoration(
             image: DecorationImage(
-              // ✨ LÓGICA: Usa a imagem real da receita
-              image: NetworkImage(recipe.image ?? 'https://via.placeholder.com/400'),
+              image: recipe.image != null && recipe.image!.startsWith('http')
+                  ? NetworkImage(recipe.image!)
+                  : AssetImage(recipe.image ?? 'assets/images/chef.jpg') as ImageProvider,
               fit: BoxFit.cover,
             ),
           ),
@@ -137,7 +280,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [ Colors.transparent, Colors.black.withOpacity(0.7) ],
+                colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
               ),
             ),
             padding: EdgeInsets.all(20),
@@ -146,7 +289,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  recipe.title, // ✨ LÓGICA: Usa o título real
+                  recipe.title,
                   style: TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w700,
@@ -167,9 +310,16 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       padding: EdgeInsets.all(20),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundImage: NetworkImage(recipe.userImage ?? 'https://via.placeholder.com/50'),
+          GestureDetector(
+            onTap: () {
+              context.push('/profile/${recipe.userId}');
+            },
+            child: CircleAvatar(
+              radius: 20,
+              backgroundImage: recipe.userImage != null && recipe.userImage!.startsWith('http')
+                  ? NetworkImage(recipe.userImage!)
+                  : AssetImage('assets/images/chef.jpg') as ImageProvider,
+            ),
           ),
           SizedBox(width: 12),
           Expanded(
@@ -177,7 +327,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  recipe.userName ?? 'Chef Saborê', // ✨ LÓGICA
+                  recipe.userName ?? 'Chef Saborê',
                   style: TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w600,
@@ -185,8 +335,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                     color: Color(0xFF3C4D18),
                   ),
                 ),
-                // TODO: O model não tem 'recipesCount' do usuário,
-                // você precisaria de um provider de 'UserDetails' para isso.
                 Text(
                   'Autor(a) da receita',
                   style: TextStyle(
@@ -211,7 +359,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                 Icon(Icons.star, color: Colors.white, size: 16),
                 SizedBox(width: 4),
                 Text(
-                  '${recipe.averageRating ?? 0.0}', // ✨ LÓGICA
+                  '${recipe.averageRating?.toStringAsFixed(1) ?? '0.0'}',
                   style: TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w600,
@@ -226,12 +374,11 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     );
   }
 
-  // ✨ UI ATUALIZADA: Mostra dados reais do Model
   Widget _buildRecipeInfo(Recipe recipe) {
-    // Lógica para extrair a categoria e estado
     String category = recipe.category ?? 'Geral';
-    String state = 'N/A';
-    if(category.contains(' - ')) {
+    String? state;
+
+    if (category.contains(' - ')) {
       var parts = category.split(' - ');
       category = parts[0];
       state = parts[1];
@@ -241,7 +388,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       margin: EdgeInsets.symmetric(horizontal: 20),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Color(0xFFFFF3E0), // ✨ Cor de card
+        color: Color(0xFFFFF3E0),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Row(
@@ -257,7 +404,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             '${recipe.servings}',
             'Porções',
           ),
-          if (state != 'N/A')
+          if (state != null)
             _buildInfoItem(
               Icons.map,
               state,
@@ -300,11 +447,11 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     );
   }
 
-  // ✨ UI ATUALIZADA: Mostra List<String>
   Widget _buildIngredientsSection(Recipe recipe) {
+    // Converter List<Ingredient> para List<String>
     final displayIngredients = showFullIngredients
         ? recipe.ingredients
-        : recipe.ingredients.take(3).toList(); // Mostra 3 por padrão
+        : recipe.ingredients.take(3).toList();
 
     return Padding(
       padding: EdgeInsets.all(20),
@@ -325,7 +472,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             margin: EdgeInsets.only(bottom: 12),
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Color(0xFFFFF3E0), // ✨ Cor de card
+              color: Color(0xFFFFF3E0),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -334,7 +481,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                 SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    ingredient, // ✨ LÓGICA: Mostra o ingrediente (String)
+                    ingredient,
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontWeight: FontWeight.w500,
@@ -368,7 +515,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             ),
           ),
           SizedBox(height: 16),
-          ...recipe.steps.asMap().entries.map((entry) { // ✨ LÓGICA: usa 'steps'
+          ...recipe.steps.asMap().entries.map((entry) {
             int index = entry.key;
             String step = entry.value;
             return Container(
@@ -456,7 +603,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     );
   }
 
-  // ✨ UI ATUALIZADA: Botão para ver comentários
   Widget _buildCommentsButton(Recipe recipe) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -473,11 +619,11 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             ),
           ),
           SizedBox(height: 12),
-          // TODO: Criar tela de comentários e navegar para ela
           GestureDetector(
             onTap: () {
-              // context.push('/recipe/${recipe.id}/comments');
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tela de comentários em breve!')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Tela de comentários em breve!')),
+              );
             },
             child: Container(
               padding: EdgeInsets.all(16),
@@ -489,7 +635,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Ver ${recipe.commentsCount} comentários',
+                    'Ver ${recipe.commentsCount ?? 0} comentários',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       color: Color(0xFF666666),
@@ -505,26 +651,91 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     );
   }
 
-  void _showBookmarkModal() {
+  void _showBookmarkModal(int recipeId) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => SelectRecipeBookModal(),
+      builder: (context) => SelectRecipeBookModal(recipeId: recipeId),
     ).then((selectedBook) {
       if (selectedBook != null) {
         setState(() {
           isBookmarked = true;
-          // TODO: Chamar provider para salvar
-          // ref.read(recipesProvider.notifier).toggleSave(int.parse(widget.recipeId));
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Receita salva em "${selectedBook['title']}"!'),
-            backgroundColor: Color(0xFF7CB342),
-          ),
-        );
+
+        // Invalidar provider para atualizar UI
+        final currentUserId = ref.read(currentUserDataProvider)?['id'] as int?;
+        if (currentUserId != null) {
+          ref.invalidate(isRecipeSavedProvider(RecipeSaveParams(
+            userId: currentUserId,
+            recipeId: recipeId,
+          )));
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Receita salva em "${selectedBook['title']}"!'),
+              backgroundColor: Color(0xFF7CB342),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
       }
     });
+  }
+
+  void _showRatingDialog(Recipe recipe) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Avaliar Receita'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Como você avalia esta receita?'),
+            SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) {
+                return IconButton(
+                  icon: Icon(
+                    index < _userRating ? Icons.star : Icons.star_border,
+                    color: Color(0xFFFA9500),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _userRating = (index + 1).toDouble();
+                    });
+                  },
+                );
+              }),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Avaliação salva: $_userRating estrelas'),
+                  backgroundColor: Color(0xFF7CB342),
+                ),
+              );
+            },
+            child: Text('Avaliar'),
+          ),
+        ],
+      ),
+    );
   }
 }

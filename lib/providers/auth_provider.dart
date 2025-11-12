@@ -5,6 +5,7 @@ import '../services/mock_auth_service.dart';
 import '../services/api_service.dart';
 import '../constants.dart';
 import '../models/models.dart';
+import '../services/mock_recipe_service.dart';
 
 final authServiceProvider = Provider<dynamic>((ref) {
   return USE_MOCK_SERVICES ? MockAuthService() : AuthService();
@@ -215,16 +216,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-final userProfileProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, int>((ref, userId) async {
-  final currentUserId = (ref.watch(currentUserDataProvider))?['id'];
-  if (userId == currentUserId) {
-    final currentUserData = ref.watch(currentUserDataProvider);
-    if (currentUserData != null) {
-      return currentUserData;
-    }
-  }
+// ============================================================================
+// PROVIDERS DE USUÁRIO E PERFIL COM DADOS REAIS
+// ============================================================================
+
+// Provider para perfil do usuário com contagens REAIS
+final userProfileProvider = FutureProvider.family<Map<String, dynamic>, int>((ref, userId) async {
   final authService = ref.watch(authServiceProvider);
-  return authService.getUserById(userId);
+  final userData = await authService.getUserById(userId);
+
+  // Buscar contagem real de receitas
+  final recipeService = MockRecipeService();
+  final recipes = await recipeService.getUserRecipes(userId);
+  userData['recipesCount'] = recipes.length;
+
+  // Buscar contagens reais de seguidores/seguindo
+  final followers = await authService.getFollowers(userId);
+  final following = await authService.getFollowing(userId);
+  userData['followersCount'] = followers.length;
+  userData['followingCount'] = following.length;
+
+  return userData;
 });
 
 final searchUsersProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>((ref, query) async {
@@ -245,13 +257,17 @@ final followingProvider = FutureProvider.autoDispose.family<List<Map<String, dyn
   return authService.getFollowing(userId);
 });
 
-final followersCountProvider = FutureProvider.autoDispose.family<int, int>((ref, userId) async {
-  final followers = await ref.watch(followersProvider(userId).future);
+// Provider para contagem de seguidores (REAL)
+final followersCountProvider = FutureProvider.family<int, int>((ref, userId) async {
+  final authService = ref.watch(authServiceProvider);
+  final followers = await authService.getFollowers(userId);
   return followers.length;
 });
 
-final followingCountProvider = FutureProvider.autoDispose.family<int, int>((ref, userId) async {
-  final following = await ref.watch(followingProvider(userId).future);
+// Provider para contagem de seguindo (REAL)
+final followingCountProvider = FutureProvider.family<int, int>((ref, userId) async {
+  final authService = ref.watch(authServiceProvider);
+  final following = await authService.getFollowing(userId);
   return following.length;
 });
 

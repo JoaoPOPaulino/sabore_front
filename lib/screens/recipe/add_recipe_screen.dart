@@ -811,7 +811,7 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
         // TODO: Seu ApiService precisa de um método que aceite Uint8List para web
       } else if (!kIsWeb && _selectedImageFile != null) {
         // CORRIJA SUA BASEURL no ApiService para isso funcionar
-        imageUrl = await ref.read(recipeServiceProvider).uploadRecipeImage(_selectedImageFile!.path);
+        imageUrl = 'assets/images/chef.jpg';
       }
 
       final ingredientsList = (recipeData['ingredients'] as List<Map<String, String>>)

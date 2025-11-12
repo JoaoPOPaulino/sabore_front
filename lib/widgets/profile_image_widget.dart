@@ -26,24 +26,36 @@ class ProfileImageWidget extends StatelessWidget {
       return _buildFullSizeImage();
     }
 
-    // Para web
+    return CircleAvatar(
+      radius: radius,
+      backgroundImage: _getImageProvider(),
+      backgroundColor: Color(0xFFF5F5F5),
+      child: _getImageProvider() == null
+          ? Icon(Icons.person, size: radius * 0.8, color: Color(0xFFFA9500))
+          : null,
+    );
+  }
+
+  ImageProvider? _getImageProvider() {
+    // Web: Verifica bytes
     if (kIsWeb && userData!['profileImageBytes'] != null) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundImage: MemoryImage(userData!['profileImageBytes'] as Uint8List),
-      );
+      return MemoryImage(userData!['profileImageBytes'] as Uint8List);
     }
 
-    // Para mobile
-    if (!kIsWeb && userData!['profileImage'] != null) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundImage: FileImage(File(userData!['profileImage'])),
-      );
+    // Mobile/Web: Verifica path
+    final profileImage = userData!['profileImage'];
+    if (profileImage != null && profileImage is String && profileImage.isNotEmpty) {
+      // Se for asset
+      if (profileImage.startsWith('assets/')) {
+        return AssetImage(profileImage);
+      }
+      // Se for arquivo local (mobile)
+      if (!kIsWeb) {
+        return FileImage(File(profileImage));
+      }
     }
 
-    // Sem imagem
-    return _buildPlaceholder();
+    return null;
   }
 
   Widget _buildPlaceholder() {
@@ -64,13 +76,7 @@ class ProfileImageWidget extends StatelessWidget {
   }
 
   Widget _buildFullSizeImage() {
-    ImageProvider? imageProvider;
-
-    if (kIsWeb && userData!['profileImageBytes'] != null) {
-      imageProvider = MemoryImage(userData!['profileImageBytes'] as Uint8List);
-    } else if (!kIsWeb && userData!['profileImage'] != null) {
-      imageProvider = FileImage(File(userData!['profileImage']));
-    }
+    final imageProvider = _getImageProvider();
 
     if (imageProvider == null) {
       return _buildPlaceholder();
@@ -79,6 +85,9 @@ class ProfileImageWidget extends StatelessWidget {
     return Image(
       image: imageProvider,
       fit: boxFit,
+      errorBuilder: (context, error, stackTrace) {
+        return _buildPlaceholder();
+      },
     );
   }
 }
