@@ -9,6 +9,8 @@ import '../../widgets/select_recipe_book_modal.dart';
 import '../../widgets/profile_image_widget.dart';
 import '../../widgets/phone_verification_banner.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/state_provider.dart';
+import '../recipe/state_recipes_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -1008,63 +1010,67 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
   }
 }
 
-class InfiniteStatesCarousel extends StatefulWidget {
+class InfiniteStatesCarousel extends ConsumerStatefulWidget {
   const InfiniteStatesCarousel({Key? key}) : super(key: key);
 
   @override
-  State<InfiniteStatesCarousel> createState() => _InfiniteStatesCarouselState();
+  ConsumerState<InfiniteStatesCarousel> createState() => _InfiniteStatesCarouselState();
 }
 
-class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
+class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel> {
   late PageController _pageController;
-  late Timer _timer;
+  Timer? _timer;
   int _currentPage = 0;
-
-  final List<Map<String, String>> states = [
-    {'name': 'Tocantins', 'recipes': '50 receitas', 'emoji': '🌾'},
-    {'name': 'São Paulo', 'recipes': '120 receitas', 'emoji': '🏙️'},
-    {'name': 'Paraná', 'recipes': '65 receitas', 'emoji': '🌲'},
-    {'name': 'Rio de Janeiro', 'recipes': '95 receitas', 'emoji': '🏖️'},
-    {'name': 'Maranhão', 'recipes': '30 receitas', 'emoji': '🦐'},
-    {'name': 'Goiás', 'recipes': '70 receitas', 'emoji': '🌽'},
-    {'name': 'Minas Gerais', 'recipes': '85 receitas', 'emoji': '🧀'},
-    {'name': 'Bahia', 'recipes': '75 receitas', 'emoji': '🥥'},
-    {'name': 'Pernambuco', 'recipes': '60 receitas', 'emoji': '🦞'},
-    {'name': 'Ceará', 'recipes': '55 receitas', 'emoji': '🦀'},
-  ];
 
   @override
   void initState() {
     super.initState();
-
     _pageController = PageController(
-      initialPage: states.length * 1000,
+      initialPage: 0,
       viewportFraction: 0.4,
     );
+  }
 
-    _currentPage = states.length * 1000;
+  void _startAutoScroll(int statesLength) {
+    _timer?.cancel();
+    if (statesLength > 0) {
+      _timer = Timer.periodic(Duration(seconds: 3), (timer) {
+        if (mounted && _pageController.hasClients) {
+          _currentPage = (_currentPage + 1) % statesLength;
+          _pageController.animateToPage(
+            _currentPage,
+            duration: Duration(milliseconds: 600),
+            curve: Curves.easeInOutCubic,
+          );
+        }
+      });
+    }
+  }
 
-    _timer = Timer.periodic(Duration(seconds: 3), (timer) {
+  void _stopAutoScroll() {
+    _timer?.cancel();
+  }
+
+  void _resumeAutoScrollAfterDelay(int statesLength) {
+    _stopAutoScroll();
+    Timer(Duration(seconds: 5), () {
       if (mounted) {
-        _currentPage++;
-        _pageController.animateToPage(
-          _currentPage,
-          duration: Duration(milliseconds: 600),
-          curve: Curves.easeInOutCubic,
-        );
+        _startAutoScroll(statesLength);
       }
     });
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final statesAsync = ref.watch(brazilianStatesProvider);
+
     return Column(
       children: [
         Row(
@@ -1118,191 +1124,292 @@ class _InfiniteStatesCarouselState extends State<InfiniteStatesCarousel> {
         ),
         SizedBox(height: 16),
 
-        Container(
-          height: 160,
-          child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            itemBuilder: (context, index) {
-              final stateIndex = index % states.length;
-              final state = states[stateIndex];
-              final isCenter = (index - _currentPage).abs() == 0;
+        // Carrossel de estados
+        statesAsync.when(
+          data: (states) {
+            // Pegar apenas os 10 primeiros estados com mais receitas
+            final topStates = states.take(10).toList();
 
-              return AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                margin: EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: isCenter ? 0 : 10,
-                ),
-                child: GestureDetector(
-                  onTap: () {
-                    _timer.cancel();
-                    print('🗺️ State tapped: ${state['name']}');
-                    context.push('/states');
+            // Iniciar auto-scroll apenas uma vez
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_timer == null || !_timer!.isActive) {
+                _startAutoScroll(topStates.length);
+              }
+            });
 
-                    Timer(Duration(seconds: 5), () {
-                      if (mounted) {
-                        _timer = Timer.periodic(Duration(seconds: 3), (timer) {
-                          if (mounted) {
-                            _currentPage++;
-                            _pageController.animateToPage(
-                              _currentPage,
-                              duration: Duration(milliseconds: 600),
-                              curve: Curves.easeInOutCubic,
-                            );
-                          }
-                        });
-                      }
-                    });
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(isCenter ? 0.15 : 0.08),
-                          blurRadius: isCenter ? 15 : 8,
-                          offset: Offset(0, isCenter ? 8 : 4),
+            return Column(
+              children: [
+                Container(
+                  height: 160,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index % topStates.length;
+                      });
+                    },
+                    itemCount: topStates.length,
+                    itemBuilder: (context, index) {
+                      final stateIndex = index % topStates.length;
+                      final state = topStates[stateIndex];
+                      final isCenter = _currentPage == stateIndex;
+
+                      return AnimatedContainer(
+                        duration: Duration(milliseconds: 300),
+                        margin: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: isCenter ? 0 : 10,
                         ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Stack(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: AssetImage('assets/images/chef.jpg'),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.black.withOpacity(0.3),
-                                  Colors.black.withOpacity(0.7),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (isCenter)
-                            Positioned(
-                              top: 12,
-                              right: 12,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Color(0xFFFA9500),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.star, color: Colors.white, size: 10),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Popular',
-                                      style: TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
+                        child: GestureDetector(
+                          onTap: () {
+                            _resumeAutoScrollAfterDelay(topStates.length);
+                            print('🗺️ State tapped: ${state.name}');
+
+                            // Navegar para tela de receitas do estado
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => StateRecipesScreen(
+                                  stateName: state.name,
+                                  stateEmoji: state.emoji,
+                                  stateColor: state.color,
                                 ),
                               ),
-                            ),
-                          Positioned(
-                            bottom: 12,
-                            left: 12,
-                            right: 12,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  state['emoji']!,
-                                  style: TextStyle(fontSize: 24),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  state['name']!,
-                                  style: TextStyle(
-                                    fontFamily: 'Montserrat',
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 16,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.restaurant_menu,
-                                      color: Colors.white70,
-                                      size: 12,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      state['recipes']!,
-                                      style: TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 11,
-                                        color: Colors.white70,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                            );
+                          },
+                          child: _buildStateCard(state, isCenter),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              );
-            },
+
+                SizedBox(height: 12),
+
+                // Indicadores
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(topStates.length, (index) {
+                    final isActive = _currentPage == index;
+                    return AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      width: isActive ? 24 : 8,
+                      height: 8,
+                      margin: EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: isActive ? Color(0xFFFA9500) : Color(0xFFE0E0E0),
+                        borderRadius: BorderRadius.circular(4),
+                        boxShadow: isActive
+                            ? [
+                          BoxShadow(
+                            color: Color(0xFFFA9500).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ]
+                            : [],
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            );
+          },
+          loading: () => Container(
+            height: 160,
+            child: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFA9500)),
+              ),
+            ),
+          ),
+          error: (error, stack) => Container(
+            height: 160,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red, size: 32),
+                  SizedBox(height: 8),
+                  Text(
+                    'Erro ao carregar estados',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: 12,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-
-        SizedBox(height: 12),
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(states.length, (index) {
-            final isActive = (_currentPage % states.length) == index;
-            return AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              width: isActive ? 24 : 8,
-              height: 8,
-              margin: EdgeInsets.symmetric(horizontal: 3),
-              decoration: BoxDecoration(
-                color: isActive ? Color(0xFFFA9500) : Color(0xFFE0E0E0),
-                borderRadius: BorderRadius.circular(4),
-                boxShadow: isActive
-                    ? [
-                  BoxShadow(
-                    color: Color(0xFFFA9500).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ]
-                    : [],
-              ),
-            );
-          }),
-        ),
       ],
+    );
+  }
+
+  Widget _buildStateCard(StateData state, bool isCenter) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isCenter ? 0.15 : 0.08),
+            blurRadius: isCenter ? 15 : 8,
+            offset: Offset(0, isCenter ? 8 : 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            // Imagem de fundo
+            Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/images/chef.jpg'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+
+            // Gradiente com cor do estado
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(state.color).withOpacity(0.3),
+                    Color(state.color).withOpacity(0.8),
+                  ],
+                ),
+              ),
+            ),
+
+            // Badge "Popular" apenas no card central
+            if (isCenter)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFFA9500),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.star, color: Colors.white, size: 10),
+                      SizedBox(width: 4),
+                      Text(
+                        'Popular',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Badge de região
+            Positioned(
+              top: 12,
+              left: 12,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  state.region,
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                    color: Color(state.color),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+
+            // Conteúdo
+            Positioned(
+              bottom: 12,
+              left: 12,
+              right: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    state.emoji,
+                    style: TextStyle(fontSize: 24),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    state.name,
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: Colors.white,
+                      height: 1.1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.restaurant_menu,
+                        color: Colors.white.withOpacity(0.9),
+                        size: 12,
+                      ),
+                      SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          '${state.recipesCount} ${state.recipesCount == 1 ? 'receita' : 'receitas'}',
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 11,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

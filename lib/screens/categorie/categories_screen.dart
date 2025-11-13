@@ -1,572 +1,507 @@
-// categories_screen.dart
-
+// lib/screens/categories_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sabore_app/providers/auth_provider.dart';
+import 'package:sabore_app/providers/category_provider.dart';
+import 'dart:math' as math;
 
-class CategoriesScreen extends ConsumerWidget {
+class CategoriesScreen extends ConsumerStatefulWidget {
+  const CategoriesScreen({Key? key}) : super(key: key);
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CategoriesScreen> createState() => _CategoriesScreenState();
+}
+
+class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final userData = ref.watch(currentUserDataProvider);
+    final categoriesAsync = ref.watch(categoriesWithCountProvider);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFFAFAFA),
       body: Stack(
         children: [
-          // Conteúdo principal
-          SingleChildScrollView(
-            padding: EdgeInsets.only(top: 50, left: 16, right: 16, bottom: 80),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header com botão de voltar
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        // Botão de voltar
-                        GestureDetector(
-                          onTap: () {
-                            print('⬅️ Back button tapped');
-                            if (context.canPop()) {
-                              context.pop();
-                            } else {
-                              context.go('/home');
-                            }
-                          },
-                          child: Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Color(0xFFFA9500).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              Icons.arrow_back_ios_new,
-                              color: Color(0xFFFA9500),
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        CircleAvatar(
-                          radius: 25,
-                          backgroundImage: AssetImage('assets/images/chef.jpg'),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      'Saborê',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 28,
-                        color: Color(0xFFFA9500),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        print('🔍 Search icon tapped in categories');
-                        // Implementar busca nas categorias
-                      },
-                      child: Icon(
-                        Icons.search,
-                        color: Color(0xFFFA9500),
-                        size: 28,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 30),
-
-                // Título e filtro
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Categorias',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 24,
-                        color: Color(0xFF3C4D18),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        print('🎛️ Filter icon tapped');
-                        _showFilterBottomSheet(context);
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Color(0xFFFA9500).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.tune,
-                          color: Color(0xFFFA9500),
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20),
-
-                // Grid de categorias
-                _buildCategoriesGrid(context),
-              ],
-            ),
-          ),
-
-          // Bottom Navigation Bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              height: 80,
-              decoration: BoxDecoration(
-                color: Color(0xFF3C4D18),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  // Home
-                  IconButton(
-                    icon: Icon(Icons.home, color: Colors.white, size: 28),
-                    onPressed: () {
-                      print('🏠 Home button pressed from categories');
-                      context.go('/home');
-                    },
-                  ),
-                  // Search - ativo
-                  IconButton(
-                    icon: Icon(Icons.search, color: Color(0xFFFA9500), size: 28),
-                    onPressed: () {
-                      print('🔍 Search button pressed - already in categories');
-                    },
-                  ),
-                  // Add button
-                  Container(
-                    height: 56,
-                    width: 56,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFFA9500),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.add, color: Colors.white, size: 28),
-                      onPressed: () {
-                        print('➕ Add button pressed from categories');
-                        // Implementar adicionar receita
-                      },
-                    ),
-                  ),
-                  // Notifications
-                  IconButton(
-                    icon: Icon(Icons.notifications, color: Colors.white, size: 28),
-                    onPressed: () {
-                      print('🔔 Notifications button pressed from categories');
-                      // Implementar notificações
-                    },
-                  ),
-                  // Profile
-                  IconButton(
-                    icon: Icon(Icons.person, color: Colors.white, size: 28),
-                    onPressed: () {
-                      print('👤 Profile button pressed from categories');
-                      context.push('/setup-profile');
-                    },
-                  ),
+          // Gradiente de fundo
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFFF8F0),
+                  Color(0xFFFAFAFA),
                 ],
               ),
             ),
           ),
+
+          // Conteúdo
+          SafeArea(
+            child: Column(
+              children: [
+                // Header
+                _buildHeader(userData),
+
+                // Conteúdo principal
+                Expanded(
+                  child: categoriesAsync.when(
+                    data: (categories) => _buildCategoriesContent(categories),
+                    loading: () => Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFFFA9500),
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Carregando categorias...',
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: 14,
+                              color: Color(0xFF999999),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    error: (error, stack) => Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Erro ao carregar categorias',
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: 16,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Bottom Navigation
+          _buildBottomNavigationBar(userData),
         ],
       ),
     );
   }
 
-  Widget _buildCategoriesGrid(BuildContext context) {
-    return Column(
-      children: [
-        // Primeira linha
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Receitas Juninas (grande)
-            Expanded(
-              flex: 1,
-              child: _buildCategoryCard(
-                'Receitas\nJuninas',
-                'assets/images/chef.jpg',
-                height: 280,
-                context: context,
-              ),
-            ),
-            SizedBox(width: 12),
-            // Coluna direita
-            Expanded(
-              flex: 1,
-              child: Column(
+  Widget _buildHeader(Map<String, dynamic>? userData) {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
                 children: [
-                  // Zero lactose
-                  _buildCategoryCard(
-                    'Zero lactose',
-                    'assets/images/chef.jpg',
-                    height: 134,
-                    context: context,
+                  GestureDetector(
+                    onTap: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/home');
+                      }
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF7CB342),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
                   ),
-                  SizedBox(height: 12),
-                  // Zero açúcar
-                  _buildCategoryCard(
-                    'Zero açúcar',
-                    'assets/images/chef.jpg',
-                    height: 134,
-                    context: context,
+                  SizedBox(width: 12),
+                  CircleAvatar(
+                    radius: 25,
+                    backgroundImage: AssetImage('assets/images/chef.jpg'),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        SizedBox(height: 12),
-
-        // Segunda linha
-        Row(
-          children: [
-            // Zero Glúten
-            Expanded(
-              flex: 1,
-              child: _buildCategoryCard(
-                'Zero Glúten',
-                'assets/images/chef.jpg',
-                height: 134,
-                context: context,
-              ),
-            ),
-            SizedBox(width: 12),
-            // Fit & Light
-            Expanded(
-              flex: 1,
-              child: _buildCategoryCard(
-                'Fit & Light',
-                'assets/images/chef.jpg',
-                height: 134,
-                context: context,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 12),
-
-        // Terceira linha - items menores na parte inferior
-        Row(
-          children: [
-            Expanded(
-              child: _buildCategoryCard(
-                'Vegano',
-                'assets/images/chef.jpg',
-                height: 100,
-                context: context,
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: _buildCategoryCard(
-                'Doces',
-                'assets/images/chef.jpg',
-                height: 100,
-                context: context,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryCard(
-      String title,
-      String imagePath, {
-        required double height,
-        required BuildContext context,
-      }) {
-    return GestureDetector(
-      onTap: () {
-        print('🏷️ Category tapped: $title');
-        _showCategoryBottomSheet(context, title);
-      },
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          image: DecorationImage(
-            image: AssetImage(imagePath),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.4),
-              BlendMode.darken,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Container(
-          padding: EdgeInsets.all(16),
-          alignment: Alignment.bottomLeft,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
               Text(
-                title,
+                'Saborê',
                 style: TextStyle(
                   fontFamily: 'Montserrat',
                   fontWeight: FontWeight.w700,
-                  fontSize: title.length > 15 ? 16 : 18,
-                  color: Colors.white,
-                  height: 1.2,
+                  fontSize: 28,
+                  color: Color(0xFFFA9500),
                 ),
               ),
-              SizedBox(height: 4),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Color(0xFFFA9500),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Ver receitas',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w500,
-                    fontSize: 10,
-                    color: Colors.white,
+              GestureDetector(
+                onTap: () {
+                  context.push('/search');
+                },
+                child: Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFFFF3E0),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.search,
+                    color: Color(0xFFFA9500),
+                    size: 24,
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  void _showCategoryBottomSheet(BuildContext context, String categoryTitle) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            // Handle
-            Container(
-              margin: EdgeInsets.symmetric(vertical: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // Header
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    categoryTitle,
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 20,
-                      color: Color(0xFF3C4D18),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close, color: Color(0xFF3C4D18)),
-                  ),
-                ],
-              ),
-            ),
-            Divider(),
-            // Content
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Filtros rápidos
-                    Text(
-                      'Filtros rápidos:',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Color(0xFF3C4D18),
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildFilterChip('Fácil'),
-                        _buildFilterChip('Médio'),
-                        _buildFilterChip('Difícil'),
-                        _buildFilterChip('Rápido'),
-                        _buildFilterChip('Vegetariano'),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-
-                    // Lista de receitas exemplo
-                    Text(
-                      'Receitas populares:',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Color(0xFF3C4D18),
-                      ),
-                    ),
-                    SizedBox(height: 12),
-
-                    Expanded(
-                      child: ListView(
-                        children: [
-                          _buildRecipeListItem(
-                            'Bolo de milho ${categoryTitle.toLowerCase()}',
-                            '45 min • Fácil',
-                            'assets/images/chef.jpg',
-                          ),
-                          _buildRecipeListItem(
-                            'Pudim ${categoryTitle.toLowerCase()}',
-                            '2h • Médio',
-                            'assets/images/chef.jpg',
-                          ),
-                          _buildRecipeListItem(
-                            'Brigadeiro ${categoryTitle.toLowerCase()}',
-                            '20 min • Fácil',
-                            'assets/images/chef.jpg',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label) {
-    return FilterChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'Montserrat',
-          fontSize: 12,
-          color: Color(0xFF3C4D18),
-        ),
-      ),
-      selected: false,
-      onSelected: (bool selected) {
-        print('Filter selected: $label - $selected');
-      },
-      backgroundColor: Colors.grey[100],
-      selectedColor: Color(0xFFFA9500).withOpacity(0.3),
-      checkmarkColor: Color(0xFF3C4D18),
-    );
-  }
-
-  Widget _buildRecipeListItem(String title, String subtitle, String imagePath) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              imagePath,
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
+          SizedBox(height: 24),
+          Text(
+            'Categorias',
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontWeight: FontWeight.w700,
+              fontSize: 32,
+              color: Color(0xFF3C4D18),
             ),
           ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Color(0xFF3C4D18),
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+          SizedBox(height: 4),
+          Text(
+            'Tamanho = popularidade 📊',
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontSize: 14,
+              color: Color(0xFF999999),
             ),
-          ),
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: Colors.grey[400],
           ),
         ],
       ),
     );
   }
 
-  void _showFilterBottomSheet(BuildContext context) {
+  Widget _buildCategoriesContent(List<CategoryData> categories) {
+    if (categories.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.category_outlined,
+              size: 80,
+              color: Color(0xFFE0E0E0),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Nenhuma categoria encontrada',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 16,
+                color: Color(0xFF666666),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: _buildDynamicMasonryGrid(categories),
+    );
+  }
+
+  Widget _buildDynamicMasonryGrid(List<CategoryData> categories) {
+    // Normalizar tamanhos baseados na quantidade de receitas
+    final maxCount = categories.first.recipesCount.toDouble();
+    final minCount = categories.last.recipesCount.toDouble();
+
+    return Column(
+      children: _buildMasonryRows(categories, maxCount, minCount),
+    );
+  }
+
+  List<Widget> _buildMasonryRows(
+      List<CategoryData> categories,
+      double maxCount,
+      double minCount,
+      ) {
+    final List<Widget> rows = [];
+    int index = 0;
+
+    while (index < categories.length) {
+      // Padrão alternado: Grande + Pequeno, Pequeno + Grande
+      final isEvenRow = (rows.length % 2 == 0);
+
+      if (index < categories.length) {
+        final leftCategory = categories[index];
+        final rightCategory =
+        index + 1 < categories.length ? categories[index + 1] : null;
+
+        rows.add(
+          _buildMasonryRow(
+            leftCategory,
+            rightCategory,
+            maxCount,
+            minCount,
+            isEvenRow,
+          ),
+        );
+
+        index += rightCategory != null ? 2 : 1;
+      }
+    }
+
+    return rows;
+  }
+
+  Widget _buildMasonryRow(
+      CategoryData leftCategory,
+      CategoryData? rightCategory,
+      double maxCount,
+      double minCount,
+      bool leftLarger,
+      ) {
+    // Calcular alturas proporcionais
+    final leftHeight = _calculateHeight(leftCategory.recipesCount, maxCount, minCount);
+    final rightHeight = rightCategory != null
+        ? _calculateHeight(rightCategory.recipesCount, maxCount, minCount)
+        : 150.0;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Card esquerdo
+          Expanded(
+            flex: leftLarger ? 3 : 2,
+            child: _buildCategoryCard(
+              leftCategory,
+              leftHeight,
+              0,
+            ),
+          ),
+
+          if (rightCategory != null) ...[
+            SizedBox(width: 12),
+            // Card direito
+            Expanded(
+              flex: leftLarger ? 2 : 3,
+              child: _buildCategoryCard(
+                rightCategory,
+                rightHeight,
+                1,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  double _calculateHeight(int count, double maxCount, double minCount) {
+    // Normalizar entre 150 (min) e 280 (max)
+    const minHeight = 150.0;
+    const maxHeight = 280.0;
+
+    if (maxCount == minCount) return minHeight;
+
+    final normalized = (count - minCount) / (maxCount - minCount);
+    return minHeight + (normalized * (maxHeight - minHeight));
+  }
+
+  Widget _buildCategoryCard(
+      CategoryData category,
+      double height,
+      int index,
+      ) {
+    final animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Interval(
+          index * 0.1,
+          1.0,
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    );
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: Offset(0, 0.3),
+          end: Offset.zero,
+        ).animate(animation),
+        child: GestureDetector(
+          onTap: () {
+            print('🏷️ Category tapped: ${category.name}');
+            _showCategoryBottomSheet(category);
+          },
+          child: Container(
+            height: height,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(category.color),
+                  Color(category.color).withOpacity(0.7),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(category.color).withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                // Pattern de fundo
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/chef.jpg'),
+                        fit: BoxFit.cover,
+                        opacity: 0.15,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Badge de quantidade no topo direito
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.restaurant_menu,
+                          size: 14,
+                          color: Color(category.color),
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          '${category.recipesCount}',
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(category.color),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Conteúdo
+                Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        category.emoji,
+                        style: TextStyle(fontSize: height > 200 ? 48 : 32),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        category.name,
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w800,
+                          fontSize: height > 200 ? 24 : 18,
+                          color: Colors.white,
+                          height: 1.2,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '${category.recipesCount} ${category.recipesCount == 1 ? 'receita' : 'receitas'}',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCategoryBottomSheet(CategoryData category) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: 400,
+        height: MediaQuery.of(context).size.height * 0.75,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
         ),
         child: Column(
           children: [
@@ -576,95 +511,84 @@ class CategoriesScreen extends ConsumerWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: Color(0xFFE0E0E0),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
+
             // Header
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Filtros',
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 20,
-                      color: Color(0xFF3C4D18),
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Color(category.color).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      category.emoji,
+                      style: TextStyle(fontSize: 32),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category.name,
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 24,
+                            color: Color(0xFF3C4D18),
+                          ),
+                        ),
+                        Text(
+                          '${category.recipesCount} receitas disponíveis',
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 14,
+                            color: Color(0xFF999999),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close, color: Color(0xFF3C4D18)),
+                    onPressed: () => context.pop(),
+                    icon: Icon(Icons.close, color: Color(0xFF666666)),
                   ),
                 ],
               ),
             ),
-            Divider(),
+
+            Divider(height: 32),
+
             // Content
             Expanded(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Dificuldade:',
+                      'Em breve: lista de receitas',
                       style: TextStyle(
                         fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
                         fontSize: 16,
-                        color: Color(0xFF3C4D18),
+                        color: Color(0xFF999999),
                       ),
-                    ),
-                    SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        _buildFilterChip('Fácil'),
-                        _buildFilterChip('Médio'),
-                        _buildFilterChip('Difícil'),
-                      ],
                     ),
                     SizedBox(height: 20),
-                    Text(
-                      'Tempo de preparo:',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Color(0xFF3C4D18),
+                    Center(
+                      child: Icon(
+                        Icons.construction,
+                        size: 64,
+                        color: Color(0xFFE0E0E0),
                       ),
-                    ),
-                    SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        _buildFilterChip('Até 30 min'),
-                        _buildFilterChip('30-60 min'),
-                        _buildFilterChip('Mais de 1h'),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Tipo de dieta:',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Color(0xFF3C4D18),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        _buildFilterChip('Vegetariano'),
-                        _buildFilterChip('Vegano'),
-                        _buildFilterChip('Sem glúten'),
-                      ],
                     ),
                   ],
                 ),
@@ -675,15 +599,80 @@ class CategoriesScreen extends ConsumerWidget {
       ),
     );
   }
-}
 
-// Enums para organização (mantidos do código original)
-enum CategorySize { small, medium, large }
+  Widget _buildBottomNavigationBar(Map<String, dynamic>? userData) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Container(
+        height: 75,
+        margin: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Color(0xFF3C4D18),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFF3C4D18).withOpacity(0.3),
+              blurRadius: 20,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(Icons.home, false, () => context.go('/home')),
+            _buildNavItem(Icons.search, true, () {}), // Ativo
+            _buildNavItemFAB(Icons.add, () => context.push('/add-recipe')),
+            _buildNavItem(Icons.notifications_outlined, false,
+                    () => context.push('/notifications')),
+            _buildNavItem(Icons.person_outline, false,
+                    () => context.push('/profile/${userData?['id'] ?? '1'}')),
+          ],
+        ),
+      ),
+    );
+  }
 
-class CategoryItem {
-  final String title;
-  final String imagePath;
-  final CategorySize size;
+  Widget _buildNavItem(IconData icon, bool isActive, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isActive ? Color(0xFFFA9500) : Colors.transparent,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Icon(
+          icon,
+          color: isActive ? Colors.white : Colors.white70,
+          size: 24,
+        ),
+      ),
+    );
+  }
 
-  CategoryItem(this.title, this.imagePath, this.size);
+  Widget _buildNavItemFAB(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFA9500), Color(0xFFFF6B35)],
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFFFA9500).withOpacity(0.4),
+              blurRadius: 15,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: Colors.white, size: 28),
+      ),
+    );
+  }
 }

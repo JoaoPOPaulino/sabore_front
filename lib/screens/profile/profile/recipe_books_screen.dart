@@ -1,24 +1,198 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/recipe_book_provider.dart';
 
-class RecipeBooksScreen extends ConsumerWidget {
+class RecipeBooksScreen extends ConsumerStatefulWidget {
   const RecipeBooksScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final List<Map<String, dynamic>> recipeBooks = [
-      {
-        'title': 'Festa Junina',
-        'image': 'assets/images/chef.jpg',
-        'recipesCount': 12,
-      },
-      {
-        'title': 'Sobremesas',
-        'image': 'assets/images/chef.jpg',
-        'recipesCount': 8,
-      },
-    ];
+  ConsumerState<RecipeBooksScreen> createState() => _RecipeBooksScreenState();
+}
+
+class _RecipeBooksScreenState extends ConsumerState<RecipeBooksScreen> {
+  final TextEditingController _bookNameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _bookNameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _createNewBook(int userId) async {
+    if (_bookNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Por favor, digite um nome para o livro'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final actions = ref.read(recipeBookActionsProvider);
+      await actions.createBook(userId, _bookNameController.text.trim());
+
+      _bookNameController.clear();
+
+      if (mounted) {
+        context.pop(); // Fechar o dialog
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text(
+                  'Livro criado com sucesso!',
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Color(0xFF7CB342),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+
+      // Invalidar providers para atualizar
+      ref.invalidate(userRecipeBooksProvider(userId));
+      ref.invalidate(savedRecipesByBookProvider(userId));
+    } catch (e) {
+      print('Erro ao criar livro: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao criar livro'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showAddBookDialog(int userId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Color(0xFFFFF3E0),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.bookmarks,
+                color: Color(0xFFFA9500),
+                size: 24,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Novo livro de receitas',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                color: Color(0xFF3C4D18),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _bookNameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Nome do livro',
+                hintStyle: TextStyle(
+                  fontFamily: 'Montserrat',
+                  color: Color(0xFF999999),
+                ),
+                filled: true,
+                fillColor: Color(0xFFFFF3E0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: Icon(Icons.book, color: Color(0xFFFA9500)),
+              ),
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 14,
+              ),
+              onSubmitted: (_) => _createNewBook(userId),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _bookNameController.clear();
+              context.pop();
+            },
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                color: Color(0xFF666666),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => _createNewBook(userId),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFFFA9500),
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Criar',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUserId = ref.watch(currentUserDataProvider)?['id'] as int?;
+    final userData = ref.watch(currentUserDataProvider);
+
+    if (currentUserId == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Text('Usuário não autenticado'),
+        ),
+      );
+    }
+
+    final savedByBookAsync = ref.watch(savedRecipesByBookProvider(currentUserId));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -55,9 +229,14 @@ class RecipeBooksScreen extends ConsumerWidget {
                       color: Color(0xFFFA9500),
                     ),
                   ),
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundImage: AssetImage('assets/images/chef.jpg'),
+                  GestureDetector(
+                    onTap: () {
+                      context.push('/profile/${userData?['id'] ?? '1'}');
+                    },
+                    child: CircleAvatar(
+                      radius: 25,
+                      backgroundImage: AssetImage('assets/images/chef.jpg'),
+                    ),
                   ),
                 ],
               ),
@@ -66,41 +245,164 @@ class RecipeBooksScreen extends ConsumerWidget {
             // Título
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Livros de receitas',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 32,
-                    color: Color(0xFF3C4D18),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Livros de receitas',
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 32,
+                            color: Color(0xFF3C4D18),
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        savedByBookAsync.when(
+                          data: (books) => Text(
+                            '${books.length} ${books.length == 1 ? 'livro' : 'livros'}',
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: 14,
+                              color: Color(0xFF999999),
+                            ),
+                          ),
+                          loading: () => SizedBox.shrink(),
+                          error: (_, __) => SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
 
             // Grid de livros
             Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.8,
-                  ),
-                  itemCount: recipeBooks.length + 1, // +1 para o botão de adicionar
-                  itemBuilder: (context, index) {
-                    if (index == recipeBooks.length) {
-                      // Botão para adicionar novo livro
-                      return _buildAddBookCard(context);
-                    }
+              child: savedByBookAsync.when(
+                data: (savedByBook) {
+                  if (savedByBook.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(32),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFFFF3E0),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.bookmarks_outlined,
+                              size: 80,
+                              color: Color(0xFFFA9500),
+                            ),
+                          ),
+                          SizedBox(height: 24),
+                          Text(
+                            'Nenhum livro criado',
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 20,
+                              color: Color(0xFF666666),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Crie seu primeiro livro de receitas',
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: 14,
+                              color: Color(0xFF999999),
+                            ),
+                          ),
+                          SizedBox(height: 32),
+                          ElevatedButton.icon(
+                            onPressed: () => _showAddBookDialog(currentUserId),
+                            icon: Icon(Icons.add),
+                            label: Text('Criar livro'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFFA9500),
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-                    final book = recipeBooks[index];
-                    return _buildBookCard(context, book);
-                  },
+                  return Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: GridView.builder(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.8,
+                      ),
+                      itemCount: savedByBook.length + 1, // +1 para botão adicionar
+                      itemBuilder: (context, index) {
+                        if (index == savedByBook.length) {
+                          return _buildAddBookCard(currentUserId);
+                        }
+
+                        final bookTitle = savedByBook.keys.elementAt(index);
+                        final recipes = savedByBook[bookTitle] ?? [];
+
+                        return _buildBookCard(
+                          context,
+                          bookTitle,
+                          recipes.length,
+                          recipes.isNotEmpty ? recipes.first.image : null,
+                        );
+                      },
+                    ),
+                  );
+                },
+                loading: () => Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFA9500)),
+                  ),
+                ),
+                error: (error, stack) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Erro ao carregar livros',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 16,
+                          color: Colors.red,
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          ref.invalidate(savedRecipesByBookProvider(currentUserId));
+                        },
+                        child: Text('Tentar novamente'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -110,11 +412,22 @@ class RecipeBooksScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBookCard(BuildContext context, Map<String, dynamic> book) {
+  Widget _buildBookCard(
+      BuildContext context,
+      String bookTitle,
+      int recipesCount,
+      String? coverImage,
+      ) {
     return GestureDetector(
       onTap: () {
-        print('Book tapped: ${book['title']}');
-        // Navegar para tela de receitas do livro
+        print('📖 Book tapped: $bookTitle');
+        // TODO: Navegar para tela de receitas do livro
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Visualizar receitas de "$bookTitle"'),
+            backgroundColor: Color(0xFF7CB342),
+          ),
+        );
       },
       child: Container(
         decoration: BoxDecoration(
@@ -134,7 +447,7 @@ class RecipeBooksScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 image: DecorationImage(
-                  image: AssetImage(book['image']),
+                  image: AssetImage(coverImage ?? 'assets/images/chef.jpg'),
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
                     Colors.black.withOpacity(0.3),
@@ -188,23 +501,35 @@ class RecipeBooksScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      book['title'],
+                      bookTitle,
                       style: TextStyle(
                         fontFamily: 'Montserrat',
                         fontWeight: FontWeight.w700,
                         fontSize: 18,
                         color: Colors.white,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 4),
-                    Text(
-                      '${book['recipesCount']} receitas',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w400,
-                        fontSize: 12,
-                        color: Colors.white70,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.restaurant_menu,
+                          color: Colors.white70,
+                          size: 14,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          '$recipesCount ${recipesCount == 1 ? 'receita' : 'receitas'}',
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -216,11 +541,11 @@ class RecipeBooksScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddBookCard(BuildContext context) {
+  Widget _buildAddBookCard(int userId) {
     return GestureDetector(
       onTap: () {
-        print('Add new book tapped');
-        _showAddBookDialog(context);
+        print('➕ Add new book tapped');
+        _showAddBookDialog(userId);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -259,74 +584,6 @@ class RecipeBooksScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showAddBookDialog(BuildContext context) {
-    final TextEditingController nameController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Text(
-          'Novo livro de receitas',
-          style: TextStyle(
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF3C4D18),
-          ),
-        ),
-        content: TextField(
-          controller: nameController,
-          decoration: InputDecoration(
-            hintText: 'Nome do livro',
-            filled: true,
-            fillColor: Color(0xFFFFF3E0),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                color: Color(0xFF666666),
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              if (nameController.text.isNotEmpty) {
-                print('Creating new book: ${nameController.text}');
-                // Implementar criação do livro
-                context.pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Livro "${nameController.text}" criado!'),
-                    backgroundColor: Color(0xFF7CB342),
-                  ),
-                );
-              }
-            },
-            child: Text(
-              'Criar',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                color: Color(0xFFFA9500),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

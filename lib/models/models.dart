@@ -67,6 +67,7 @@ class Recipe {
   final List<String> ingredients;
   final List<String> steps;
   final String? category;
+  final String? state;
   final int userId; // Chave como int
   final String? userName;
   final String? userImage;
@@ -88,6 +89,7 @@ class Recipe {
     required this.ingredients,
     required this.steps,
     this.category,
+    this.state,
     required this.userId,
     this.userName,
     this.userImage,
@@ -111,6 +113,7 @@ class Recipe {
       ingredients: List<String>.from(json['ingredients'] ?? []),
       steps: List<String>.from(json['steps'] ?? []),
       category: json['category'],
+      state: json['state'],
       userId: int.tryParse(json['user_id'].toString()) ?? (json['user'] != null ? int.tryParse(json['user']['id'].toString()) ?? 0 : 0), // Garante que seja int
       userName: json['user_name'] ?? json['user']?['name'],
       userImage: json['user_image'] ?? json['user']?['profile_image'],
@@ -149,6 +152,7 @@ class Recipe {
     List<String>? ingredients,
     List<String>? steps,
     String? category,
+    String? state,
     int? userId,
     String? userName,
     String? userImage,
@@ -167,6 +171,7 @@ class Recipe {
       ingredients: ingredients ?? this.ingredients,
       steps: steps ?? this.steps,
       category: category ?? this.category,
+      state: state ?? this.state,
       userId: userId ?? this.userId,
       userName: userName ?? this.userName,
       userImage: userImage ?? this.userImage,
