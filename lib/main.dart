@@ -29,6 +29,8 @@ import 'screens/home/home_screen.dart';
 import 'providers/auth_provider.dart';
 import 'screens/recipe/recipe_detail_screen.dart';
 import 'screens/recipe/recipe_comments_screen.dart';
+import 'package:sabore_app/screens/profile/profile/followers_screen.dart';
+import 'package:sabore_app/screens/profile/profile/following_screen.dart';
 
 void main() {
   runApp(ProviderScope(child: MyApp()));
@@ -259,6 +261,31 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      GoRoute(
+        path: '/followers/:userId',
+        builder: (context, state) {
+          final userId = int.parse(state.pathParameters['userId']!);
+          final extra = state.extra as Map<String, dynamic>?;
+
+          return FollowersScreen(
+            userId: userId,
+            userName: extra?['userName'] ?? 'Usuário',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/following/:userId',
+        builder: (context, state) {
+          final userId = int.parse(state.pathParameters['userId']!);
+          final extra = state.extra as Map<String, dynamic>?;
+
+          return FollowingScreen(
+            userId: userId,
+            userName: extra?['userName'] ?? 'Usuário',
+          );
+        },
+      ),
+
       // Test Route
       GoRoute(
         path: '/test',

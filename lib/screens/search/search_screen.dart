@@ -1,11 +1,13 @@
+// lib/screens/search/search_screen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sabore_app/providers/auth_provider.dart';
 import 'package:sabore_app/widgets/profile_image_widget.dart';
-// TODO: Importar seu recipe_provider.dart
-// import 'package:sabore_app/providers/recipe_provider.dart';
+import 'package:sabore_app/providers/recipe_provider.dart';
 
 enum _SearchMode { recipes, users }
 
@@ -34,7 +36,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   late Animation<double> _fadeAnimation;
 
   final List<String> filters = [
-    'Todos', 'Doces', 'Salgados', 'Bebidas', 'Sem Lactose', 'Sem Glúten', 'Vegano',
+    'Todos',
+    'Doces',
+    'Salgados',
+    'Bebidas',
+    'Sem Lactose',
+    'Sem Glúten',
+    'Vegano',
   ];
 
   final List<Map<String, dynamic>> popularCategories = [
@@ -46,9 +54,42 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
 
   // MOCK DE RECEITAS
   final List<Map<String, dynamic>> allRecipes = [
-    { 'id': '1', 'name': 'Bolo de milho sem açúcar', 'time': '1h20min', 'ingredients': 9, 'rating': 4.8, 'author': 'Chef Ana', 'category': 'Doces', 'image': 'assets/images/chef.jpg', 'difficulty': 'Fácil', 'calories': 250, },
-    { 'id': '2', 'name': 'Brownie sem lactose', 'time': '45min', 'ingredients': 11, 'rating': 4.9, 'author': 'Chef Carlos', 'category': 'Doces', 'image': 'assets/images/chef.jpg', 'difficulty': 'Médio', 'calories': 320, },
-    { 'id': '3', 'name': 'Pizza Margherita', 'time': '30min', 'ingredients': 8, 'rating': 4.7, 'author': 'Chef Maria', 'category': 'Salgados', 'image': 'assets/images/chef.jpg', 'difficulty': 'Fácil', 'calories': 280, },
+    {
+      'id': '1',
+      'name': 'Bolo de milho sem açúcar',
+      'time': '1h20min',
+      'ingredients': 9,
+      'rating': 4.8,
+      'author': 'Chef Ana',
+      'category': 'Doces',
+      'image': 'assets/images/chef.jpg',
+      'difficulty': 'Fácil',
+      'calories': 250,
+    },
+    {
+      'id': '2',
+      'name': 'Brownie sem lactose',
+      'time': '45min',
+      'ingredients': 11,
+      'rating': 4.9,
+      'author': 'Chef Carlos',
+      'category': 'Doces',
+      'image': 'assets/images/chef.jpg',
+      'difficulty': 'Médio',
+      'calories': 320,
+    },
+    {
+      'id': '3',
+      'name': 'Pizza Margherita',
+      'time': '30min',
+      'ingredients': 8,
+      'rating': 4.7,
+      'author': 'Chef Maria',
+      'category': 'Salgados',
+      'image': 'assets/images/chef.jpg',
+      'difficulty': 'Fácil',
+      'calories': 280,
+    },
   ];
 
   @override
@@ -70,7 +111,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     final query = _searchController.text;
     setState(() {
       _searchQuery = query;
-      _searchMode = query.startsWith('@') ? _SearchMode.users : _SearchMode.recipes;
+      _searchMode =
+      query.startsWith('@') ? _SearchMode.users : _SearchMode.recipes;
     });
     if (_debounce?.isActive ?? false) _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
@@ -99,6 +141,38 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     });
   }
 
+  // ✅ MÉTODO PARA VOLTAR - CORRIGIDO
+  void _handleBack() {
+    try {
+      // Remove o foco do TextField
+      FocusScope.of(context).unfocus();
+      _searchFocusNode.unfocus();
+
+      // Força o fechamento do teclado
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+
+      // Aguarda um pouco para garantir que o teclado feche
+      Future.delayed(Duration(milliseconds: 150), () {
+        if (!mounted) return;
+
+        // Navega de volta
+        try {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            context.go('/home');
+          }
+        } catch (e) {
+          print('❌ Erro ao navegar: $e');
+          context.go('/home');
+        }
+      });
+    } catch (e) {
+      print('❌ Erro no handleBack: $e');
+      context.go('/home');
+    }
+  }
+
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
@@ -111,21 +185,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFFAFAFA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildSearchHeader(),
-            if (_searchQuery.isNotEmpty && _searchMode == _SearchMode.recipes)
-              _buildQuickFilters(),
-            Expanded(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: _buildSearchBody(),
+    return WillPopScope(
+      onWillPop: () async {
+        _handleBack();
+        return false; // Previne o pop padrão
+      },
+      child: Scaffold(
+        backgroundColor: Color(0xFFFAFAFA),
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildSearchHeader(),
+              if (_searchQuery.isNotEmpty && _searchMode == _SearchMode.recipes)
+                _buildQuickFilters(),
+              Expanded(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: _buildSearchBody(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -147,13 +227,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
       ),
       child: Row(
         children: [
+          // ✅ BOTÃO DE VOLTAR CORRIGIDO
           GestureDetector(
-            onTap: () => context.pop(),
+            onTap: _handleBack,
             child: Container(
               padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Color(0xFFFFF3E0),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0xFFFA9500).withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
               child: Icon(
                 Icons.arrow_back,
@@ -173,9 +261,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               child: Row(
                 children: [
                   Icon(
-                      isUserSearch ? Icons.person_outline : Icons.search,
-                      color: Color(0xFFFA9500),
-                      size: 20
+                    isUserSearch ? Icons.person_outline : Icons.search,
+                    color: Color(0xFFFA9500),
+                    size: 20,
                   ),
                   SizedBox(width: 12),
                   Expanded(
@@ -189,7 +277,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                         color: Color(0xFF3C4D18),
                       ),
                       decoration: InputDecoration(
-                        hintText: isUserSearch ? 'Buscar usuários...' : 'Buscar receitas...',
+                        hintText: isUserSearch
+                            ? 'Buscar usuários...'
+                            : 'Buscar receitas...',
                         border: InputBorder.none,
                         hintStyle: TextStyle(
                           color: Color(0xFF999999),
@@ -198,13 +288,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                       ),
                       onSubmitted: (value) {
                         _saveRecentSearch(value);
-                        setState(() { _debouncedQuery = value; });
+                        setState(() {
+                          _debouncedQuery = value;
+                        });
                       },
                     ),
                   ),
                   if (_searchQuery.isNotEmpty)
                     GestureDetector(
-                      onTap: () => _searchController.clear(),
+                      onTap: () {
+                        _searchController.clear();
+                        _searchFocusNode.requestFocus();
+                      },
                       child: Icon(
                         Icons.close,
                         color: Color(0xFF999999),
@@ -252,6 +347,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: 16),
+        physics: BouncingScrollPhysics(),
         itemCount: filters.length,
         itemBuilder: (context, index) {
           final filter = filters[index];
@@ -324,18 +420,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
       );
     }
 
-    // TODO: Substitua pelo seu provider de receitas
+    // Busca de receitas com filtros
     final recipeResults = allRecipes.where((recipe) {
       final query = _debouncedQuery.toLowerCase();
-      final matchesQuery =
-          recipe['name'].toLowerCase().contains(query) ||
-              (recipe['category'] as String).toLowerCase().contains(query);
-      final matchesFilter = selectedFilter == 'Todos' ||
-          recipe['category'] == selectedFilter;
+      final matchesQuery = recipe['name'].toLowerCase().contains(query) ||
+          (recipe['category'] as String).toLowerCase().contains(query);
+      final matchesFilter =
+          selectedFilter == 'Todos' || recipe['category'] == selectedFilter;
       return matchesQuery && matchesFilter;
     }).toList();
 
-    if (recipeResults.isEmpty && _debouncedQuery.isNotEmpty) return _buildNoResults();
+    if (recipeResults.isEmpty && _debouncedQuery.isNotEmpty)
+      return _buildNoResults();
     return _buildRecipeResults(recipeResults);
   }
 
@@ -435,7 +531,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     return GestureDetector(
       onTap: () {
         _searchController.text = search;
-        _searchController.selection = TextSelection.fromPosition(TextPosition(offset: _searchController.text.length));
+        _searchController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _searchController.text.length));
         _searchFocusNode.requestFocus();
       },
       child: Container(
@@ -456,9 +553,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-                isUserSearch ? Icons.person_outline : Icons.history,
-                size: 16,
-                color: isUserSearch ? Color(0xFFFA9500) : Color(0xFF999999)
+              isUserSearch ? Icons.person_outline : Icons.history,
+              size: 16,
+              color: isUserSearch ? Color(0xFFFA9500) : Color(0xFF999999),
             ),
             SizedBox(width: 8),
             Text(
@@ -601,7 +698,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
           ),
           SizedBox(height: 24),
           Text(
-            isUserSearch ? 'Nenhum usuário encontrado' : 'Nenhuma receita encontrada',
+            isUserSearch
+                ? 'Nenhum usuário encontrado'
+                : 'Nenhuma receita encontrada',
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontSize: 20,
@@ -611,7 +710,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
           ),
           SizedBox(height: 8),
           Text(
-            isUserSearch ? 'Verifique o @username' : 'Tente buscar por outro termo',
+            isUserSearch
+                ? 'Verifique o @username'
+                : 'Tente buscar por outro termo',
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontSize: 14,
@@ -776,7 +877,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding:
+                      EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: _getDifficultyColor(recipe['difficulty']),
                         borderRadius: BorderRadius.circular(12),

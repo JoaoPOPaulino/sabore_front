@@ -314,22 +314,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               children: [
                 _buildStatColumn(userData['recipesCount'].toString(), 'Receitas'),
                 Container(height: 40, width: 1, color: Color(0xFFE0E0E0)),
-                followersCountAsync.when(
-                  data: (count) => _buildStatColumn(count.toString(), 'Seguidores'),
-                  loading: () => _buildStatColumn('...', 'Seguidores'),
-                  error: (_, __) => _buildStatColumn(userData['followersCount'].toString(), 'Seguidores'),
+
+                // ✅ SEGUIDORES - CLICÁVEL
+                GestureDetector(
+                  onTap: () {
+                    context.push(
+                      '/followers/${userIdAsInt}',
+                      extra: {'userName': userData['name'] ?? 'Usuário'},
+                    );
+                  },
+                  child: followersCountAsync.when(
+                    data: (count) => _buildStatColumn(count.toString(), 'Seguidores'),
+                    loading: () => _buildStatColumn('...', 'Seguidores'),
+                    error: (_, __) => _buildStatColumn(userData['followersCount'].toString(), 'Seguidores'),
+                  ),
                 ),
+
                 Container(height: 40, width: 1, color: Color(0xFFE0E0E0)),
-                isOwnProfile && currentUserId != null
-                    ? ref.watch(followingCountProvider(currentUserId)).when(
-                  data: (count) => _buildStatColumn(count.toString(), 'Seguindo'),
-                  loading: () => _buildStatColumn('...', 'Seguindo'),
-                  error: (_, __) => _buildStatColumn(userData['followingCount'].toString(), 'Seguindo'),
-                )
-                    : followingCountAsync.when(
-                  data: (count) => _buildStatColumn(count.toString(), 'Seguindo'),
-                  loading: () => _buildStatColumn('...', 'Seguindo'),
-                  error: (_, __) => _buildStatColumn(userData['followingCount'].toString(), 'Seguindo'),
+
+                // ✅ SEGUINDO - CLICÁVEL
+                GestureDetector(
+                  onTap: () {
+                    context.push(
+                      '/following/${userIdAsInt}',
+                      extra: {'userName': userData['name'] ?? 'Usuário'},
+                    );
+                  },
+                  child: isOwnProfile && currentUserId != null
+                      ? ref.watch(followingCountProvider(currentUserId)).when(
+                    data: (count) => _buildStatColumn(count.toString(), 'Seguindo'),
+                    loading: () => _buildStatColumn('...', 'Seguindo'),
+                    error: (_, __) => _buildStatColumn(userData['followingCount'].toString(), 'Seguindo'),
+                  )
+                      : followingCountAsync.when(
+                    data: (count) => _buildStatColumn(count.toString(), 'Seguindo'),
+                    loading: () => _buildStatColumn('...', 'Seguindo'),
+                    error: (_, __) => _buildStatColumn(userData['followingCount'].toString(), 'Seguindo'),
+                  ),
                 ),
               ],
             ),
@@ -446,10 +467,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       final isNowFollowing = await authService.toggleFollow(userIdToFollow);
 
-      ref.invalidate(followersCountProvider(userIdToFollow));
-      ref.invalidate(followingCountProvider(currentUserId));
+      // ✅ INVALIDAR TODOS OS PROVIDERS RELACIONADOS
       ref.invalidate(followersProvider(userIdToFollow));
+      ref.invalidate(followersCountProvider(userIdToFollow));
       ref.invalidate(followingProvider(currentUserId));
+      ref.invalidate(followingCountProvider(currentUserId));
       ref.invalidate(followStateProvider(userIdToFollow));
       ref.invalidate(userProfileProvider(userIdToFollow));
       ref.invalidate(userProfileProvider(currentUserId));

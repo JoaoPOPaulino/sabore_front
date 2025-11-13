@@ -271,10 +271,12 @@ final followingCountProvider = FutureProvider.family<int, int>((ref, userId) asy
   return following.length;
 });
 
-final followStateProvider = StateProvider.autoDispose.family<bool, int>((ref, userId) {
-  final currentUserId = ref.watch(currentUserDataProvider)?['id'];
+final followStateProvider = Provider.autoDispose.family<bool, int>((ref, userId) {
+  final currentUserId = ref.watch(currentUserDataProvider)?['id'] as int?;
   if (currentUserId == null) return false;
+
   final followingListAsync = ref.watch(followingProvider(currentUserId));
+
   return followingListAsync.when(
     data: (list) => list.any((user) => user['id'] == userId),
     loading: () => false,
