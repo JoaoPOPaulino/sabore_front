@@ -1228,6 +1228,8 @@ class MockRecipeService {
     10: [1, 2, 11, 15, 17, 6],                  // Fernanda curtiu 6 receitas
   };
 
+
+
   // ✅ SALVOS POR LIVRO - REALISTA E COERENTE
   static final Map<int, Map<String, List<int>>> _savedRecipesByBook = {
     1: {

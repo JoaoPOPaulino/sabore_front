@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'mock_notification_service.dart';
+
 class MockAuthService {
   static final List<Map<String, dynamic>> _users = [
     {
@@ -463,18 +465,38 @@ class MockAuthService {
     }
 
     final currentUserFollowing = _followingMap[_currentUserId]!;
+    final isNowFollowing = !currentUserFollowing.contains(userIdToFollow);
 
     if (currentUserFollowing.contains(userIdToFollow)) {
+      // DEIXAR DE SEGUIR
       currentUserFollowing.remove(userIdToFollow);
       print('❌ [MOCK] Usuário $_currentUserId deixou de seguir $userIdToFollow');
     } else {
+      // COMEÇAR A SEGUIR
       currentUserFollowing.add(userIdToFollow);
       print('✅ [MOCK] Usuário $_currentUserId começou a seguir $userIdToFollow');
+
+      // ✅ CRIAR NOTIFICAÇÃO DE FOLLOW
+      try {
+        final currentUser = _users.firstWhere((u) => u['id'] == _currentUserId);
+        final notificationService = MockNotificationService();
+
+        notificationService.createFollowNotification(
+          targetUserId: userIdToFollow,
+          fromUserId: _currentUserId!,
+          fromUserName: currentUser['name'],
+          fromUserImage: currentUser['profileImage'],
+        );
+
+        print('🔔 Notificação de follow enviada para usuário $userIdToFollow');
+      } catch (e) {
+        print('❌ Erro ao criar notificação: $e');
+      }
     }
 
     await _updateFollowCounts(_currentUserId!, userIdToFollow);
 
-    return currentUserFollowing.contains(userIdToFollow);
+    return isNowFollowing;
   }
 
   Future<void> _updateFollowCounts(int currentUserId, int targetUserId) async {

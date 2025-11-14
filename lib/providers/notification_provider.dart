@@ -20,10 +20,15 @@ final notificationsProvider = StreamProvider.autoDispose<List<AppNotification>>(
   final initialNotifications = await service.getNotifications(userId);
   yield initialNotifications;
 
-  // Escutar novas notificações
-  await for (final newNotification in service.notificationStream) {
-    final updatedNotifications = await service.getNotifications(userId);
-    yield updatedNotifications;
+  // ✅ POLLING A CADA 3 SEGUNDOS PARA ATUALIZAR
+  await for (final _ in Stream.periodic(Duration(seconds: 3))) {
+    if (!ref.state.hasValue) break;
+    try {
+      final updatedNotifications = await service.getNotifications(userId);
+      yield updatedNotifications;
+    } catch (e) {
+      print('❌ Erro ao atualizar notificações: $e');
+    }
   }
 });
 
@@ -33,6 +38,7 @@ final unreadNotificationCountProvider = FutureProvider.autoDispose<int>((ref) as
 
   final userId = currentUser['id'] as int;
   final service = ref.watch(notificationServiceProvider);
+  ref.watch(notificationsProvider);
 
   return await service.getUnreadCount(userId);
 });
