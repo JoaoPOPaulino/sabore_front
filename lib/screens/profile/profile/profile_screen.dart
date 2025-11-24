@@ -24,13 +24,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String selectedTab = 'Receitas';
   bool _isFollowLoading = false;
 
-  final List<String> _mockGalleryImages = [
-    'assets/images/chef.jpg',
-    'assets/images/chef.jpg',
-    'assets/images/chef.jpg',
-    'assets/images/chef.jpg',
-  ];
-
   final List<Map<String, dynamic>> _mockReviews = [
     {
       'authorName': 'Carlos Souza',
@@ -764,7 +757,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         );
       case 'Galeria':
-        return _buildGalleryGrid();
+        final userRecipes = ref.watch(userRecipesProvider(userId));
+        return userRecipes.when(
+          data: (recipes) {
+            // Filtrar apenas receitas com imagens
+            final recipesWithImages = recipes.where((r) => r.image != null && r.image!.isNotEmpty).toList();
+
+            if (recipesWithImages.isEmpty) {
+              return _buildEmptyStateSliver(
+                icon: Icons.photo_library_outlined,
+                title: 'Nenhuma foto ainda',
+                subtitle: isOwnProfile
+                    ? 'As fotos das suas receitas aparecerão aqui.'
+                    : 'Este usuário ainda não postou fotos.',
+              );
+            }
+
+            return _buildGalleryGrid(recipesWithImages);
+          },
+          loading: () => SliverToBoxAdapter(
+            child: Container(
+              height: 200,
+              child: Center(child: CircularProgressIndicator(color: Color(0xFFFA9500))),
+            ),
+          ),
+          error: (err, stack) => _buildEmptyStateSliver(
+            icon: Icons.error_outline,
+            title: 'Erro ao carregar',
+            subtitle: 'Não foi possível carregar a galeria.',
+          ),
+        );
       case 'Avaliações':
         return _buildReviewsList();
       case 'Salvos':
@@ -833,7 +855,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildGalleryGrid() {
+  Widget _buildGalleryGrid(List<Recipe> recipes) {
     return SliverGrid(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
@@ -843,17 +865,83 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       delegate: SliverChildBuilderDelegate(
             (context, index) {
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              image: DecorationImage(
-                image: AssetImage(_mockGalleryImages[index]),
-                fit: BoxFit.cover,
+          final recipe = recipes[index];
+
+          ImageProvider imageProvider;
+          if (recipe.image!.startsWith('assets/')) {
+            imageProvider = AssetImage(recipe.image!);
+          } else {
+            imageProvider = FileImage(File(recipe.image!));
+          }
+
+          return GestureDetector(
+            onTap: () {
+              print('🖼️ Galeria - Receita clicada: ${recipe.title}');
+              context.push('/recipe/${recipe.id}');
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                image: DecorationImage(
+                  image: imageProvider,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              // Overlay com gradiente para melhor legibilidade
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.3),
+                    ],
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    // Badge com contagem de likes
+                    if (recipe.likesCount > 0)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.favorite,
+                                color: Colors.red,
+                                size: 10,
+                              ),
+                              SizedBox(width: 3),
+                              Text(
+                                '${recipe.likesCount}',
+                                style: TextStyle(
+                                  fontFamily: 'Montserrat',
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           );
         },
-        childCount: _mockGalleryImages.length,
+        childCount: recipes.length,
       ),
     );
   }

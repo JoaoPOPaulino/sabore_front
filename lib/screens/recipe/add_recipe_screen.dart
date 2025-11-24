@@ -22,7 +22,7 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
 
   // Controllers para os formulários
   final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController(); // ✨ NOVO
+  final _descriptionController = TextEditingController();
   File? _selectedImageFile;
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
@@ -37,14 +37,14 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
   // Dados da receita
   Map<String, dynamic> recipeData = {
     'name': '',
-    'description': '', // ✨ NOVO
+    'description': '',
     'ingredients': <Map<String, String>>[],
     'preparations': <String>[],
     'prepTime': 15,
     'cookTime': 45,
-    'servings': 4, // ✨ NOVO
+    'servings': 4,
     'restriction': 'Não',
-    'state': 'Nenhum', // ✨ NOVO
+    'state': 'Nenhum',
   };
 
   @override
@@ -400,7 +400,7 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
                           hintStyle: TextStyle(color: Colors.grey[400]),
                         ),
                         onChanged: (value) {
-                          setState(() { // setState aqui para atualizar o 'canProceed'
+                          setState(() {
                             if (index < recipeData['preparations'].length) {
                               recipeData['preparations'][index] = value;
                             }
@@ -756,7 +756,7 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
 
   // ---- MÉTODOS DE LÓGICA ----
 
-  // ✨ FUNÇÃO _nextStep CORRIGIDA (estava faltando)
+
   void _nextStep() {
     if (currentStep < 5) {
       setState(() {
@@ -769,7 +769,7 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     }
   }
 
-  // ✨ FUNÇÃO _pickImage CORRIGIDA (estava faltando)
+
   void _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -786,32 +786,34 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     }
   }
 
-  // ✨ FUNÇÃO _addIngredient CORRIGIDA (estava faltando)
+
   void _addIngredient() {
     setState(() {
       recipeData['ingredients'].add({ 'name': '', 'amount': '', });
     });
   }
 
-  // ✨ FUNÇÃO _addPreparation CORRIGIDA (estava faltando)
+
   void _addPreparation() {
     setState(() {
       recipeData['preparations'].add('');
     });
   }
 
-  // ✨ FUNÇÃO _confirmRecipe CORRIGIDA (estava faltando)
+
   void _confirmRecipe() async {
     setState(() => _isLoading = true);
 
     try {
       String? imageUrl;
       if (kIsWeb && _selectedImageBytes != null) {
-        print("Upload de imagem web não implementado no serviço. A imagem não será enviada.");
-        // TODO: Seu ApiService precisa de um método que aceite Uint8List para web
+
+        imageUrl = 'web_image_${DateTime.now().millisecondsSinceEpoch}';
+        print("⚠️ Imagem web: A visualização não funcionará completamente no mock. Path: $imageUrl");
       } else if (!kIsWeb && _selectedImageFile != null) {
-        // CORRIJA SUA BASEURL no ApiService para isso funcionar
-        imageUrl = 'assets/images/chef.jpg';
+
+        imageUrl = _selectedImageFile!.path;
+        print("📸 Imagem mobile salva: $imageUrl");
       }
 
       final ingredientsList = (recipeData['ingredients'] as List<Map<String, String>>)
@@ -849,9 +851,11 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
         createdAt: DateTime.now(),
       );
 
-      // CORRIJA SUA BASEURL no ApiService para isso funcionar
+
       await ref.read(recipesProvider.notifier).addRecipe(newRecipe);
       ref.invalidate(userRecipesProvider(userIdAsInt));
+      ref.invalidate(userProfileProvider(userIdAsInt));
+      ref.invalidate(allRecipesProvider);
 
       if (mounted) context.push('/recipe-success');
 
@@ -870,13 +874,13 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     }
   }
 
-  // ✨ FUNÇÃO _hasSelectedImage CORRIGIDA (estava faltando)
+
   bool _hasSelectedImage() {
     return (kIsWeb && _selectedImageBytes != null) ||
         (!kIsWeb && _selectedImageFile != null);
   }
 
-  // ✨ FUNÇÃO _getImageProvider CORRIGIDA (estava faltando)
+
   DecorationImage? _getImageProvider() {
     if (kIsWeb && _selectedImageBytes != null) {
       return DecorationImage(image: MemoryImage(_selectedImageBytes!), fit: BoxFit.cover);
@@ -886,7 +890,7 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     return null;
   }
 
-  // ✨ FUNÇÃO dispose CORRIGIDA (estava faltando)
+
   @override
   void dispose() {
     _nameController.dispose();

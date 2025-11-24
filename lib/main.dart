@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart'; // ✅ FALTAVA ESTE IMPORT
+import 'package:sabore_app/test_email.dart';
+import 'firebase_options.dart';
 import 'package:sabore_app/screens/auth/verify_email_screen.dart';
 import 'package:sabore_app/screens/auth/verify_phone_screen.dart';
 import 'package:sabore_app/screens/auth/forgot_password_screen.dart';
@@ -32,7 +35,21 @@ import 'screens/recipe/recipe_comments_screen.dart';
 import 'package:sabore_app/screens/profile/profile/followers_screen.dart';
 import 'package:sabore_app/screens/profile/profile/following_screen.dart';
 
-void main() {
+// ✅ INICIALIZAÇÃO CORRIGIDA
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    // ✅ Inicializa o Firebase com as configurações geradas
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('✅ Firebase inicializado com sucesso!');
+  } catch (e) {
+    print('⚠️ Erro ao inicializar Firebase: $e');
+    print('⚠️ Continuando em modo mock para desenvolvimento');
+  }
+
   runApp(ProviderScope(child: MyApp()));
 }
 
@@ -116,7 +133,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => LoginScreen(),
       ),
 
-      // ✅ ROTAS DE RECUPERAÇÃO DE SENHA
+      // Rotas de Recuperação de Senha
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => ForgotPasswordScreen(),
@@ -286,10 +303,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      // Test Route
+      // Test Routes
       GoRoute(
         path: '/test',
         builder: (context, state) => TestAuthScreen(),
+      ),
+      GoRoute(
+        path: '/test-email',
+        builder: (context, state) => TestEmailScreen(),
       ),
     ],
     redirect: (context, state) {
@@ -297,12 +318,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isFirstLogin = ref.read(isFirstLoginProvider);
       final location = state.matchedLocation;
 
-      // Se ainda está carregando, manter na rota atual
       if (authState.isLoading && !authState.isInitialized) {
         return null;
       }
 
-      // Rotas públicas
       final publicRoutes = [
         '/onboarding',
         '/create-account',
@@ -312,19 +331,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         '/choose-recovery-method',
         '/verify-recovery-code',
         '/reset-password',
-        '/test'
+        '/test',
+        '/test-email', // ✅ Adicionar rota de teste como pública
       ];
 
       if (publicRoutes.contains(location)) {
         return null;
       }
 
-      // Se não está autenticado, redirecionar para onboarding
       if (!authState.isAuthenticated) {
         return '/onboarding';
       }
 
-      // Se está autenticado e é primeiro login
       if (authState.isAuthenticated && isFirstLogin) {
         if (location != '/setup-profile' &&
             location != '/setup-complete' &&
@@ -333,7 +351,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      // Permitir navegação livre
       return null;
     },
     refreshListenable: routerNotifier,
@@ -386,6 +403,54 @@ class TestAuthScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            SizedBox(height: 20),
+
+            // Botões de teste para Email e SMS
+            Card(
+              color: Colors.blue[50],
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      '🧪 Testes de Verificação',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: () => context.push('/test-email'),
+                      icon: Icon(Icons.email),
+                      label: Text('Testar Envio de Email'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      onPressed: () => context.push('/verify-email'),
+                      icon: Icon(Icons.email),
+                      label: Text('Testar Verificação Email'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      onPressed: () => context.push('/verify-phone'),
+                      icon: Icon(Icons.phone),
+                      label: Text('Testar Verificação SMS'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => context.go('/login'),

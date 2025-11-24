@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/recipe_provider.dart';
 import '../../widgets/profile_image_widget.dart';
 
 class RecipeCommentsScreen extends ConsumerStatefulWidget {
@@ -26,84 +27,6 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
   int? _replyingToId;
   String? _replyingToName;
 
-  // Mock data de comentários
-  List<Comment> _comments = [
-    Comment(
-      id: 1,
-      userId: 4,
-      userName: 'Ana Beatriz Costa',
-      userImage: 'assets/images/chef.jpg',
-      text: 'Receita incrível! Fiz ontem e ficou perfeito. Minha família adorou! 😍',
-      timestamp: DateTime.now().subtract(Duration(hours: 2)),
-      likes: 12,
-      isLiked: true,
-      replies: [
-        Comment(
-          id: 11,
-          userId: 1,
-          userName: 'João Pedro Silva',
-          userImage: null,
-          text: 'Muito obrigado pelo feedback! Fico feliz que tenha gostado! ❤️',
-          timestamp: DateTime.now().subtract(Duration(hours: 1, minutes: 30)),
-          likes: 5,
-          isLiked: false,
-        ),
-        Comment(
-          id: 12,
-          userId: 6,
-          userName: 'Juliana Ferreira',
-          userImage: null,
-          text: 'Também fiz e aprovei! Deliciosa!',
-          timestamp: DateTime.now().subtract(Duration(hours: 1)),
-          likes: 3,
-          isLiked: false,
-        ),
-      ],
-    ),
-    Comment(
-      id: 2,
-      userId: 10,
-      userName: 'Fernanda Gomes',
-      userImage: null,
-      text: 'Posso substituir o leite de coco por leite comum?',
-      timestamp: DateTime.now().subtract(Duration(hours: 5)),
-      likes: 3,
-      isLiked: false,
-      replies: [
-        Comment(
-          id: 21,
-          userId: 1,
-          userName: 'João Pedro Silva',
-          userImage: null,
-          text: 'Sim! Pode usar leite comum sem problemas. O sabor fica um pouco diferente mas continua delicioso!',
-          timestamp: DateTime.now().subtract(Duration(hours: 4)),
-          likes: 2,
-          isLiked: false,
-        ),
-      ],
-    ),
-    Comment(
-      id: 3,
-      userId: 6,
-      userName: 'Juliana Ferreira',
-      userImage: null,
-      text: 'Maravilhosa! Já é a terceira vez que faço essa receita. Nunca falha! 🎉',
-      timestamp: DateTime.now().subtract(Duration(days: 1)),
-      likes: 8,
-      isLiked: false,
-    ),
-    Comment(
-      id: 4,
-      userId: 1,
-      userName: 'João Pedro Silva',
-      userImage: null,
-      text: 'Para quem quiser uma versão ainda mais saudável, podem usar açúcar de coco! Fica incrível também! 💚',
-      timestamp: DateTime.now().subtract(Duration(days: 2)),
-      likes: 15,
-      isLiked: false,
-    ),
-  ];
-
   @override
   void dispose() {
     _commentController.dispose();
@@ -111,66 +34,83 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
     super.dispose();
   }
 
-  void _submitComment() {
+  Future<void> _submitComment() async {
     if (_commentController.text.trim().isEmpty) return;
 
     final currentUser = ref.read(currentUserDataProvider);
     if (currentUser == null) return;
 
-    final newComment = Comment(
-      id: DateTime.now().millisecondsSinceEpoch,
-      userId: currentUser['id'] as int,
-      userName: currentUser['name'],
-      userImage: currentUser['profileImage'],
-      text: _commentController.text.trim(),
-      timestamp: DateTime.now(),
-      likes: 0,
-      isLiked: false,
-    );
+    final recipeId = int.parse(widget.recipeId);
+    final userId = currentUser['id'] as int;
+    final text = _commentController.text.trim();
 
-    setState(() {
-      if (_replyingToId != null) {
-        // Adicionar resposta
-        final commentIndex = _comments.indexWhere((c) => c.id == _replyingToId);
-        if (commentIndex != -1) {
-          _comments[commentIndex].replies.add(newComment);
-        }
-      } else {
-        // Adicionar comentário principal
-        _comments.insert(0, newComment);
-      }
+    try {
+      final actions = ref.read(recipeActionsProvider);
+      await actions.addComment(
+        recipeId: recipeId,
+        userId: userId,
+        text: text,
+        replyToId: _replyingToId,
+      );
+
       _commentController.clear();
-      _replyingToId = null;
-      _replyingToName = null;
-    });
+      setState(() {
+        _replyingToId = null;
+        _replyingToName = null;
+      });
+      _commentFocusNode.unfocus();
 
-    _commentFocusNode.unfocus();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 12),
-            Text(
-              _replyingToId != null ? 'Resposta enviada!' : 'Comentário enviado!',
-              style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.w600),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text(
+                  _replyingToId != null ? 'Resposta enviada!' : 'Comentário enviado!',
+                  style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.w600),
+                ),
+              ],
             ),
-          ],
-        ),
-        backgroundColor: Color(0xFF7CB342),
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+            backgroundColor: Color(0xFF7CB342),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao enviar comentário'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  void _toggleLike(Comment comment) {
-    setState(() {
-      comment.isLiked = !comment.isLiked;
-      comment.likes += comment.isLiked ? 1 : -1;
-    });
+  Future<void> _toggleLike(Map<String, dynamic> comment, {int? parentCommentId}) async {
+    final currentUser = ref.read(currentUserDataProvider);
+    if (currentUser == null) return;
+
+    final recipeId = int.parse(widget.recipeId);
+    final userId = currentUser['id'] as int;
+    final commentId = comment['id'] as int;
+
+    try {
+      final actions = ref.read(recipeActionsProvider);
+      await actions.toggleCommentLike(
+        recipeId: recipeId,
+        commentId: commentId,
+        userId: userId,
+        parentCommentId: parentCommentId,
+      );
+    } catch (e) {
+      print('❌ Erro ao curtir comentário: $e');
+    }
   }
 
   void _replyToComment(int commentId, String userName) {
@@ -191,6 +131,8 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = ref.watch(currentUserDataProvider)?['id'] as int?;
+    final recipeId = int.parse(widget.recipeId);
+    final commentsAsync = ref.watch(recipeCommentsProvider(recipeId));
 
     return Scaffold(
       backgroundColor: Color(0xFFFAFAFA),
@@ -237,18 +179,34 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
         children: [
           // Lista de comentários
           Expanded(
-            child: _comments.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: _comments.length,
-              itemBuilder: (context, index) {
-                return _buildCommentItem(
-                  _comments[index],
-                  currentUserId,
-                  isReply: false,
+            child: commentsAsync.when(
+              data: (comments) {
+                if (comments.isEmpty) {
+                  return _buildEmptyState();
+                }
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(recipeCommentsProvider(recipeId));
+                  },
+                  child: ListView.builder(
+                    padding: EdgeInsets.all(16),
+                    itemCount: comments.length,
+                    itemBuilder: (context, index) {
+                      return _buildCommentItem(
+                        comments[index],
+                        currentUserId,
+                        isReply: false,
+                      );
+                    },
+                  ),
                 );
               },
+              loading: () => Center(
+                child: CircularProgressIndicator(color: Color(0xFFFA9500)),
+              ),
+              error: (error, stack) => Center(
+                child: Text('Erro ao carregar comentários'),
+              ),
             ),
           ),
 
@@ -300,9 +258,14 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
     );
   }
 
-  Widget _buildCommentItem(Comment comment, int? currentUserId, {required bool isReply}) {
-    final bool isAuthor = comment.userId == widget.recipeAuthorId;
-    final bool isCurrentUser = comment.userId == currentUserId;
+  Widget _buildCommentItem(
+      Map<String, dynamic> comment,
+      int? currentUserId, {
+        required bool isReply,
+        int? parentCommentId,
+      }) {
+    final bool isAuthor = comment['userId'] == widget.recipeAuthorId;
+    final bool isCurrentUser = comment['userId'] == currentUserId;
 
     return Container(
       margin: EdgeInsets.only(
@@ -317,7 +280,7 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
             children: [
               // Avatar
               ProfileImageWidget(
-                userData: {'profileImage': comment.userImage},
+                userData: {'profileImage': comment['userImage']},
                 radius: isReply ? 16 : 20,
               ),
               SizedBox(width: 12),
@@ -345,7 +308,7 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              comment.userName,
+                              comment['userName'],
                               style: TextStyle(
                                 fontFamily: 'Montserrat',
                                 fontWeight: FontWeight.w700,
@@ -388,7 +351,7 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
 
                       // Texto do comentário
                       Text(
-                        comment.text,
+                        comment['text'],
                         style: TextStyle(
                           fontFamily: 'Montserrat',
                           fontSize: isReply ? 13 : 14,
@@ -398,21 +361,21 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
                       ),
                       SizedBox(height: 8),
 
-                      // Ações (curtir, responder, tempo)
+                      // Ações
                       Row(
                         children: [
                           Text(
-                            _formatTimestamp(comment.timestamp),
+                            _formatTimestamp(comment['timestamp']),
                             style: TextStyle(
                               fontFamily: 'Montserrat',
                               fontSize: 11,
                               color: Color(0xFF999999),
                             ),
                           ),
-                          if (comment.likes > 0) ...[
+                          if (comment['likes'] > 0) ...[
                             SizedBox(width: 12),
                             Text(
-                              '${comment.likes} ${comment.likes == 1 ? 'curtida' : 'curtidas'}',
+                              '${comment['likes']} ${comment['likes'] == 1 ? 'curtida' : 'curtidas'}',
                               style: TextStyle(
                                 fontFamily: 'Montserrat',
                                 fontSize: 11,
@@ -424,7 +387,7 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
                           if (!isReply) ...[
                             SizedBox(width: 12),
                             GestureDetector(
-                              onTap: () => _replyToComment(comment.id, comment.userName),
+                              onTap: () => _replyToComment(comment['id'], comment['userName']),
                               child: Text(
                                 'Responder',
                                 style: TextStyle(
@@ -446,12 +409,12 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
               // Botão de curtir
               SizedBox(width: 8),
               GestureDetector(
-                onTap: () => _toggleLike(comment),
+                onTap: () => _toggleLike(comment, parentCommentId: parentCommentId),
                 child: Container(
                   padding: EdgeInsets.all(8),
                   child: Icon(
-                    comment.isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: comment.isLiked ? Colors.red : Color(0xFF999999),
+                    comment['isLiked'] ? Icons.favorite : Icons.favorite_border,
+                    color: comment['isLiked'] ? Colors.red : Color(0xFF999999),
                     size: isReply ? 18 : 20,
                   ),
                 ),
@@ -460,12 +423,13 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
           ),
 
           // Respostas
-          if (!isReply && comment.replies.isNotEmpty) ...[
+          if (!isReply && comment['replies'] != null && (comment['replies'] as List).isNotEmpty) ...[
             SizedBox(height: 8),
-            ...comment.replies.map((reply) => _buildCommentItem(
-              reply,
+            ...(comment['replies'] as List).map((reply) => _buildCommentItem(
+              reply as Map<String, dynamic>,
               currentUserId,
               isReply: true,
+              parentCommentId: comment['id'],
             )),
           ],
         ],
@@ -611,28 +575,4 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
       return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
     }
   }
-}
-
-class Comment {
-  final int id;
-  final int userId;
-  final String userName;
-  final String? userImage;
-  final String text;
-  final DateTime timestamp;
-  int likes;
-  bool isLiked;
-  final List<Comment> replies;
-
-  Comment({
-    required this.id,
-    required this.userId,
-    required this.userName,
-    this.userImage,
-    required this.text,
-    required this.timestamp,
-    required this.likes,
-    required this.isLiked,
-    List<Comment>? replies,
-  }) : this.replies = replies ?? [];
 }

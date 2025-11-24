@@ -24,6 +24,7 @@ android {
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -36,3 +37,5 @@ android {
 flutter {
     source = "../.."
 }
+
+apply plugin: 'com.google.gms.google-services'

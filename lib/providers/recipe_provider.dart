@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
 import '../services/mock_recipe_service.dart';
+import 'auth_provider.dart';
 
 // ============================================================================
 // PROVIDERS DE SERVIÇO
@@ -103,12 +104,15 @@ class RecipesNotifier extends StateNotifier<AsyncValue<List<Recipe>>> {
   // Adicionar nova receita
   Future<void> addRecipe(Recipe recipe) async {
     try {
-      // Como estamos usando mock, apenas recarregamos a lista
-      // Em produção, você faria:
-      // final service = ref.read(recipeServiceProviderForRecipes);
-      // await service.createRecipe(recipe);
+      final service = ref.read(recipeServiceProviderForRecipes);
+      final createdRecipe = await service.createRecipe(recipe);
 
-      print('✅ Receita "${recipe.title}" adicionada com sucesso!');
+      print('✅ Receita "${createdRecipe.title}" adicionada com sucesso!');
+
+      // Invalidar providers para atualizar UI
+      ref.invalidate(allRecipesProvider);
+      ref.invalidate(userRecipesProvider(recipe.userId));
+      ref.invalidate(userProfileProvider(recipe.userId));
 
       // Recarregar lista de receitas
       await loadRecipes();
@@ -155,6 +159,11 @@ final recipesProvider = StateNotifierProvider<RecipesNotifier, AsyncValue<List<R
 // ACTIONS PARA LIKES E INTERAÇÕES
 // ============================================================================
 
+final recipeCommentsProvider = FutureProvider.family<List<Map<String, dynamic>>, int>((ref, recipeId) async {
+  final service = ref.watch(recipeServiceProviderForRecipes);
+  return await service.getRecipeComments(recipeId);
+});
+
 final recipeActionsProvider = Provider<RecipeActions>((ref) {
   return RecipeActions(ref);
 });
@@ -177,9 +186,39 @@ class RecipeActions {
   }
 
   // Adicionar comentário
-  Future<void> addComment(int recipeId, String comment) async {
-    // TODO: Implementar quando tiver o serviço
-    print('💬 Comentário adicionado na receita $recipeId: $comment');
+  Future<Map<String, dynamic>> addComment({
+    required int recipeId,
+    required int userId,
+    required String text,
+    int? replyToId,
+  }) async {
+    final service = ref.read(recipeServiceProviderForRecipes);
+    final comment = await service.addComment(
+      recipeId: recipeId,
+      userId: userId,
+      text: text,
+      replyToId: replyToId,
+    );
+
+    // Invalidar providers para atualizar UI
+    ref.invalidate(recipeCommentsProvider(recipeId));
+    ref.invalidate(recipeByIdProvider(recipeId));
+
+    return comment;
+  }
+
+  // Toggle like em comentário
+  Future<void> toggleCommentLike({
+    required int recipeId,
+    required int commentId,
+    required int userId,
+    int? parentCommentId,
+  }) async {
+    final service = ref.read(recipeServiceProviderForRecipes);
+    await service.toggleCommentLike(recipeId, commentId, userId, parentCommentId: parentCommentId);
+
+    // Invalidar provider para atualizar UI
+    ref.invalidate(recipeCommentsProvider(recipeId));
   }
 
   // Avaliar receita
@@ -188,3 +227,4 @@ class RecipeActions {
     print('⭐ Receita $recipeId avaliada com $rating estrelas');
   }
 }
+

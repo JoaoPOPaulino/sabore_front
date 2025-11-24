@@ -8,7 +8,7 @@ class MockRecipeService {
   {
     'id': 1,
     'userId': 1,
-    'state': 'Tocantins', // ← ADICIONADO
+    'state': 'Tocantins',
     'title': 'Bolo de milho sem açúcar',
     'description': 'Delicioso bolo de milho perfeito para festas juninas, sem adição de açúcar refinado.',
     'ingredients': [
@@ -44,7 +44,7 @@ class MockRecipeService {
     {
     'id': 2,
     'userId': 1,
-    'state': 'Tocantins', // ← ADICIONADO
+    'state': 'Tocantins',
     'title': 'Canjica zero lactose',
     'description': 'Canjica cremosa e deliciosa, perfeita para quem tem intolerância à lactose.',
     'ingredients': [
@@ -79,7 +79,7 @@ class MockRecipeService {
     {
     'id': 3,
     'userId': 1,
-    'state': 'Goiás', // ← ADICIONADO
+    'state': 'Goiás',
     'title': 'Paçoca Cremosa',
     'description': 'Paçoca caseira cremosa, perfeita para festas juninas.',
     'ingredients': [
@@ -110,7 +110,7 @@ class MockRecipeService {
     {
     'id': 4,
     'userId': 1,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo',
     'title': 'Arroz Doce Especial',
     'description': 'Arroz doce cremoso com toque de limão e canela.',
     'ingredients': [
@@ -143,7 +143,7 @@ class MockRecipeService {
     {
     'id': 5,
     'userId': 1,
-    'state': 'Bahia', // ← ADICIONADO
+    'state': 'Bahia',
     'title': 'Cocada de Forno',
     'description': 'Cocada assada crocante por fora e macia por dentro.',
     'ingredients': [
@@ -176,7 +176,7 @@ class MockRecipeService {
         {
     'id': 6,
     'userId': 2,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo',
     'title': 'Lasanha à Bolonhesa',
     'description': 'Lasanha tradicional com molho bolonhesa caseiro e muito queijo.',
     'ingredients': [
@@ -211,7 +211,7 @@ class MockRecipeService {
     {
     'id': 7,
     'userId': 2,
-    'state': 'Rio de Janeiro', // ← ADICIONADO
+    'state': 'Rio de Janeiro',
     'title': 'Risoto de Camarão',
     'description': 'Risoto cremoso com camarões frescos e ervas finas.',
     'ingredients': [
@@ -245,7 +245,7 @@ class MockRecipeService {
     {
     'id': 8,
     'userId': 2,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo',
     'title': 'Nhoque ao Molho Branco',
     'description': 'Nhoque de batata caseiro com molho branco cremoso.',
     'ingredients': [
@@ -280,7 +280,7 @@ class MockRecipeService {
         {
     'id': 9,
     'userId': 3,
-    'state': 'Rio Grande do Sul', // ← ADICIONADO
+    'state': 'Rio Grande do Sul',
     'title': 'Churrasco Completo',
     'description': 'Guia completo para fazer o churrasco perfeito.',
     'ingredients': [
@@ -311,7 +311,7 @@ class MockRecipeService {
     {
     'id': 10,
     'userId': 3,
-    'state': 'Goiás', // ← ADICIONADO
+    'state': 'Goiás',
     'title': 'Farofa Completa',
     'description': 'Farofa rica com bacon, linguiça e legumes.',
     'ingredients': [
@@ -345,7 +345,7 @@ class MockRecipeService {
         {
     'id': 11,
     'userId': 4,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo',
     'title': 'Brownie de chocolate',
     'description': 'Brownie ultra cremoso com chocolate belga de primeira qualidade.',
     'ingredients': [
@@ -380,7 +380,7 @@ class MockRecipeService {
     {
     'id': 12,
     'userId': 4,
-    'state': 'Minas Gerais', // ← ADICIONADO - Pão de Queijo
+    'state': 'Minas Gerais',
     'title': 'Pão de Queijo',
     'description': 'Pão de queijo mineiro tradicional, crocante por fora e macio por dentro.',
     'ingredients': [
@@ -413,7 +413,7 @@ class MockRecipeService {
     {
     'id': 13,
     'userId': 4,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo', 
     'title': 'Mousse de Maracujá',
     'description': 'Mousse leve e refrescante de maracujá.',
     'ingredients': [
@@ -444,7 +444,7 @@ class MockRecipeService {
     {
     'id': 14,
     'userId': 4,
-    'state': 'Rio de Janeiro', // ← ADICIONADO
+    'state': 'Rio de Janeiro', 
     'title': 'Torta de Limão',
     'description': 'Torta de limão com merengue crocante.',
     'ingredients': [
@@ -480,7 +480,7 @@ class MockRecipeService {
         {
     'id': 15,
     'userId': 5,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo', 
     'title': 'Hambúrguer Artesanal',
     'description': 'Hambúrguer suculento feito em casa com ingredientes frescos.',
     'ingredients': [
@@ -513,7 +513,7 @@ class MockRecipeService {
     {
     'id': 16,
     'userId': 5,
-    'state': 'Paraná', // ← ADICIONADO
+    'state': 'Paraná', 
     'title': 'Batata Rosti',
     'description': 'Batata suíça crocante por fora e macia por dentro.',
     'ingredients': [
@@ -546,7 +546,7 @@ class MockRecipeService {
         {
     'id': 17,
     'userId': 6,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo', 
     'title': 'Pizza Margherita',
     'description': 'Pizza clássica italiana com molho de tomate fresco, mussarela e manjericão.',
     'ingredients': [
@@ -579,7 +579,7 @@ class MockRecipeService {
     {
     'id': 18,
     'userId': 6,
-    'state': 'Rio de Janeiro', // ← ADICIONADO
+    'state': 'Rio de Janeiro', 
     'title': 'Suco Verde Detox',
     'description': 'Suco verde energizante e desintoxicante.',
     'ingredients': [
@@ -611,7 +611,7 @@ class MockRecipeService {
     {
     'id': 19,
     'userId': 6,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo', 
     'title': 'Salada Caesar',
     'description': 'Salada clássica com molho caesar e croutons crocantes.',
     'ingredients': [
@@ -645,7 +645,7 @@ class MockRecipeService {
         {
     'id': 20,
     'userId': 9,
-    'state': 'Pernambuco', // ← ADICIONADO
+    'state': 'Pernambuco', 
     'title': 'Tapioca Recheada',
     'description': 'Tapioca brasileira com recheio de queijo coalho e coco.',
     'ingredients': [
@@ -676,7 +676,7 @@ class MockRecipeService {
     {
     'id': 21,
     'userId': 9,
-    'state': 'Pará', // ← ADICIONADO
+    'state': 'Pará', 
     'title': 'Açaí na Tigela',
     'description': 'Açaí cremoso com granola, banana e mel.',
     'ingredients': [
@@ -710,7 +710,7 @@ class MockRecipeService {
         {
     'id': 22,
     'userId': 10,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo', 
     'title': 'Brigadeiro Gourmet',
     'description': 'Brigadeiro cremoso com chocolate belga.',
     'ingredients': [
@@ -741,7 +741,7 @@ class MockRecipeService {
     {
     'id': 23,
     'userId': 10,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo', 
     'title': 'Panqueca Americana',
     'description': 'Panquecas fofas com calda de maple.',
     'ingredients': [
@@ -774,7 +774,7 @@ class MockRecipeService {
     {
     'id': 24,
     'userId': 10,
-    'state': 'Rio de Janeiro', // ← ADICIONADO
+    'state': 'Rio de Janeiro', 
     'title': 'Smoothie de Frutas',
     'description': 'Smoothie refrescante com frutas tropicais.',
     'ingredients': [
@@ -808,7 +808,7 @@ class MockRecipeService {
         {
     'id': 25,
     'userId': 7,
-    'state': 'São Paulo', // ← ADICIONADO
+    'state': 'São Paulo', 
     'title': 'Omelete Simples',
     'description': 'Omelete básico e nutritivo para qualquer hora do dia.',
     'ingredients': [
@@ -1512,4 +1512,259 @@ class MockRecipeService {
     print('📸 Upload simulado de imagem: $filePath');
     return 'assets/images/chef.jpg';
   }
+  // ===== SISTEMA DE COMENTÁRIOS =====
+  static final Map<int, List<Map<String, dynamic>>> _comments = {
+    1: [
+      {
+        'id': 1,
+        'userId': 4,
+        'userName': 'Ana Beatriz Costa',
+        'userImage': 'assets/images/chef.jpg',
+        'text': 'Receita incrível! Fiz ontem e ficou perfeito. Minha família adorou! 😍',
+        'timestamp': DateTime.now().subtract(Duration(hours: 2)),
+        'likes': 12,
+        'isLiked': false,
+        'replies': [
+          {
+            'id': 11,
+            'userId': 1,
+            'userName': 'João Pedro Silva',
+            'userImage': null,
+            'text': 'Muito obrigado pelo feedback! Fico feliz que tenha gostado! ❤️',
+            'timestamp': DateTime.now().subtract(Duration(hours: 1, minutes: 30)),
+            'likes': 5,
+            'isLiked': false,
+          },
+        ],
+      },
+      {
+        'id': 2,
+        'userId': 10,
+        'userName': 'Fernanda Gomes',
+        'userImage': null,
+        'text': 'Posso substituir o leite de coco por leite comum?',
+        'timestamp': DateTime.now().subtract(Duration(hours: 5)),
+        'likes': 3,
+        'isLiked': false,
+        'replies': [
+          {
+            'id': 21,
+            'userId': 1,
+            'userName': 'João Pedro Silva',
+            'userImage': null,
+            'text': 'Sim! Pode usar leite comum sem problemas. O sabor fica um pouco diferente mas continua delicioso!',
+            'timestamp': DateTime.now().subtract(Duration(hours: 4)),
+            'likes': 2,
+            'isLiked': false,
+          },
+        ],
+      },
+    ],
+    2: [
+      {
+        'id': 101,
+        'userId': 6,
+        'userName': 'Juliana Ferreira',
+        'userImage': null,
+        'text': 'Canjica perfeita! Ficou muito cremosa! 🤤',
+        'timestamp': DateTime.now().subtract(Duration(hours: 3)),
+        'likes': 8,
+        'isLiked': false,
+      },
+    ],
+  };
+
+  static int _commentIdCounter = 1000;
+
+  Future<List<Map<String, dynamic>>> getRecipeComments(int recipeId) async {
+    await _simulateDelay();
+    return List.from(_comments[recipeId] ?? []);
+  }
+
+  Future<Map<String, dynamic>> addComment({
+    required int recipeId,
+    required int userId,
+    required String text,
+    int? replyToId,
+  }) async {
+    await _simulateDelay();
+
+    final authService = MockAuthService();
+    final user = await authService.getUserById(userId);
+
+    final newComment = {
+      'id': _commentIdCounter++,
+      'userId': userId,
+      'userName': user['name'],
+      'userImage': user['profileImage'],
+      'text': text,
+      'timestamp': DateTime.now(),
+      'likes': 0,
+      'isLiked': false,
+      'replies': [],
+    };
+
+    if (!_comments.containsKey(recipeId)) {
+      _comments[recipeId] = [];
+    }
+
+    if (replyToId != null) {
+      // Adicionar como resposta
+      final commentIndex = _comments[recipeId]!.indexWhere((c) => c['id'] == replyToId);
+      if (commentIndex != -1) {
+        final replies = _comments[recipeId]![commentIndex]['replies'] as List;
+        replies.add(newComment);
+      }
+    } else {
+      // Adicionar como comentário principal
+      _comments[recipeId]!.insert(0, newComment);
+
+      // Atualizar contagem de comentários
+      final recipeIndex = _recipes.indexWhere((r) => r['id'] == recipeId);
+      if (recipeIndex != -1) {
+        _recipes[recipeIndex]['commentsCount'] = (_recipes[recipeIndex]['commentsCount'] as int) + 1;
+      }
+    }
+
+    print('💬 Comentário adicionado na receita $recipeId por ${user['name']}');
+
+    // 🔔 CRIAR NOTIFICAÇÃO DE COMENTÁRIO
+    final recipe = _recipes.firstWhere((r) => r['id'] == recipeId);
+    final recipeOwnerId = recipe['userId'] as int;
+
+    if (recipeOwnerId != userId) {
+      final notificationService = MockNotificationService();
+      notificationService.createCommentNotification(
+        targetUserId: recipeOwnerId,
+        fromUserId: userId,
+        fromUserName: user['name'],
+        fromUserImage: user['profileImage'],
+        recipeId: recipeId,
+        recipeName: recipe['title'],
+        commentText: text,
+      );
+    }
+
+    return newComment;
+  }
+
+  Future<void> toggleCommentLike(int recipeId, int commentId, int userId, {int? parentCommentId}) async {
+    await _simulateDelay();
+
+    if (!_comments.containsKey(recipeId)) return;
+
+    if (parentCommentId != null) {
+      // Like em resposta
+      final parentIndex = _comments[recipeId]!.indexWhere((c) => c['id'] == parentCommentId);
+      if (parentIndex != -1) {
+        final replies = _comments[recipeId]![parentIndex]['replies'] as List;
+        final replyIndex = replies.indexWhere((r) => r['id'] == commentId);
+        if (replyIndex != -1) {
+          final reply = replies[replyIndex];
+          final isLiked = reply['isLiked'] as bool;
+          reply['isLiked'] = !isLiked;
+          reply['likes'] = (reply['likes'] as int) + (isLiked ? -1 : 1);
+        }
+      }
+    } else {
+      // Like em comentário principal
+      final commentIndex = _comments[recipeId]!.indexWhere((c) => c['id'] == commentId);
+      if (commentIndex != -1) {
+        final comment = _comments[recipeId]![commentIndex];
+        final isLiked = comment['isLiked'] as bool;
+        comment['isLiked'] = !isLiked;
+        comment['likes'] = (comment['likes'] as int) + (isLiked ? -1 : 1);
+      }
+    }
+  }
+
+// ===== CRIAR NOVA RECEITA =====
+  static int _recipeIdCounter = 100; // Contador para IDs de novas receitas
+
+  Future<Recipe> createRecipe(Recipe recipe) async {
+    await _simulateDelay();
+
+    // Gerar ID único
+    final newId = _recipeIdCounter++;
+
+    // Pegar nome do usuário
+    final authService = MockAuthService();
+    final user = await authService.getUserById(recipe.userId);
+
+    // Criar novo mapa de receita
+    final newRecipeMap = {
+      'id': newId,
+      'userId': recipe.userId,
+      'state': _extractState(recipe.category), // Extrair estado da categoria
+      'title': recipe.title,
+      'description': recipe.description,
+      'ingredients': recipe.ingredients.map((ing) {
+        // Converter string "1 xícara farinha" para mapa
+        final parts = ing.split(' ');
+        return {
+          'name': parts.length > 2 ? parts.sublist(2).join(' ') : ing,
+          'quantity': parts.isNotEmpty ? parts[0] : '',
+          'unit': parts.length > 1 ? parts[1] : '',
+        };
+      }).toList(),
+      'preparationSteps': recipe.steps,
+      'preparationTime': recipe.preparationTime,
+      'servings': recipe.servings,
+      'difficulty': 'Médio',
+      'category': _extractCategory(recipe.category),
+      'tags': _generateTags(recipe.category),
+      'image': recipe.image ?? 'assets/images/chef.jpg',
+      'createdAt': recipe.createdAt,
+      'likesCount': 0,
+      'commentsCount': 0,
+      'savesCount': 0,
+      'averageRating': 0.0,
+    };
+
+    // Adicionar à lista de receitas
+    _recipes.insert(0, newRecipeMap); // Adiciona no início (mais recente)
+
+    print('✅ Receita "${recipe.title}" criada com ID $newId pelo usuário ${recipe.userId}');
+
+    // Retornar receita criada
+    return _mapToRecipe(newRecipeMap);
+  }
+
+// Métodos auxiliares para processar categoria
+  String _extractState(String? category) {
+    if (category == null || category == 'Não') return 'Nenhum';
+
+    // Se tem " - " significa que tem estado
+    if (category.contains(' - ')) {
+      return category.split(' - ').last;
+    }
+
+    return 'Nenhum';
+  }
+
+  String _extractCategory(String? category) {
+    if (category == null) return 'Salgados';
+
+    // Se tem " - " pega só a primeira parte
+    if (category.contains(' - ')) {
+      final mainCategory = category.split(' - ').first;
+      return mainCategory == 'Não' ? 'Salgados' : mainCategory;
+    }
+
+    return category == 'Não' ? 'Salgados' : category;
+  }
+
+  List<String> _generateTags(String? category) {
+    if (category == null) return ['Caseiro'];
+
+    final tags = <String>['Caseiro'];
+
+    if (category.contains('Glúten')) tags.add('Zero Glúten');
+    if (category.contains('Lactose')) tags.add('Zero Lactose');
+    if (category.contains('Vegano')) tags.add('Vegano');
+    if (category.contains('Vegetariano')) tags.add('Vegetariano');
+
+    return tags;
+  }
+
 }
