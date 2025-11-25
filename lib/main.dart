@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_core/firebase_core.dart'; // ✅ FALTAVA ESTE IMPORT
+import 'package:firebase_core/firebase_core.dart';
 import 'package:sabore_app/test_email.dart';
+import 'package:sabore_app/test_sms.dart';
 import 'firebase_options.dart';
 import 'package:sabore_app/screens/auth/verify_email_screen.dart';
 import 'package:sabore_app/screens/auth/verify_phone_screen.dart';
@@ -34,20 +35,31 @@ import 'screens/recipe/recipe_detail_screen.dart';
 import 'screens/recipe/recipe_comments_screen.dart';
 import 'package:sabore_app/screens/profile/profile/followers_screen.dart';
 import 'package:sabore_app/screens/profile/profile/following_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart';
+import 'firebase_options.dart';
 
-// ✅ INICIALIZAÇÃO CORRIGIDA
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    // ✅ Inicializa o Firebase com as configurações geradas
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+
+  if (!kIsWeb) {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: kDebugMode
+          ? AndroidProvider.debug
+          : AndroidProvider.playIntegrity,
+      appleProvider: AppleProvider.debug,
     );
-    print('✅ Firebase inicializado com sucesso!');
-  } catch (e) {
-    print('⚠️ Erro ao inicializar Firebase: $e');
-    print('⚠️ Continuando em modo mock para desenvolvimento');
+    print('App Check ativado para Android');
+  } else {
+    print('App Check ignorado (rodando na Web)');
   }
 
   runApp(ProviderScope(child: MyApp()));
@@ -312,6 +324,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/test-email',
         builder: (context, state) => TestEmailScreen(),
       ),
+      GoRoute(
+        path: '/test-sms',
+        builder: (context, state) => TestSmsScreen(),
+      ),
     ],
     redirect: (context, state) {
       final authState = ref.read(authProvider);
@@ -332,7 +348,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         '/verify-recovery-code',
         '/reset-password',
         '/test',
-        '/test-email', // ✅ Adicionar rota de teste como pública
+        '/test-email',
+        '/test-sms',
       ];
 
       if (publicRoutes.contains(location)) {
@@ -357,7 +374,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-// Widget de teste para facilitar o desenvolvimento
 class TestAuthScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -366,151 +382,321 @@ class TestAuthScreen extends ConsumerWidget {
     final userData = ref.watch(currentUserDataProvider);
 
     return Scaffold(
+      backgroundColor: Color(0xFFFFF8F0),
       appBar: AppBar(
-        title: Text('Test Auth'),
+        title: Text(
+          'Test Auth',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: Color(0xFFFA9500),
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Estado Atual:',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+            // ✅ CARD DE ESTADO
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Color(0xFFFA9500), size: 28),
+                      SizedBox(width: 12),
+                      Text(
+                        'Estado Atual',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF3C4D18),
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 8),
-                    Text('Autenticado: ${authState.isAuthenticated}'),
-                    Text('Carregando: ${authState.isLoading}'),
-                    Text('Inicializado: ${authState.isInitialized}'),
-                    Text('Primeiro Login: $isFirstLogin'),
-                    if (userData != null) ...[
-                      Divider(height: 20),
-                      Text('Nome: ${userData['name']}'),
-                      Text('Email: ${userData['email']}'),
-                      Text('Username: ${userData['username'] ?? 'não definido'}'),
                     ],
+                  ),
+                  Divider(height: 24),
+                  _buildInfoRow('Autenticado', authState.isAuthenticated ? '✅' : '❌'),
+                  _buildInfoRow('Carregando', authState.isLoading ? '⏳' : '✅'),
+                  _buildInfoRow('Inicializado', authState.isInitialized ? '✅' : '❌'),
+                  _buildInfoRow('Primeiro Login', isFirstLogin ? '✅' : '❌'),
+                  if (userData != null) ...[
+                    Divider(height: 24),
+                    _buildInfoRow('Nome', userData['name']),
+                    _buildInfoRow('Email', userData['email']),
+                    _buildInfoRow('Username', userData['username'] ?? 'não definido'),
                   ],
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-
-            // Botões de teste para Email e SMS
-            Card(
-              color: Colors.blue[50],
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Text(
-                      '🧪 Testes de Verificação',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: () => context.push('/test-email'),
-                      icon: Icon(Icons.email),
-                      label: Text('Testar Envio de Email'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      onPressed: () => context.push('/verify-email'),
-                      icon: Icon(Icons.email),
-                      label: Text('Testar Verificação Email'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      onPressed: () => context.push('/verify-phone'),
-                      icon: Icon(Icons.phone),
-                      label: Text('Testar Verificação SMS'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
 
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => context.go('/login'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFFA9500),
-                padding: EdgeInsets.symmetric(vertical: 16),
+            SizedBox(height: 24),
+
+            // ✅ SEÇÃO DE TESTES DE VERIFICAÇÃO
+            Text(
+              '🧪 Testes de Verificação',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF3C4D18),
               ),
-              child: Text('Ir para Login', style: TextStyle(color: Colors.white)),
+            ),
+            SizedBox(height: 12),
+
+            _buildTestButton(
+              context: context,
+              icon: Icons.email_outlined,
+              label: 'Testar Envio de Email',
+              color: Color(0xFF9C27B0),
+              onTap: () => context.push('/test-email'),
+            ),
+            SizedBox(height: 12),
+
+            _buildTestButton(
+              context: context,
+              icon: Icons.phone_android,
+              label: 'Testar Envio de SMS',
+              color: Color(0xFF4CAF50),
+              onTap: () => context.push('/test-sms'),
+            ),
+            SizedBox(height: 12),
+
+            _buildTestButton(
+              context: context,
+              icon: Icons.verified_user,
+              label: 'Verificação de Email',
+              color: Color(0xFF2196F3),
+              onTap: () => context.push('/verify-email'),
+            ),
+            SizedBox(height: 12),
+
+            _buildTestButton(
+              context: context,
+              icon: Icons.verified_outlined,
+              label: 'Verificação de SMS',
+              color: Color(0xFF7CB342),
+              onTap: () => context.push('/verify-phone'),
+            ),
+
+            SizedBox(height: 32),
+
+            // ✅ SEÇÃO DE NAVEGAÇÃO
+            Text(
+              '🗺️ Navegação',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF3C4D18),
+              ),
+            ),
+            SizedBox(height: 12),
+
+            _buildNavButton(
+              label: 'Ir para Login',
+              color: Color(0xFFFA9500),
+              icon: Icons.login,
+              onTap: () => context.go('/login'),
             ),
             SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => context.go('/forgot-password'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text('Testar Recuperação de Senha',
-                  style: TextStyle(color: Colors.white)),
+
+            _buildNavButton(
+              label: 'Recuperação de Senha',
+              color: Color(0xFFFF9800),
+              icon: Icons.lock_reset,
+              onTap: () => context.go('/forgot-password'),
             ),
             SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => context.go('/home'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF3C4D18),
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text('Ir para Home', style: TextStyle(color: Colors.white)),
+
+            _buildNavButton(
+              label: 'Ir para Home',
+              color: Color(0xFF3C4D18),
+              icon: Icons.home,
+              onTap: () => context.go('/home'),
             ),
             SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
+
+            _buildNavButton(
+              label: 'Ir para Perfil',
+              color: Color(0xFF2196F3),
+              icon: Icons.person,
+              onTap: () {
                 final userId = userData?['id'] ?? '1';
                 context.go('/profile/$userId');
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text('Ir para Perfil', style: TextStyle(color: Colors.white)),
             ),
             SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => ref.read(authProvider.notifier).logout(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text('Logout', style: TextStyle(color: Colors.white)),
+
+            _buildNavButton(
+              label: 'Logout',
+              color: Color(0xFFE53935),
+              icon: Icons.logout,
+              onTap: () => ref.read(authProvider.notifier).logout(),
             ),
-            SizedBox(height: 20),
-            Text(
-              'Credenciais de Teste:\nEmail: test@example.com\nSenha: password123',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-                fontStyle: FontStyle.italic,
+
+            SizedBox(height: 32),
+
+            // ✅ CREDENCIAIS DE TESTE
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.key, color: Colors.grey[700], size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Credenciais de Teste',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Email: test@example.com\nSenha: password123',
+                    style: TextStyle(
+                      fontFamily: 'Courier',
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, dynamic value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontSize: 14,
+              color: Colors.grey[700],
+            ),
+          ),
+          Text(
+            value.toString(),
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF3C4D18),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTestButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: color.withOpacity(0.3), width: 2),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: Colors.white, size: 24),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: color, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavButton({
+    required String label,
+    required Color color,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, color: Colors.white),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'Montserrat',
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          color: Colors.white,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        padding: EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 4,
       ),
     );
   }

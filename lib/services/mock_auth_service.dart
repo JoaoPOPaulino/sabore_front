@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
-
+import 'sms_service.dart';
+import 'email_service.dart';
 import 'mock_notification_service.dart';
 
 class MockAuthService {
@@ -178,9 +179,14 @@ class MockAuthService {
     },
   ];
 
+  // ✅ SERVIÇOS DE VERIFICAÇÃO
+  final SmsService _smsService = SmsService();
+  final EmailService _emailService = EmailService();
+
   final Map<String, String> _verificationCodes = {};
   final Map<String, DateTime> _codeExpiration = {};
   static int? _currentUserId;
+  String? _currentVerificationId;
 
   // ✅ MAPA DE SEGUIDORES REALISTA E COERENTE
   static final Map<int, List<int>> _followingMap = {
@@ -205,47 +211,136 @@ class MockAuthService {
     await Future.delayed(Duration(milliseconds: 600));
   }
 
+  // ===================================================================
+  // VERIFICAÇÃO DE EMAIL (USA EmailJS REAL)
+  // ===================================================================
+
+  /// Envia código de verificação por email (USA EmailJS REAL)
   Future<bool> sendEmailVerificationCode(String email) async {
-    await Future.delayed(Duration(seconds: 1));
-    final code = _generateCode();
-    _verificationCodes[email] = code;
-    _codeExpiration[email] = DateTime.now().add(Duration(minutes: 10));
-    print('📧 Código de verificação enviado para $email: $code');
-    return true;
+    print('📧 Enviando email de verificação para: $email');
+
+    try {
+      // Busca o nome do usuário
+      final user = _users.firstWhere(
+            (u) => u['email'] == email,
+        orElse: () => {'name': 'Usuário'},
+      );
+
+      // Envia email real usando EmailJS
+      final code = await _emailService.sendVerificationEmail(
+        email,
+        user['name'] ?? 'Usuário',
+      );
+
+      // Armazena o código para verificação posterior
+      _verificationCodes[email] = code;
+      _codeExpiration[email] = DateTime.now().add(Duration(minutes: 10));
+
+      print('✅ Email enviado com sucesso!');
+      print('🔢 Código gerado: $code');
+
+      return true;
+    } catch (e) {
+      print('❌ Erro ao enviar email: $e');
+      throw Exception('Erro ao enviar email de verificação');
+    }
   }
 
+  /// Verifica código de email
   Future<bool> verifyEmailCode(String email, String code) async {
     await Future.delayed(Duration(milliseconds: 500));
-    if (!_verificationCodes.containsKey(email)) throw Exception('Nenhum código foi enviado para este e-mail');
-    if (_codeExpiration[email]!.isBefore(DateTime.now())) throw Exception('Código expirado. Solicite um novo código');
-    if (_verificationCodes[email] != code) throw Exception('Código inválido');
+
+    if (!_verificationCodes.containsKey(email)) {
+      throw Exception('Nenhum código foi enviado para este e-mail');
+    }
+
+    if (_codeExpiration[email]!.isBefore(DateTime.now())) {
+      throw Exception('Código expirado. Solicite um novo código');
+    }
+
+    if (_verificationCodes[email] != code) {
+      throw Exception('Código inválido');
+    }
+
+    // Atualiza o usuário como verificado
     final userIndex = _users.indexWhere((user) => user['email'] == email);
-    if (userIndex != -1) _users[userIndex]['emailVerified'] = true;
+    if (userIndex != -1) {
+      _users[userIndex]['emailVerified'] = true;
+    }
+
+    // Limpa os códigos
     _verificationCodes.remove(email);
     _codeExpiration.remove(email);
+
     return true;
   }
 
+  // ===================================================================
+  // VERIFICAÇÃO DE SMS (USA FIREBASE REAL)
+  // ===================================================================
+
+  /// Envia código de verificação por SMS (USA FIREBASE REAL)
   Future<bool> sendPhoneVerificationCode(String phone) async {
-    await Future.delayed(Duration(seconds: 1));
-    final code = _generateCode();
-    _verificationCodes[phone] = code;
-    _codeExpiration[phone] = DateTime.now().add(Duration(minutes: 3));
-    print('📱 Código de verificação enviado para $phone: $code');
-    return true;
+    print('📱 Enviando SMS para: $phone');
+
+    try {
+      // Envia SMS real usando Firebase
+      _currentVerificationId = await _smsService.sendVerificationSms(phone);
+
+      // Armazena que enviou SMS para este número
+      _verificationCodes[phone] = 'SMS_ENVIADO';
+      _codeExpiration[phone] = DateTime.now().add(Duration(minutes: 3));
+
+      print('✅ SMS enviado com sucesso!');
+      print('📱 VerificationId: $_currentVerificationId');
+
+      // Em desenvolvimento, mostra o código de teste
+      final testCode = _smsService.getTestCode(phone);
+      if (testCode != null) {
+        print('🔢 Código de teste (DEV): $testCode');
+      }
+
+      return true;
+    } catch (e) {
+      print('❌ Erro ao enviar SMS: $e');
+      throw Exception('Erro ao enviar SMS. Verifique o número e tente novamente.');
+    }
   }
 
+  /// Verifica código de SMS (USA FIREBASE REAL)
   Future<bool> verifyPhoneCode(String phone, String code) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    if (!_verificationCodes.containsKey(phone)) throw Exception('Nenhum código foi enviado para este telefone');
-    if (_codeExpiration[phone]!.isBefore(DateTime.now())) throw Exception('Código expirado. Solicite um novo código');
-    if (_verificationCodes[phone] != code) throw Exception('Código inválido');
-    final userIndex = _users.indexWhere((user) => user['phone'] == phone);
-    if (userIndex != -1) _users[userIndex]['phoneVerified'] = true;
-    _verificationCodes.remove(phone);
-    _codeExpiration.remove(phone);
-    return true;
+    print('🔍 Verificando código SMS: $code');
+
+    try {
+      // Verifica usando o Firebase
+      final isValid = await _smsService.verifyCode(code);
+
+      if (isValid) {
+        // Atualiza o usuário como verificado
+        final userIndex = _users.indexWhere((u) => u['phone'] == phone);
+        if (userIndex != -1) {
+          _users[userIndex]['phoneVerified'] = true;
+        }
+
+        // Limpa os códigos
+        _verificationCodes.remove(phone);
+        _codeExpiration.remove(phone);
+
+        print('✅ Telefone verificado com sucesso!');
+        return true;
+      } else {
+        throw Exception('Código inválido');
+      }
+
+    } catch (e) {
+      print('❌ Erro ao verificar código: $e');
+      rethrow;
+    }
   }
+
+  // ===================================================================
+  // AUTENTICAÇÃO
+  // ===================================================================
 
   Future<bool> checkEmailAvailability(String email) async {
     await _simulateNetworkDelay();
@@ -260,9 +355,11 @@ class MockAuthService {
     String? phone,
   }) async {
     await _simulateNetworkDelay();
+
     if (_users.any((user) => user['email'] == email.toLowerCase())) {
       throw Exception('Email já cadastrado');
     }
+
     final newUser = {
       'id': _users.length + 1,
       'name': name,
@@ -280,8 +377,10 @@ class MockAuthService {
       'followersCount': 0,
       'followingCount': 0,
     };
+
     _users.add(newUser);
     _currentUserId = newUser['id'] as int?;
+
     return {
       'token': 'mock-jwt-token-${DateTime.now().millisecondsSinceEpoch}',
       'access': 'mock-jwt-token-${DateTime.now().millisecondsSinceEpoch}',
@@ -294,11 +393,14 @@ class MockAuthService {
     required String password,
   }) async {
     await _simulateNetworkDelay();
+
     try {
       final user = _users.firstWhere(
             (u) => u['email'] == email.toLowerCase() && u['password'] == password,
       );
+
       _currentUserId = user['id'] as int?;
+
       return {
         'token': 'mock-jwt-token-${DateTime.now().millisecondsSinceEpoch}',
         'access': 'mock-jwt-token-${DateTime.now().millisecondsSinceEpoch}',
@@ -311,33 +413,128 @@ class MockAuthService {
 
   Future<Map<String, dynamic>> getCurrentUser() async {
     await _simulateNetworkDelay();
-    if (_currentUserId == null) throw Exception('Nenhum usuário autenticado');
+
+    if (_currentUserId == null) {
+      throw Exception('Nenhum usuário autenticado');
+    }
+
     final user = _users.firstWhere(
           (u) => u['id'] == _currentUserId,
       orElse: () => throw Exception('Usuário não encontrado'),
     );
+
     return _mapUserToResponse(user);
   }
 
+  // ===================================================================
+  // RECUPERAÇÃO DE SENHA
+  // ===================================================================
+
+  Future<void> sendRecoveryCode(String destination, String method) async {
+    await Future.delayed(Duration(seconds: 1));
+
+    if (method == 'email') {
+      // Email real com EmailJS
+      try {
+        final code = await _emailService.sendRecoveryEmail(destination);
+        _verificationCodes[destination] = code;
+        _codeExpiration[destination] = DateTime.now().add(Duration(minutes: 10));
+        print('📧 Código de recuperação enviado por email: $code');
+      } catch (e) {
+        throw Exception('Erro ao enviar email de recuperação');
+      }
+    } else {
+      // SMS real com Firebase
+      try {
+        await sendPhoneVerificationCode(destination);
+        print('📱 Código de recuperação enviado por SMS');
+      } catch (e) {
+        throw Exception('Erro ao enviar SMS de recuperação');
+      }
+    }
+  }
+
+  Future<bool> verifyRecoveryCode(String destination, String code) async {
+    await Future.delayed(Duration(milliseconds: 500));
+
+    if (!_verificationCodes.containsKey(destination)) {
+      throw Exception('Nenhum código foi enviado');
+    }
+
+    if (_codeExpiration[destination]!.isBefore(DateTime.now())) {
+      throw Exception('Código expirado');
+    }
+
+    // Para SMS, usa verificação do Firebase
+    if (destination.startsWith('+')) {
+      try {
+        return await verifyPhoneCode(destination, code);
+      } catch (e) {
+        throw Exception('Código inválido');
+      }
+    }
+
+    // Para email, compara o código
+    if (_verificationCodes[destination] != code) {
+      throw Exception('Código inválido');
+    }
+
+    _verificationCodes.remove(destination);
+    _codeExpiration.remove(destination);
+
+    return true;
+  }
+
+  Future<bool> resetPassword(String email, String newPassword) async {
+    await Future.delayed(Duration(milliseconds: 500));
+
+    final userIndex = _users.indexWhere(
+          (u) => u['email'] == email.toLowerCase(),
+    );
+
+    if (userIndex != -1) {
+      _users[userIndex]['password'] = newPassword;
+      return true;
+    }
+
+    throw Exception('Usuário não encontrado');
+  }
+
+  // ===================================================================
+  // PERFIL E USUÁRIOS
+  // ===================================================================
+
   Future<List<Map<String, dynamic>>> searchUsers(String query) async {
     await _simulateNetworkDelay();
+
     if (query.isEmpty) return [];
+
     final lowerQuery = query.toLowerCase();
     final results = _users.where((user) {
       final name = (user['name'] as String? ?? '').toLowerCase();
       final username = (user['username'] as String? ?? '').toLowerCase();
       return name.contains(lowerQuery) || username.contains(lowerQuery);
     }).toList();
+
     return results.map((user) => _mapUserToResponse(user)).toList();
   }
 
   Future<Map<String, dynamic>> getUserById(int userId) async {
     await _simulateNetworkDelay();
+
     try {
       final user = _users.firstWhere((u) => u['id'] == userId);
       return _mapUserToResponse(user);
     } catch (e) {
       throw Exception('Usuário com ID $userId não encontrado');
+    }
+  }
+
+  Map<String, dynamic>? getUserByEmail(String email) {
+    try {
+      return _users.firstWhere((u) => u['email'] == email.toLowerCase());
+    } catch (e) {
+      return null;
     }
   }
 
@@ -369,11 +566,19 @@ class MockAuthService {
     Uint8List? coverImageBytes,
   }) async {
     await _simulateNetworkDelay();
-    if (_currentUserId == null) throw Exception('Nenhum usuário autenticado');
+
+    if (_currentUserId == null) {
+      throw Exception('Nenhum usuário autenticado');
+    }
+
     final userIndex = _users.indexWhere((u) => u['id'] == _currentUserId);
-    if (userIndex == -1) throw Exception('Usuário não encontrado');
+    if (userIndex == -1) {
+      throw Exception('Usuário não encontrado');
+    }
+
     if (name != null) _users[userIndex]['name'] = name;
     if (username != null) _users[userIndex]['username'] = username;
+
     if (profileImagePath != null) {
       _users[userIndex]['profileImage'] = profileImagePath;
       _users[userIndex]['profileImageBytes'] = null;
@@ -382,6 +587,7 @@ class MockAuthService {
       _users[userIndex]['profileImageBytes'] = profileImageBytes;
       _users[userIndex]['profileImage'] = null;
     }
+
     if (coverImagePath != null) {
       _users[userIndex]['coverImage'] = coverImagePath;
       _users[userIndex]['coverImageBytes'] = null;
@@ -395,70 +601,51 @@ class MockAuthService {
   Future<void> logout() async {
     await _simulateNetworkDelay();
     _currentUserId = null;
+    _smsService.clearState();
   }
 
-  Map<String, dynamic>? getUserByEmail(String email) {
-    try {
-      return _users.firstWhere((u) => u['email'] == email.toLowerCase());
-    } catch (e) {
-      return null;
-    }
-  }
-
-  Future<bool> resetPassword(String email, String newPassword) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    final userIndex = _users.indexWhere((u) => u['email'] == email.toLowerCase());
-    if (userIndex != -1) {
-      _users[userIndex]['password'] = newPassword;
-      return true;
-    }
-    throw Exception('Usuário não encontrado');
-  }
-
-  Future<bool> verifyRecoveryCode(String destination, String code) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    if (!_verificationCodes.containsKey(destination)) throw Exception('Nenhum código foi enviado');
-    if (_codeExpiration[destination]!.isBefore(DateTime.now())) throw Exception('Código expirado');
-    if (_verificationCodes[destination] != code) throw Exception('Código inválido');
-    _verificationCodes.remove(destination);
-    _codeExpiration.remove(destination);
-    return true;
-  }
-
-  Future<void> sendRecoveryCode(String destination, String method) async {
-    await Future.delayed(Duration(seconds: 1));
-    final code = _generateCode();
-    _verificationCodes[destination] = code;
-    _codeExpiration[destination] = DateTime.now().add(
-      method == 'email' ? Duration(minutes: 10) : Duration(minutes: 3),
-    );
-    print('📨 Código de recuperação enviado para $destination: $code');
-  }
+  // ===================================================================
+  // SEGUIDORES E SEGUINDO
+  // ===================================================================
 
   Future<List<Map<String, dynamic>>> getFollowing(int userId) async {
     await _simulateNetworkDelay();
+
     final followingIds = _followingMap[userId] ?? [];
     if (followingIds.isEmpty) return [];
-    final followingUsers = _users.where((user) => followingIds.contains(user['id'])).toList();
+
+    final followingUsers = _users
+        .where((user) => followingIds.contains(user['id']))
+        .toList();
+
     return followingUsers.map((user) => _mapUserToResponse(user)).toList();
   }
 
   Future<List<Map<String, dynamic>>> getFollowers(int userId) async {
     await _simulateNetworkDelay();
+
     final List<int> followerIds = [];
     _followingMap.forEach((followerId, followingList) {
       if (followingList.contains(userId)) {
         followerIds.add(followerId);
       }
     });
+
     if (followerIds.isEmpty) return [];
-    final followerUsers = _users.where((user) => followerIds.contains(user['id'])).toList();
+
+    final followerUsers = _users
+        .where((user) => followerIds.contains(user['id']))
+        .toList();
+
     return followerUsers.map((user) => _mapUserToResponse(user)).toList();
   }
 
   Future<bool> toggleFollow(int userIdToFollow) async {
     await _simulateNetworkDelay();
-    if (_currentUserId == null) throw Exception('Usuário não está logado');
+
+    if (_currentUserId == null) {
+      throw Exception('Usuário não está logado');
+    }
 
     if (!_followingMap.containsKey(_currentUserId)) {
       _followingMap[_currentUserId!] = [];
@@ -501,7 +688,8 @@ class MockAuthService {
 
   Future<void> _updateFollowCounts(int currentUserId, int targetUserId) async {
     final currentUserIndex = _users.indexWhere((u) => u['id'] == currentUserId);
-    _users[currentUserIndex]['followingCount'] = (_followingMap[currentUserId] ?? []).length;
+    _users[currentUserIndex]['followingCount'] =
+        (_followingMap[currentUserId] ?? []).length;
 
     final targetUserIndex = _users.indexWhere((u) => u['id'] == targetUserId);
     final followers = await getFollowers(targetUserId);
