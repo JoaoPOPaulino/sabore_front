@@ -766,4 +766,103 @@ class MockRecipeService {
     print('📸 Upload simulado de imagem: $filePath');
     return filePath;
   }
+
+  Future<Recipe> updateRecipe(int recipeId, Recipe updatedRecipe, {Uint8List? imageBytes}) async {
+    await _simulateDelay();
+
+    final recipeIndex = _recipes.indexWhere((r) => r['id'] == recipeId);
+    if (recipeIndex == -1) {
+      throw Exception('Receita não encontrada');
+    }
+
+    // ✅ Atualizar imageBytes se fornecidos
+    if (imageBytes != null) {
+      _recipeImageBytes[recipeId] = imageBytes;
+      print('📸 ImageBytes atualizados para receita $recipeId (${imageBytes.length} bytes)');
+    }
+
+    // ✅ EXTRAIR ESTADO DA CATEGORIA
+    final extractedState = _extractState(updatedRecipe.category);
+
+    print('🔄 updateRecipe:');
+    print('   - ID: $recipeId');
+    print('   - category recebida: ${updatedRecipe.category}');
+    print('   - state extraído: $extractedState');
+
+    // ✅ Atualizar dados da receita
+    _recipes[recipeIndex] = {
+      'id': recipeId,
+      'userId': _recipes[recipeIndex]['userId'], // Mantém o autor original
+      'state': extractedState,
+      'title': updatedRecipe.title,
+      'description': updatedRecipe.description,
+      'ingredients': updatedRecipe.ingredients.map((ing) {
+        final parts = ing.split(' ');
+        return {
+          'name': parts.length > 2 ? parts.sublist(2).join(' ') : ing,
+          'quantity': parts.isNotEmpty ? parts[0] : '',
+          'unit': parts.length > 1 ? parts[1] : '',
+        };
+      }).toList(),
+      'preparationSteps': updatedRecipe.steps,
+      'preparationTime': updatedRecipe.preparationTime,
+      'servings': updatedRecipe.servings,
+      'difficulty': _recipes[recipeIndex]['difficulty'], // Mantém dificuldade
+      'category': _extractCategory(updatedRecipe.category),
+      'tags': _generateTags(updatedRecipe.category),
+      'image': updatedRecipe.image ?? _recipes[recipeIndex]['image'],
+      'createdAt': _recipes[recipeIndex]['createdAt'], // Mantém data de criação
+      'likesCount': _recipes[recipeIndex]['likesCount'],
+      'commentsCount': _recipes[recipeIndex]['commentsCount'],
+      'savesCount': _recipes[recipeIndex]['savesCount'],
+      'averageRating': _recipes[recipeIndex]['averageRating'],
+    };
+
+    print('✅ Receita "${updatedRecipe.title}" atualizada com sucesso!');
+
+    return _mapToRecipe(_recipes[recipeIndex]);
+  }
+
+  // ============================================================================
+  // EXCLUIR RECEITA
+  // ============================================================================
+
+  Future<void> deleteRecipe(int recipeId, int userId) async {
+    await _simulateDelay();
+
+    final recipeIndex = _recipes.indexWhere((r) => r['id'] == recipeId);
+    if (recipeIndex == -1) {
+      throw Exception('Receita não encontrada');
+    }
+
+    // ✅ Verificar se o usuário é o autor
+    if (_recipes[recipeIndex]['userId'] != userId) {
+      throw Exception('Você não tem permissão para excluir esta receita');
+    }
+
+    final recipeTitle = _recipes[recipeIndex]['title'];
+
+    // ✅ Remover dos salvos de todos os usuários
+    _savedRecipesByBook.forEach((uid, books) {
+      books.forEach((bookName, recipeIds) {
+        recipeIds.remove(recipeId);
+      });
+    });
+
+    // ✅ Remover dos likes de todos os usuários
+    _likes.forEach((uid, likedRecipes) {
+      likedRecipes.remove(recipeId);
+    });
+
+    // ✅ Remover comentários
+    _comments.remove(recipeId);
+
+    // ✅ Remover imageBytes
+    _recipeImageBytes.remove(recipeId);
+
+    // ✅ Remover receita
+    _recipes.removeAt(recipeIndex);
+
+    print('🗑️ Receita "$recipeTitle" (ID: $recipeId) excluída com sucesso!');
+  }
 }

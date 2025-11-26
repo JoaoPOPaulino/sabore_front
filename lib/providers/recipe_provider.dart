@@ -1,109 +1,100 @@
-import 'dart:typed_data';
+// lib/providers/recipe_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:typed_data';
 import '../models/models.dart';
 import '../services/mock_recipe_service.dart';
 import 'auth_provider.dart';
+import 'state_provider.dart';
+import 'recipe_book_provider.dart'; // ✅ IMPORTAR
 
 // ============================================================================
-// PROVIDERS DE SERVIÇO
+// PROVIDER DO SERVICE
 // ============================================================================
 
-final recipeServiceProviderForRecipes = Provider<MockRecipeService>((ref) {
-  return MockRecipeService();
-});
-
-// Alias para compatibilidade com add_recipe_screen
 final recipeServiceProvider = Provider<MockRecipeService>((ref) {
   return MockRecipeService();
 });
 
 // ============================================================================
-// PROVIDERS DE CONSULTA (FutureProvider)
+// PROVIDER DE TODAS AS RECEITAS
 // ============================================================================
 
-// Provider para todas as receitas
 final allRecipesProvider = FutureProvider<List<Recipe>>((ref) async {
-  final service = ref.watch(recipeServiceProviderForRecipes);
+  final service = ref.watch(recipeServiceProvider);
   return await service.getAllRecipes();
 });
 
-// Provider para receitas de um usuário específico
+// ============================================================================
+// PROVIDER DE RECEITAS DO USUÁRIO
+// ============================================================================
+
 final userRecipesProvider = FutureProvider.family<List<Recipe>, int>((ref, userId) async {
-  final service = ref.watch(recipeServiceProviderForRecipes);
+  final service = ref.watch(recipeServiceProvider);
   return await service.getUserRecipes(userId);
 });
 
-// Provider para uma receita específica
-final recipeByIdProvider = FutureProvider.family<Recipe, int>((ref, recipeId) async {
-  final service = ref.watch(recipeServiceProviderForRecipes);
-  return await service.getRecipeById(recipeId);
-});
-
-// Provider para contar receitas por usuário (dados reais)
+// ✅ NOVO: PROVIDER DE CONTAGEM DE RECEITAS DO USUÁRIO
 final userRecipeCountProvider = FutureProvider.family<int, int>((ref, userId) async {
-  final recipes = await ref.watch(userRecipesProvider(userId).future);
+  final service = ref.watch(recipeServiceProvider);
+  final recipes = await service.getUserRecipes(userId);
   return recipes.length;
 });
 
 // ============================================================================
-// CLASSES DE PARÂMETROS
+// PROVIDER DE DETALHES DE UMA RECEITA
 // ============================================================================
 
-// Parâmetros para verificar likes
-class RecipeLikeParams {
-  final int userId;
-  final int recipeId;
-
-  RecipeLikeParams({required this.userId, required this.recipeId});
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-          other is RecipeLikeParams &&
-              runtimeType == other.runtimeType &&
-              userId == other.userId &&
-              recipeId == other.recipeId;
-
-  @override
-  int get hashCode => userId.hashCode ^ recipeId.hashCode;
-}
-
-// ============================================================================
-// PROVIDERS DE INTERAÇÃO
-// ============================================================================
-
-// Provider para verificar se receita está curtida
-final isRecipeLikedProvider = FutureProvider.family<bool, RecipeLikeParams>((ref, params) async {
-  final service = ref.watch(recipeServiceProviderForRecipes);
-  return await service.isRecipeLiked(params.userId, params.recipeId);
+final recipeDetailProvider = FutureProvider.family<Recipe, int>((ref, recipeId) async {
+  final service = ref.watch(recipeServiceProvider);
+  return await service.getRecipeById(recipeId);
 });
 
 // ============================================================================
-// STATE NOTIFIER PARA GERENCIAR LISTA DE RECEITAS
+// PROVIDER DE ESTADO DE LIKE
+// ============================================================================
+
+final isRecipeLikedProvider = FutureProvider.family<bool, Map<String, int>>((ref, params) async {
+  final service = ref.watch(recipeServiceProvider);
+  return await service.isRecipeLiked(params['userId']!, params['recipeId']!);
+});
+
+// ============================================================================
+// PROVIDER DE COMENTÁRIOS
+// ============================================================================
+
+final recipeCommentsProvider = FutureProvider.family<List<Map<String, dynamic>>, int>((ref, recipeId) async {
+  final service = ref.watch(recipeServiceProvider);
+  return await service.getRecipeComments(recipeId);
+});
+
+// ============================================================================
+// NOTIFIER PARA GERENCIAR ESTADO DAS RECEITAS
 // ============================================================================
 
 class RecipesNotifier extends StateNotifier<AsyncValue<List<Recipe>>> {
   final MockRecipeService _recipeService;
   final Ref ref;
 
-  RecipesNotifier(this._recipeService, this.ref) : super(AsyncValue.loading()) {
+  RecipesNotifier(this._recipeService, this.ref) : super(const AsyncValue.loading()) {
     _loadRecipes();
   }
 
   Future<void> _loadRecipes() async {
+    state = const AsyncValue.loading();
     try {
-      state = AsyncValue.loading();
       final recipes = await _recipeService.getAllRecipes();
       state = AsyncValue.data(recipes);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
     }
   }
 
-  // ✅ CORRIGIDO: Adicionar nova receita COM imageBytes
+  // ============================================================================
+  // ADICIONAR RECEITA
+  // ============================================================================
+
   Future<void> addRecipe(Recipe recipe, {Uint8List? imageBytes}) async {
     try {
-      // Criar receita passando imageBytes
       final createdRecipe = await _recipeService.createRecipe(
         recipe,
         imageBytes: imageBytes,
@@ -114,9 +105,16 @@ class RecipesNotifier extends StateNotifier<AsyncValue<List<Recipe>>> {
       // Invalidar providers para atualizar UI
       ref.invalidate(allRecipesProvider);
       ref.invalidate(userRecipesProvider(recipe.userId));
+      ref.invalidate(userRecipeCountProvider(recipe.userId));
       ref.invalidate(userProfileProvider(recipe.userId));
 
-      // Recarregar lista de receitas
+      // Invalidar providers de estado para atualizar contagem
+      ref.invalidate(stateRecipeCountsProvider);
+      ref.invalidate(brazilianStatesProvider);
+      if (createdRecipe.state != null && createdRecipe.state != 'Nenhum') {
+        ref.invalidate(recipesByStateProvider(createdRecipe.state!));
+      }
+
       await _loadRecipes();
     } catch (error) {
       print('❌ Erro ao adicionar receita: $error');
@@ -124,10 +122,36 @@ class RecipesNotifier extends StateNotifier<AsyncValue<List<Recipe>>> {
     }
   }
 
-  // Atualizar receita existente
-  Future<void> updateRecipe(Recipe recipe) async {
+  // ============================================================================
+  // ATUALIZAR RECEITA
+  // ============================================================================
+
+  Future<void> updateRecipe(int recipeId, Recipe updatedRecipe, {Uint8List? imageBytes}) async {
     try {
-      print('✅ Receita "${recipe.title}" atualizada com sucesso!');
+      print('🔄 Atualizando receita $recipeId...');
+
+      final updated = await _recipeService.updateRecipe(
+        recipeId,
+        updatedRecipe,
+        imageBytes: imageBytes,
+      );
+
+      print('✅ Receita "${updated.title}" atualizada com sucesso!');
+
+      // Invalidar providers para atualizar UI
+      ref.invalidate(allRecipesProvider);
+      ref.invalidate(userRecipesProvider(updated.userId));
+      ref.invalidate(userRecipeCountProvider(updated.userId));
+      ref.invalidate(userProfileProvider(updated.userId));
+      ref.invalidate(recipeDetailProvider(recipeId));
+
+      // Invalidar providers de estado
+      ref.invalidate(stateRecipeCountsProvider);
+      ref.invalidate(brazilianStatesProvider);
+      if (updated.state != null && updated.state != 'Nenhum') {
+        ref.invalidate(recipesByStateProvider(updated.state!));
+      }
+
       await _loadRecipes();
     } catch (error) {
       print('❌ Erro ao atualizar receita: $error');
@@ -135,98 +159,173 @@ class RecipesNotifier extends StateNotifier<AsyncValue<List<Recipe>>> {
     }
   }
 
-  // Deletar receita
-  Future<void> deleteRecipe(int recipeId) async {
+  // ============================================================================
+  // EXCLUIR RECEITA
+  // ============================================================================
+
+  Future<void> deleteRecipe(int recipeId, int userId) async {
     try {
-      print('✅ Receita $recipeId deletada com sucesso!');
+      print('🗑️ Excluindo receita $recipeId...');
+
+      // Buscar dados da receita antes de excluir (para invalidar providers)
+      final recipe = await _recipeService.getRecipeById(recipeId);
+
+      await _recipeService.deleteRecipe(recipeId, userId);
+
+      print('✅ Receita excluída com sucesso!');
+
+      // Invalidar providers para atualizar UI
+      ref.invalidate(allRecipesProvider);
+      ref.invalidate(userRecipesProvider(userId));
+      ref.invalidate(userRecipeCountProvider(userId));
+      ref.invalidate(userProfileProvider(userId));
+      ref.invalidate(recipeDetailProvider(recipeId));
+
+      // Invalidar providers de estado
+      ref.invalidate(stateRecipeCountsProvider);
+      ref.invalidate(brazilianStatesProvider);
+      if (recipe.state != null && recipe.state != 'Nenhum') {
+        ref.invalidate(recipesByStateProvider(recipe.state!));
+      }
+
       await _loadRecipes();
     } catch (error) {
-      print('❌ Erro ao deletar receita: $error');
+      print('❌ Erro ao excluir receita: $error');
       rethrow;
     }
   }
 
-  // Refresh manual
-  Future<void> refresh() async {
-    await _loadRecipes();
-  }
-}
+  // ============================================================================
+  // TOGGLE LIKE
+  // ============================================================================
 
-// ✅ CORRIGIDO: Provider do StateNotifier passando ref
-final recipesProvider = StateNotifierProvider<RecipesNotifier, AsyncValue<List<Recipe>>>((ref) {
-  final service = ref.watch(recipeServiceProviderForRecipes);
-  return RecipesNotifier(service, ref);
-});
+  Future<void> toggleLike(int userId, int recipeId) async {
+    try {
+      final isLiked = await _recipeService.toggleLike(userId, recipeId);
 
-// ============================================================================
-// ACTIONS PARA LIKES E INTERAÇÕES
-// ============================================================================
+      // Invalidar providers
+      ref.invalidate(recipeDetailProvider(recipeId));
+      ref.invalidate(allRecipesProvider);
+      ref.invalidate(isRecipeLikedProvider({'userId': userId, 'recipeId': recipeId}));
 
-final recipeCommentsProvider = FutureProvider.family<List<Map<String, dynamic>>, int>((ref, recipeId) async {
-  final service = ref.watch(recipeServiceProviderForRecipes);
-  return await service.getRecipeComments(recipeId);
-});
+      await _loadRecipes();
 
-final recipeActionsProvider = Provider<RecipeActions>((ref) {
-  return RecipeActions(ref);
-});
-
-class RecipeActions {
-  final Ref ref;
-
-  RecipeActions(this.ref);
-
-  // Toggle like em uma receita
-  Future<bool> toggleLike(int userId, int recipeId) async {
-    final service = ref.read(recipeServiceProviderForRecipes);
-    final isLiked = await service.toggleLike(userId, recipeId);
-
-    // Invalidar providers para atualizar UI
-    ref.invalidate(isRecipeLikedProvider);
-    ref.invalidate(recipeByIdProvider(recipeId));
-
-    return isLiked;
+      print(isLiked ? '❤️ Receita curtida' : '💔 Receita descurtida');
+    } catch (error) {
+      print('❌ Erro ao curtir/descurtir receita: $error');
+      rethrow;
+    }
   }
 
-  // Adicionar comentário
-  Future<Map<String, dynamic>> addComment({
+  // ============================================================================
+  // SALVAR RECEITA
+  // ============================================================================
+
+  Future<void> saveRecipe(int userId, int recipeId, String bookTitle) async {
+    try {
+      await _recipeService.saveRecipeToBook(userId, recipeId, bookTitle);
+
+      // Invalidar providers
+      ref.invalidate(savedRecipesProvider(userId));
+      ref.invalidate(savedRecipesByBookProvider(userId));
+      ref.invalidate(userRecipeBooksProvider(userId));
+      ref.invalidate(isRecipeSavedProvider(RecipeSaveParams(userId: userId, recipeId: recipeId))); // ✅ USAR RecipeSaveParams
+
+      print('💾 Receita salva no livro "$bookTitle"');
+    } catch (error) {
+      print('❌ Erro ao salvar receita: $error');
+      rethrow;
+    }
+  }
+
+  // ============================================================================
+  // REMOVER RECEITA SALVA
+  // ============================================================================
+
+  Future<void> unsaveRecipe(int userId, int recipeId, String bookTitle) async {
+    try {
+      await _recipeService.unsaveRecipeFromBook(userId, recipeId, bookTitle);
+
+      // Invalidar providers
+      ref.invalidate(savedRecipesProvider(userId));
+      ref.invalidate(savedRecipesByBookProvider(userId));
+      ref.invalidate(isRecipeSavedProvider(RecipeSaveParams(userId: userId, recipeId: recipeId))); // ✅ USAR RecipeSaveParams
+
+      print('🗑️ Receita removida do livro "$bookTitle"');
+    } catch (error) {
+      print('❌ Erro ao remover receita salva: $error');
+      rethrow;
+    }
+  }
+
+  // ============================================================================
+  // CRIAR LIVRO DE RECEITAS
+  // ============================================================================
+
+  Future<void> createRecipeBook(int userId, String bookName) async {
+    try {
+      await _recipeService.createRecipeBook(userId, bookName);
+
+      // Invalidar providers
+      ref.invalidate(userRecipeBooksProvider(userId));
+      ref.invalidate(savedRecipesByBookProvider(userId));
+
+      print('📚 Livro "$bookName" criado');
+    } catch (error) {
+      print('❌ Erro ao criar livro: $error');
+      rethrow;
+    }
+  }
+
+  // ============================================================================
+  // COMENTÁRIOS
+  // ============================================================================
+
+  Future<void> addComment({
     required int recipeId,
     required int userId,
     required String text,
     int? replyToId,
   }) async {
-    final service = ref.read(recipeServiceProviderForRecipes);
-    final comment = await service.addComment(
-      recipeId: recipeId,
-      userId: userId,
-      text: text,
-      replyToId: replyToId,
-    );
+    try {
+      await _recipeService.addComment(
+        recipeId: recipeId,
+        userId: userId,
+        text: text,
+        replyToId: replyToId,
+      );
 
-    // Invalidar providers para atualizar UI
-    ref.invalidate(recipeCommentsProvider(recipeId));
-    ref.invalidate(recipeByIdProvider(recipeId));
+      // Invalidar providers
+      ref.invalidate(recipeCommentsProvider(recipeId));
+      ref.invalidate(recipeDetailProvider(recipeId));
 
-    return comment;
+      print('💬 Comentário adicionado');
+    } catch (error) {
+      print('❌ Erro ao adicionar comentário: $error');
+      rethrow;
+    }
   }
 
-  // Toggle like em comentário
-  Future<void> toggleCommentLike({
-    required int recipeId,
-    required int commentId,
-    required int userId,
-    int? parentCommentId,
-  }) async {
-    final service = ref.read(recipeServiceProviderForRecipes);
-    await service.toggleCommentLike(recipeId, commentId, userId, parentCommentId: parentCommentId);
+  Future<void> toggleCommentLike(int recipeId, int commentId, int userId, {int? parentCommentId}) async {
+    try {
+      await _recipeService.toggleCommentLike(recipeId, commentId, userId, parentCommentId: parentCommentId);
 
-    // Invalidar provider para atualizar UI
-    ref.invalidate(recipeCommentsProvider(recipeId));
-  }
+      // Invalidar providers
+      ref.invalidate(recipeCommentsProvider(recipeId));
 
-  // Avaliar receita
-  Future<void> rateRecipe(int recipeId, double rating) async {
-    // TODO: Implementar quando tiver o serviço
-    print('⭐ Receita $recipeId avaliada com $rating estrelas');
+      print('👍 Like no comentário');
+    } catch (error) {
+      print('❌ Erro ao curtir comentário: $error');
+      rethrow;
+    }
   }
 }
+
+// ============================================================================
+// PROVIDER PRINCIPAL
+// ============================================================================
+
+final recipesProvider = StateNotifierProvider<RecipesNotifier, AsyncValue<List<Recipe>>>((ref) {
+  final service = ref.watch(recipeServiceProvider);
+  return RecipesNotifier(service, ref);
+});

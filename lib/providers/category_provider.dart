@@ -1,14 +1,13 @@
 // lib/providers/category_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/mock_recipe_service.dart';
-import 'recipe_provider.dart';
 
 class CategoryData {
   final String name;
   final int recipesCount;
   final String emoji;
   final int color;
-  final String type; // 'restriction', 'cuisine', 'meal', 'custom'
+  final String type;
 
   CategoryData({
     required this.name,
@@ -20,11 +19,10 @@ class CategoryData {
 }
 
 // ============================================================================
-// CATEGORIAS PREDEFINIDAS (NÃO PODEM SER ALTERADAS)
+// CATEGORIAS PREDEFINIDAS
 // ============================================================================
 
 class PredefinedCategories {
-  // Restrições alimentares
   static const Map<String, Map<String, dynamic>> restrictions = {
     'Zero Glúten': {'emoji': '🌾', 'color': 0xFFFDD835},
     'Zero Lactose': {'emoji': '🥛', 'color': 0xFF42A5F5},
@@ -33,7 +31,6 @@ class PredefinedCategories {
     'Sem Açúcar': {'emoji': '🚫', 'color': 0xFFEF5350},
   };
 
-  // Tipos de culinária
   static const Map<String, Map<String, dynamic>> cuisines = {
     'Brasileiro': {'emoji': '🇧🇷', 'color': 0xFFFDD835},
     'Italiano': {'emoji': '🍕', 'color': 0xFFFF5722},
@@ -43,7 +40,6 @@ class PredefinedCategories {
     'Árabe': {'emoji': '🧆', 'color': 0xFFAB47BC},
   };
 
-  // Tipos de refeição
   static const Map<String, Map<String, dynamic>> meals = {
     'Café da Manhã': {'emoji': '☕', 'color': 0xFFFF7043},
     'Almoço': {'emoji': '🍽️', 'color': 0xFF5C6BC0},
@@ -52,7 +48,6 @@ class PredefinedCategories {
     'Sobremesa': {'emoji': '🍨', 'color': 0xFFAB47BC},
   };
 
-  // Ocasiões especiais
   static const Map<String, Map<String, dynamic>> occasions = {
     'Junina': {'emoji': '🎉', 'color': 0xFFFA9500},
     'Natal': {'emoji': '🎄', 'color': 0xFFF44336},
@@ -61,7 +56,6 @@ class PredefinedCategories {
     'Aniversário': {'emoji': '🎂', 'color': 0xFFFF4081},
   };
 
-  // Tipos gerais
   static const Map<String, Map<String, dynamic>> general = {
     'Doces': {'emoji': '🍰', 'color': 0xFFE91E63},
     'Salgados': {'emoji': '🥐', 'color': 0xFF7CB342},
@@ -74,7 +68,6 @@ class PredefinedCategories {
     'Sopas': {'emoji': '🍲', 'color': 0xFFFFA726},
   };
 
-  // Retorna todas as categorias predefinidas
   static Map<String, Map<String, dynamic>> getAll() {
     return {
       ...restrictions,
@@ -84,41 +77,29 @@ class PredefinedCategories {
       ...general,
     };
   }
-
-  // Retorna categorias por tipo
-  static Map<String, Map<String, dynamic>> getByType(String type) {
-    switch (type) {
-      case 'restrictions':
-        return restrictions;
-      case 'cuisines':
-        return cuisines;
-      case 'meals':
-        return meals;
-      case 'occasions':
-        return occasions;
-      case 'general':
-        return general;
-      default:
-        return getAll();
-    }
-  }
 }
+
+// ============================================================================
+// PROVIDER DO SERVICE (SEM CONFLITO)
+// ============================================================================
+
+final recipeServiceProviderForCategories = Provider<MockRecipeService>((ref) {
+  return MockRecipeService();
+});
 
 // ============================================================================
 // PROVIDER DE CATEGORIAS COM CONTAGEM
 // ============================================================================
 
 final categoriesWithCountProvider = FutureProvider<List<CategoryData>>((ref) async {
-  final recipeService = ref.watch(recipeServiceProviderForRecipes);
+  final recipeService = ref.watch(recipeServiceProviderForCategories);
   final allRecipes = await recipeService.getAllRecipes();
 
   final predefinedCategories = PredefinedCategories.getAll();
 
-  // Contar receitas por categoria
   final Map<String, int> categoryCounts = {};
 
   for (final recipe in allRecipes) {
-    // Separar múltiplas categorias (ex: "Vegano - SP" vira ["Vegano", "SP"])
     final categories = (recipe.category ?? 'Outros')
         .split(' - ')
         .map((c) => c.trim())
@@ -130,7 +111,6 @@ final categoriesWithCountProvider = FutureProvider<List<CategoryData>>((ref) asy
     }
   }
 
-  // Converter para lista
   final categories = categoryCounts.entries
       .map((entry) {
     final predefined = predefinedCategories[entry.key];
@@ -149,7 +129,7 @@ final categoriesWithCountProvider = FutureProvider<List<CategoryData>>((ref) asy
 });
 
 // ============================================================================
-// PROVIDER PARA CATEGORIAS SELECIONÁVEIS (PARA O FORMULÁRIO)
+// PROVIDER PARA CATEGORIAS SELECIONÁVEIS
 // ============================================================================
 
 final availableCategoriesProvider = Provider<List<Map<String, dynamic>>>((ref) {

@@ -23,6 +23,7 @@ import 'package:sabore_app/screens/recipe/recipe_success_screen.dart';
 import 'package:sabore_app/screens/recipe/state_recipes_screen.dart';
 import 'package:sabore_app/screens/search/search_screen.dart';
 import 'package:sabore_app/screens/profile/profile/setting_screen.dart';
+import 'models/models.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/create_account_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -271,7 +272,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/add-recipe',
-        builder: (context, state) => AddRecipeScreen(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final recipe = extra?['recipe'] as Recipe?;
+
+          return AddRecipeScreen(recipeToEdit: recipe);
+        },
       ),
       GoRoute(
         path: '/recipe-success',

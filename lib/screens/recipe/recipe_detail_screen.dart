@@ -1,4 +1,6 @@
+// lib/screens/recipe/recipe_detail_screen.dart
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,12 +8,9 @@ import 'package:go_router/go_router.dart';
 import 'package:sabore_app/models/models.dart';
 import 'package:sabore_app/providers/recipe_provider.dart';
 import 'package:sabore_app/providers/auth_provider.dart';
-import 'package:sabore_app/services/mock_notification_service.dart';
+import 'package:sabore_app/widgets/profile_image_widget.dart';
 import '../../widgets/select_recipe_book_modal.dart';
 import '../../providers/recipe_book_provider.dart';
-
-// Alias para facilitar o uso
-final recipeDetailProvider = recipeByIdProvider;
 
 class RecipeDetailScreen extends ConsumerStatefulWidget {
   final String recipeId;
@@ -98,27 +97,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       _isSubmittingComment = false;
       _commentController.clear();
     });
-
-    // 🔔 CRIAR NOTIFICAÇÃO DE COMENTÁRIO
-    try {
-      final recipeId = int.parse(widget.recipeId);
-      final recipe = await ref.read(recipeByIdProvider(recipeId).future);
-
-      if (recipe.userId != currentUser['id']) {
-        final notificationService = MockNotificationService();
-        notificationService.createCommentNotification(
-          targetUserId: recipe.userId,
-          fromUserId: currentUser['id'] as int,
-          fromUserName: currentUser['name'],
-          fromUserImage: currentUser['profileImage'],
-          recipeId: recipe.id,
-          recipeName: recipe.title,
-          commentText: newComment['comment'],
-        );
-      }
-    } catch (e) {
-      print('❌ Erro ao criar notificação: $e');
-    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -209,15 +187,13 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   }
 
   Widget _buildSliverAppBar(Recipe recipe) {
-    final currentUserId = ref.watch(currentUserDataProvider)?['id'] as int?;
+    final currentUserId = ref.watch(currentUserDataProvider)?['id'];
+    final isAuthor = currentUserId != null && int.parse(currentUserId.toString()) == recipe.userId;
 
-    // Verificar se a receita está salva
+    // ✅ ADICIONAR ESTA LINHA:
     final isSavedAsync = currentUserId != null
-        ? ref.watch(isRecipeSavedProvider(RecipeSaveParams(
-      userId: currentUserId,
-      recipeId: recipe.id,
-    )))
-        : AsyncValue.data(false);
+        ? ref.watch(isRecipeSavedProvider(RecipeSaveParams(userId: int.parse(currentUserId.toString()), recipeId: recipe.id)))
+        : const AsyncValue.data(false);
 
     // ✅ USAR FUNÇÃO HELPER PARA IMAGEM
     final imageProvider = _getRecipeImageProvider(recipe);
@@ -238,6 +214,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           child: Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
       ),
+      // ✅ MENU DE OPÇÕES (APENAS PARA O AUTOR)
       actions: [
         isSavedAsync.when(
           data: (isSaved) => Container(
@@ -289,25 +266,77 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             ),
           ),
         ),
-        Container(
-          margin: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Color(0xFF7CB342),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: Icon(Icons.star, color: Colors.white, size: 20),
-            onPressed: () {
-              _showRatingDialog(recipe);
+        // ✅ MENU DE 3 PONTINHOS (APENAS PARA O AUTOR)
+        if (isAuthor)
+          PopupMenuButton<String>(
+            icon: Container(
+              margin: EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.more_vert, color: Color(0xFF3C4D18)),
+            ),
+            onSelected: (value) {
+              if (value == 'edit') {
+                _editRecipe(recipe);
+              } else if (value == 'delete') {
+                _deleteRecipe(recipe);
+              }
             },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, color: Color(0xFF7CB342), size: 20),
+                    SizedBox(width: 12),
+                    Text(
+                      'Editar',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF3C4D18),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, color: Colors.red, size: 20),
+                    SizedBox(width: 12),
+                    Text(
+                      'Excluir',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ),
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: imageProvider, // ✅ USAR HELPER
+              image: imageProvider,
               fit: BoxFit.cover,
             ),
           ),
@@ -341,71 +370,249 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildRecipeHeader(Recipe recipe) {
-    return Padding(
-      padding: EdgeInsets.all(20),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-              context.push('/profile/${recipe.userId}');
-            },
-            child: CircleAvatar(
-              radius: 20,
-              backgroundImage: recipe.userImage != null && recipe.userImage!.startsWith('http')
-                  ? NetworkImage(recipe.userImage!)
-                  : AssetImage('assets/images/chef.jpg') as ImageProvider,
+  // ✅ NOVO: Editar receita
+  void _editRecipe(Recipe recipe) {
+    context.push('/add-recipe', extra: {'recipe': recipe});
+  }
+
+  // ✅ NOVO: Excluir receita
+  Future<void> _deleteRecipe(Recipe recipe) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+            SizedBox(width: 12),
+            Text(
+              'Excluir Receita',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                color: Color(0xFF3C4D18),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Tem certeza que deseja excluir "${recipe.title}"?\n\nEsta ação não pode ser desfeita.',
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontSize: 14,
+            color: Colors.grey[700],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
             ),
           ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  recipe.userName ?? 'Chef Saborê',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: Color(0xFF3C4D18),
-                  ),
-                ),
-                Text(
-                  'Autor(a) da receita',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w400,
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Color(0xFF7CB342),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.star, color: Colors.white, size: 16),
-                SizedBox(width: 4),
-                Text(
-                  '${recipe.averageRating?.toStringAsFixed(1) ?? '0.0'}',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+            child: Text(
+              'Excluir',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final currentUserId = ref.read(currentUserDataProvider)?['id'];
+        if (currentUserId == null) throw Exception('Usuário não autenticado');
+
+        await ref.read(recipesProvider.notifier).deleteRecipe(
+          recipe.id,
+          int.parse(currentUserId.toString()),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Receita excluída com sucesso!'),
+              backgroundColor: Color(0xFF7CB342),
+            ),
+          );
+          context.go('/home'); // Redirecionar para home
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Erro ao excluir receita: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Widget _buildRecipeHeader(Recipe recipe) {
+    // ✅ BUSCAR DADOS ATUALIZADOS DO AUTOR
+    final authorDataAsync = ref.watch(userProfileProvider(recipe.userId));
+
+    return Padding(
+      padding: EdgeInsets.all(20),
+      child: authorDataAsync.when(
+        data: (authorData) {
+          print('👤 Dados do autor ${recipe.userId}: ${authorData.keys}');
+          print('📸 profileImage: ${authorData['profileImage']}');
+          print('📸 profileImageBytes: ${authorData['profileImageBytes'] != null ? 'HAS BYTES' : 'NO BYTES'}');
+
+          return Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  context.push('/profile/${recipe.userId}');
+                },
+                child: Hero(
+                  tag: 'author_${recipe.userId}',
+                  // ✅ USAR ProfileImageWidget COM DADOS ATUALIZADOS
+                  child: ProfileImageWidget(
+                    userData: authorData,
+                    radius: 20,
+                  ),
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      authorData['name'] ?? 'Chef Saborê',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Color(0xFF3C4D18),
+                      ),
+                    ),
+                    Text(
+                      'Autor(a) da receita',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.w400,
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Color(0xFF7CB342),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.star, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      '${recipe.averageRating?.toStringAsFixed(1) ?? '0.0'}',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+        loading: () => Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: Color(0xFFF5F5F5),
+              child: Icon(Icons.person, size: 16, color: Color(0xFFFA9500)),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 100,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Container(
+                    width: 80,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        error: (_, __) => Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundImage: AssetImage('assets/images/chef.jpg'),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe.userName ?? 'Chef Saborê',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Color(0xFF3C4D18),
+                    ),
+                  ),
+                  Text(
+                    'Autor(a) da receita',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w400,
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -484,7 +691,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   }
 
   Widget _buildIngredientsSection(Recipe recipe) {
-    // Converter List<Ingredient> para List<String>
     final displayIngredients = showFullIngredients
         ? recipe.ingredients
         : recipe.ingredients.take(3).toList();
@@ -657,7 +863,6 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           SizedBox(height: 12),
           GestureDetector(
             onTap: () {
-              // ✅ NAVEGAÇÃO PARA TELA DE COMENTÁRIOS
               context.push(
                 '/recipe/${recipe.id}/comments',
                 extra: {
@@ -745,13 +950,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           isBookmarked = true;
         });
 
-        // Invalidar provider para atualizar UI
         final currentUserId = ref.read(currentUserDataProvider)?['id'] as int?;
         if (currentUserId != null) {
-          ref.invalidate(isRecipeSavedProvider(RecipeSaveParams(
-            userId: currentUserId,
-            recipeId: recipeId,
-          )));
+          ref.invalidate(isRecipeSavedProvider(RecipeSaveParams(userId: currentUserId, recipeId: recipeId)));
         }
 
         if (mounted) {

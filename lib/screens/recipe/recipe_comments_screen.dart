@@ -45,8 +45,8 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
     final text = _commentController.text.trim();
 
     try {
-      final actions = ref.read(recipeActionsProvider);
-      await actions.addComment(
+      final notifier = ref.read(recipesProvider.notifier);
+      await notifier.addComment(
         recipeId: recipeId,
         userId: userId,
         text: text,
@@ -101,11 +101,11 @@ class _RecipeCommentsScreenState extends ConsumerState<RecipeCommentsScreen> {
     final commentId = comment['id'] as int;
 
     try {
-      final actions = ref.read(recipeActionsProvider);
-      await actions.toggleCommentLike(
-        recipeId: recipeId,
-        commentId: commentId,
-        userId: userId,
+      final notifier = ref.read(recipesProvider.notifier);
+      await notifier.toggleCommentLike(
+        recipeId,
+        commentId,
+        userId,
         parentCommentId: parentCommentId,
       );
     } catch (e) {

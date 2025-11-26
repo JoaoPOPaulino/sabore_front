@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sabore_app/providers/auth_provider.dart';
 import 'package:sabore_app/providers/state_provider.dart';
+import 'package:sabore_app/widgets/profile_image_widget.dart';
 
 import '../recipe/state_recipes_screen.dart';
 
@@ -172,9 +173,10 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
                     ),
                   ),
                   SizedBox(width: 12),
-                  CircleAvatar(
+                  // ✅ CORRIGIDO: Usar ProfileImageWidget
+                  ProfileImageWidget(
+                    userData: userData,
                     radius: 25,
-                    backgroundImage: AssetImage('assets/images/chef.jpg'),
                   ),
                 ],
               ),
@@ -229,6 +231,8 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
       ),
     );
   }
+
+  // ... resto do código permanece igual (não precisa mudar)
 
   Widget _buildRegionFilter() {
     return Container(
@@ -315,7 +319,6 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
         ),
       );
     }
-
 
     return SingleChildScrollView(
       padding: EdgeInsets.only(
@@ -436,7 +439,6 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
       ),
     );
 
-    // Ajustar tamanhos baseado na altura disponível
     final isSmallCard = height < 180;
     final emojiSize = isSmallCard ? 32.0 : (height > 200 ? 48.0 : 36.0);
     final titleSize = isSmallCard ? 16.0 : (height > 200 ? 22.0 : 18.0);
@@ -454,7 +456,6 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
           onTap: () {
             print('🗺️ Estado tapped: ${state.name}');
 
-            // Navegar para tela de receitas do estado
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -482,7 +483,6 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
               borderRadius: BorderRadius.circular(20),
               child: Stack(
                 children: [
-                  // Imagem de fundo
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
@@ -493,8 +493,6 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
                       ),
                     ),
                   ),
-
-                  // Overlay com gradiente
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
@@ -509,8 +507,6 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
                       ),
                     ),
                   ),
-
-                  // Badge de região
                   Positioned(
                     top: 8,
                     left: 8,
@@ -542,8 +538,6 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
                       ),
                     ),
                   ),
-
-                  // Badge de quantidade
                   Positioned(
                     top: 8,
                     right: 8,
@@ -585,8 +579,6 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
                       ),
                     ),
                   ),
-
-                  // Conteúdo - Ajustado para evitar overflow
                   Positioned(
                     left: contentPadding,
                     right: contentPadding,
@@ -644,164 +636,6 @@ class _StatesScreenState extends ConsumerState<StatesScreen>
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  void _showStateBottomSheet(StateData state) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-        ),
-        child: Column(
-          children: [
-            // Handle
-            Container(
-              margin: EdgeInsets.symmetric(vertical: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Color(0xFFE0E0E0),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            // Header
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(state.color),
-                          Color(state.color).withOpacity(0.7),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(state.color).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      state.emoji,
-                      style: TextStyle(fontSize: 36),
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          state.name,
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 24,
-                            color: Color(0xFF3C4D18),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Color(state.color).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            state.region,
-                            style: TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(state.color),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          '${state.recipesCount} receitas disponíveis',
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontSize: 14,
-                            color: Color(0xFF999999),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(Icons.close, color: Color(0xFF666666)),
-                  ),
-                ],
-              ),
-            ),
-
-            Divider(height: 32),
-
-            // Content
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info_outline, color: Color(0xFFFA9500)),
-                        SizedBox(width: 8),
-                        Text(
-                          'Receitas típicas em breve',
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF666666),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.construction,
-                            size: 64,
-                            color: Color(0xFFE0E0E0),
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Em desenvolvimento',
-                            style: TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontSize: 14,
-                              color: Color(0xFF999999),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

@@ -1,4 +1,4 @@
-// lib/screens/recipe/add_recipe_screen_improved.dart
+// lib/screens/recipe/add_recipe_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,14 +12,19 @@ import '../../providers/recipe_provider.dart';
 import '../../providers/category_provider.dart';
 
 class AddRecipeScreen extends ConsumerStatefulWidget {
+  final Recipe? recipeToEdit; // ✅ NOVO: Receita para editar
+
+  const AddRecipeScreen({Key? key, this.recipeToEdit}) : super(key: key);
+
   @override
-  _AddRecipeScreenImprovedState createState() => _AddRecipeScreenImprovedState();
+  _AddRecipeScreenState createState() => _AddRecipeScreenState();
 }
 
-class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
+class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
   int currentStep = 1;
   final PageController _pageController = PageController();
   bool _isLoading = false;
+  bool get isEditMode => widget.recipeToEdit != null; // ✅ NOVO
 
   // Controllers
   final _nameController = TextEditingController();
@@ -44,15 +49,63 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
     'prepTime': 15,
     'cookTime': 45,
     'servings': 4,
-    'categories': <String>[], // ✅ AGORA É LISTA
+    'categories': <String>[], // Lista de categorias
     'state': 'Nenhum',
   };
 
   @override
   void initState() {
     super.initState();
+
+    // ✅ NOVO: Preencher dados se for modo edição
+    if (isEditMode) {
+      _loadRecipeData();
+    }
+
     _nameController.addListener(() => setState(() { recipeData['name'] = _nameController.text; }));
     _descriptionController.addListener(() => setState(() { recipeData['description'] = _descriptionController.text; }));
+  }
+
+  // ✅ NOVO: Carregar dados da receita para edição
+  void _loadRecipeData() {
+    final recipe = widget.recipeToEdit!;
+
+    _nameController.text = recipe.title;
+    _descriptionController.text = recipe.description;
+
+    recipeData['name'] = recipe.title;
+    recipeData['description'] = recipe.description;
+    recipeData['prepTime'] = recipe.preparationTime ~/ 2; // Aproximação
+    recipeData['cookTime'] = recipe.preparationTime ~/ 2;
+    recipeData['servings'] = recipe.servings;
+
+    // ✅ Reconstruir ingredientes
+    recipeData['ingredients'] = recipe.ingredients.map((ing) {
+      final parts = ing.split(' ');
+      return {
+        'name': parts.length > 2 ? parts.sublist(2).join(' ') : ing,
+        'amount': parts.length > 1 ? '${parts[0]} ${parts[1]}' : parts.isNotEmpty ? parts[0] : '',
+      };
+    }).toList();
+
+    // ✅ Reconstruir etapas
+    recipeData['preparations'] = List<String>.from(recipe.steps);
+
+    // ✅ Reconstruir categorias
+    if (recipe.category != null) {
+      recipeData['categories'] = recipe.category!.split(' - ').where((c) => c != 'Nenhum').toList();
+    }
+
+    // ✅ Estado
+    recipeData['state'] = recipe.state ?? 'Nenhum';
+
+    // ✅ Imagem
+    if (recipe.imageBytes != null) {
+      _selectedImageBytes = recipe.imageBytes;
+      _selectedImageName = 'recipe_image.jpg';
+    }
+
+    print('✏️ Modo edição ativado - Dados carregados');
   }
 
   @override
@@ -66,7 +119,7 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
         children: [
           _buildStep1(),
           _buildStep2(),
-          _buildStep3Improved(), // ✅ MELHORADO
+          _buildStep3Improved(),
           _buildStep4(),
           _buildStep5(),
         ],
@@ -101,7 +154,7 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
         ),
       ),
       title: Text(
-        'Adicionar Receita',
+        isEditMode ? 'Editar Receita' : 'Adicionar Receita', // ✅ MUDANÇA
         style: TextStyle(
           fontFamily: 'Montserrat',
           fontWeight: FontWeight.w600,
@@ -146,7 +199,7 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Nova receita',
+            isEditMode ? 'Editar receita' : 'Nova receita', // ✅ MUDANÇA
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontWeight: FontWeight.w700,
@@ -212,7 +265,7 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
   }
 
   // ============================================================================
-  // STEP 2: CATEGORIAS E DETALHES (MELHORADO)
+  // STEP 2: CATEGORIAS E DETALHES
   // ============================================================================
 
   Widget _buildStep2() {
@@ -234,7 +287,7 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
           ),
           SizedBox(height: 30),
 
-          // ✅ SELETOR DE CATEGORIAS MÚLTIPLAS
+          // Seletor de categorias múltiplas
           Text(
             'Categorias',
             style: TextStyle(
@@ -351,7 +404,7 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
   }
 
   // ============================================================================
-  // STEP 3: INGREDIENTES (UI MELHORADA)
+  // STEP 3: INGREDIENTES
   // ============================================================================
 
   Widget _buildStep3Improved() {
@@ -383,11 +436,12 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
           ),
           SizedBox(height: 30),
 
-          // ✅ NOVA UI - Cards mais bonitos
           Expanded(
             child: ListView.builder(
               itemCount: recipeData['ingredients'].length,
               itemBuilder: (context, index) {
+                final ingredient = recipeData['ingredients'][index];
+
                 return Container(
                   margin: EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
@@ -450,7 +504,8 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
                         SizedBox(height: 12),
 
                         // Nome do ingrediente
-                        TextField(
+                        TextFormField(
+                          initialValue: ingredient['name'],
                           decoration: InputDecoration(
                             hintText: 'Ex: Farinha de trigo',
                             hintStyle: TextStyle(
@@ -488,7 +543,8 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
                         SizedBox(height: 12),
 
                         // Quantidade
-                        TextField(
+                        TextFormField(
+                          initialValue: ingredient['amount'],
                           decoration: InputDecoration(
                             hintText: 'Ex: 2 xícaras',
                             hintStyle: TextStyle(
@@ -544,7 +600,7 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
   }
 
   // ============================================================================
-  // STEP 4 e 5 (mantém igual)
+  // STEP 4: MODO DE PREPARO
   // ============================================================================
 
   Widget _buildStep4() {
@@ -570,6 +626,8 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
             child: ListView.builder(
               itemCount: recipeData['preparations'].length,
               itemBuilder: (context, index) {
+                final step = recipeData['preparations'][index];
+
                 return Container(
                   margin: EdgeInsets.only(bottom: 12),
                   padding: EdgeInsets.all(16),
@@ -601,7 +659,8 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
                         ],
                       ),
                       SizedBox(height: 8),
-                      TextField(
+                      TextFormField(
+                        initialValue: step,
                         maxLines: 3,
                         decoration: InputDecoration(
                           hintText: 'Descreva a etapa ${index + 1}...',
@@ -635,6 +694,10 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
       ),
     );
   }
+
+  // ============================================================================
+  // STEP 5: REVISÃO
+  // ============================================================================
 
   Widget _buildStep5() {
     final selectedCategories = (recipeData['categories'] as List<String>);
@@ -757,7 +820,7 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Confirmar',
+                        isEditMode ? 'Atualizar' : 'Confirmar', // ✅ MUDANÇA
                         style: TextStyle(
                           fontFamily: 'Montserrat',
                           fontWeight: FontWeight.w600,
@@ -1075,14 +1138,21 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
     try {
       String? imageUrl;
       Uint8List? imageBytes;
+
       if (kIsWeb && _selectedImageBytes != null) {
-        imageUrl = 'recipe_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        imageUrl = isEditMode && widget.recipeToEdit!.image != null
+            ? widget.recipeToEdit!.image
+            : 'recipe_${DateTime.now().millisecondsSinceEpoch}.jpg';
         imageBytes = _selectedImageBytes;
         print("📸 Imagem web: $imageUrl (${imageBytes!.length} bytes)");
       } else if (!kIsWeb && _selectedImageFile != null) {
-    imageUrl = _selectedImageFile!.path;
-    print("📸 Imagem mobile: $imageUrl");
-    }
+        imageUrl = _selectedImageFile!.path;
+        print("📸 Imagem mobile: $imageUrl");
+      } else if (isEditMode) {
+        // Manter imagem existente
+        imageUrl = widget.recipeToEdit!.image;
+        imageBytes = widget.recipeToEdit!.imageBytes;
+      }
 
       final ingredientsList = (recipeData['ingredients'] as List<Map<String, String>>)
           .map((ing) => "${ing['amount'] ?? ''} ${ing['name'] ?? ''}".trim())
@@ -1099,7 +1169,6 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
       if (userId == null) throw Exception('Usuário não autenticado.');
       final userIdAsInt = int.tryParse(userId.toString()) ?? 0;
 
-
       List<String> finalCategories = List<String>.from(recipeData['categories']);
       if (recipeData['state'] != 'Nenhum') {
         finalCategories.add(recipeData['state']);
@@ -1107,8 +1176,8 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
 
       final categoryString = finalCategories.join(' - ');
 
-      final newRecipe = Recipe(
-        id: 0,
+      final recipe = Recipe(
+        id: isEditMode ? widget.recipeToEdit!.id : 0,
         title: recipeData['name'],
         description: recipeData['description'],
         image: imageUrl,
@@ -1118,23 +1187,42 @@ class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
         steps: stepsList,
         category: categoryString,
         userId: userIdAsInt,
-        createdAt: DateTime.now(),
+        createdAt: isEditMode ? widget.recipeToEdit!.createdAt : DateTime.now(),
         imageBytes: imageBytes,
       );
 
-      // ✅ PASSAR imageBytes ao provider
-      await ref.read(recipesProvider.notifier).addRecipe(newRecipe, imageBytes: imageBytes);
+      if (isEditMode) {
+        // ✅ MODO EDIÇÃO
+        await ref.read(recipesProvider.notifier).updateRecipe(
+          widget.recipeToEdit!.id,
+          recipe,
+          imageBytes: imageBytes,
+        );
 
-      // Invalidar providers
-      ref.invalidate(userRecipesProvider(userIdAsInt));
-      ref.invalidate(userProfileProvider(userIdAsInt));
-      ref.invalidate(allRecipesProvider);
-      ref.invalidate(categoriesWithCountProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Receita atualizada com sucesso!'),
+              backgroundColor: Color(0xFF7CB342),
+            ),
+          );
+          context.pop(); // Voltar para a tela anterior
+        }
+      } else {
+        // ✅ MODO CRIAÇÃO
+        await ref.read(recipesProvider.notifier).addRecipe(recipe, imageBytes: imageBytes);
 
-      if (mounted) context.push('/recipe-success');
+        // Invalidar providers
+        ref.invalidate(userRecipesProvider(userIdAsInt));
+        ref.invalidate(userProfileProvider(userIdAsInt));
+        ref.invalidate(allRecipesProvider);
+        ref.invalidate(categoriesWithCountProvider);
+
+        if (mounted) context.push('/recipe-success');
+      }
 
     } catch (e) {
-      print('❌ Erro ao criar receita: $e');
+      print('❌ Erro ao salvar receita: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
