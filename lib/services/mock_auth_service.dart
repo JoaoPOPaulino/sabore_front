@@ -179,7 +179,6 @@ class MockAuthService {
     },
   ];
 
-  // ✅ SERVIÇOS DE VERIFICAÇÃO
   final SmsService _smsService = SmsService();
   final EmailService _emailService = EmailService();
 
@@ -188,18 +187,17 @@ class MockAuthService {
   static int? _currentUserId;
   String? _currentVerificationId;
 
-  // ✅ MAPA DE SEGUIDORES REALISTA E COERENTE
   static final Map<int, List<int>> _followingMap = {
-    1: [4, 6, 10, 2, 3, 5],           // João segue 6 pessoas
-    2: [1, 4, 6, 10],                 // Maria segue 4 pessoas
-    3: [1, 4, 6, 2, 10],              // Carlos segue 5 pessoas
-    4: [1, 2, 3, 5, 6, 9, 10, 7],     // Ana (popular) segue 8 pessoas
-    5: [1, 4, 6],                     // Rafael segue 3 pessoas
-    6: [1, 2, 4, 5, 10, 3, 7],        // Juliana segue 7 pessoas
-    7: [1, 2, 3, 4, 5, 6, 9, 10, 8],  // Teste segue 9 pessoas
-    8: [],                             // Admin não segue ninguém
-    9: [1, 4, 6, 2, 10, 5],           // Pedro segue 6 pessoas
-    10: [1, 4, 6, 2, 5],              // Fernanda segue 5 pessoas
+    1: [4, 6, 10, 2, 3, 5],
+    2: [1, 4, 6, 10],
+    3: [1, 4, 6, 2, 10],
+    4: [1, 2, 3, 5, 6, 9, 10, 7],
+    5: [1, 4, 6],
+    6: [1, 2, 4, 5, 10, 3, 7],
+    7: [1, 2, 3, 4, 5, 6, 9, 10, 8],
+    8: [],
+    9: [1, 4, 6, 2, 10, 5],
+    10: [1, 4, 6, 2, 5],
   };
 
   String _generateCode() {

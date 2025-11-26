@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,6 +36,39 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  // ✅ FUNÇÃO HELPER PARA CRIAR ImageProvider CORRETO
+  ImageProvider _getRecipeImageProvider(Recipe recipe) {
+    // Verificar se tem bytes (WEB)
+    if (recipe.imageBytes != null) {
+      print('✅ Usando MemoryImage para receita ${recipe.id}');
+      return MemoryImage(recipe.imageBytes!);
+    }
+
+    // Verificar se tem imagem
+    if (recipe.image == null || recipe.image!.isEmpty) {
+      return AssetImage('assets/images/chef.jpg');
+    }
+
+    // Se é URL HTTP/HTTPS
+    if (recipe.image!.startsWith('http')) {
+      return NetworkImage(recipe.image!);
+    }
+
+    // Se começa com assets/, usar AssetImage
+    if (recipe.image!.startsWith('assets/')) {
+      return AssetImage(recipe.image!);
+    }
+
+    // Se está na WEB mas não tem bytes, usar placeholder
+    if (kIsWeb) {
+      print('⚠️ Imagem sem bytes na WEB: ${recipe.image}');
+      return AssetImage('assets/images/chef.jpg');
+    }
+
+    // Mobile/Desktop: usar FileImage
+    return FileImage(File(recipe.image!));
   }
 
   Future<void> _submitComment() async {
@@ -184,6 +219,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     )))
         : AsyncValue.data(false);
 
+    // ✅ USAR FUNÇÃO HELPER PARA IMAGEM
+    final imageProvider = _getRecipeImageProvider(recipe);
+
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
@@ -269,9 +307,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         background: Container(
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: recipe.image != null && recipe.image!.startsWith('http')
-                  ? NetworkImage(recipe.image!)
-                  : AssetImage(recipe.image ?? 'assets/images/chef.jpg') as ImageProvider,
+              image: imageProvider, // ✅ USAR HELPER
               fit: BoxFit.cover,
             ),
           ),

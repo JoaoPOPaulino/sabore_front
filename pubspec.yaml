@@ -31,8 +31,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  build_runner: ^2.4.0  # Para gerar código com freezed (se usar)
-  json_serializable: ^6.7.0  # Para gerar modelos (se usar)
+  build_runner: ^2.4.0
+  json_serializable: ^6.7.0
 
 flutter:
   uses-material-design: true

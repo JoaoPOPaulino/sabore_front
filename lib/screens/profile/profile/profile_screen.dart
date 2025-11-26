@@ -33,6 +33,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     },
   ];
 
+  // ✅ FUNÇÃO HELPER PARA CRIAR ImageProvider CORRETO
+  ImageProvider _getRecipeImageProvider(Recipe recipe) {
+    // Verificar se tem bytes (WEB)
+    if (recipe.imageBytes != null) {
+      return MemoryImage(recipe.imageBytes!);
+    }
+
+    // Verificar se tem imagem
+    if (recipe.image == null || recipe.image!.isEmpty) {
+      return AssetImage('assets/images/chef.jpg');
+    }
+
+    // Se começa com assets/, usar AssetImage
+    if (recipe.image!.startsWith('assets/')) {
+      return AssetImage(recipe.image!);
+    }
+
+    // Se está na WEB mas não tem bytes, usar placeholder
+    if (kIsWeb) {
+      print('⚠️ Imagem sem bytes na WEB: ${recipe.image}');
+      return AssetImage('assets/images/chef.jpg');
+    }
+
+    // Mobile/Desktop: usar FileImage
+    return FileImage(File(recipe.image!));
+  }
+
   @override
   Widget build(BuildContext context) {
     final int userIdAsInt = int.tryParse(widget.userId) ?? 0;
@@ -308,7 +335,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildStatColumn(userData['recipesCount'].toString(), 'Receitas'),
                 Container(height: 40, width: 1, color: Color(0xFFE0E0E0)),
 
-                // ✅ SEGUIDORES - CLICÁVEL
                 GestureDetector(
                   onTap: () {
                     context.push(
@@ -325,7 +351,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                 Container(height: 40, width: 1, color: Color(0xFFE0E0E0)),
 
-                // ✅ SEGUINDO - CLICÁVEL
                 GestureDetector(
                   onTap: () {
                     context.push(
@@ -460,7 +485,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       final isNowFollowing = await authService.toggleFollow(userIdToFollow);
 
-      // ✅ INVALIDAR TODOS OS PROVIDERS RELACIONADOS
       ref.invalidate(followersProvider(userIdToFollow));
       ref.invalidate(followersCountProvider(userIdToFollow));
       ref.invalidate(followingProvider(currentUserId));
@@ -760,7 +784,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         final userRecipes = ref.watch(userRecipesProvider(userId));
         return userRecipes.when(
           data: (recipes) {
-            // Filtrar apenas receitas com imagens
             final recipesWithImages = recipes.where((r) => r.image != null && r.image!.isNotEmpty).toList();
 
             if (recipesWithImages.isEmpty) {
@@ -847,6 +870,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               recipe.image ?? 'assets/images/chef.jpg',
               recipe.id,
               isPopular: recipe.likesCount > 10,
+              recipe: recipe, // ✅ PASSAR O OBJETO RECIPE
             ),
           );
         },
@@ -855,6 +879,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  // ✅ GALERIA CORRIGIDA PARA WEB
   Widget _buildGalleryGrid(List<Recipe> recipes) {
     return SliverGrid(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -867,12 +892,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             (context, index) {
           final recipe = recipes[index];
 
-          ImageProvider imageProvider;
-          if (recipe.image!.startsWith('assets/')) {
-            imageProvider = AssetImage(recipe.image!);
-          } else {
-            imageProvider = FileImage(File(recipe.image!));
-          }
+          // ✅ USAR FUNÇÃO HELPER
+          final imageProvider = _getRecipeImageProvider(recipe);
 
           return GestureDetector(
             onTap: () {
@@ -887,7 +908,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   fit: BoxFit.cover,
                 ),
               ),
-              // Overlay com gradiente para melhor legibilidade
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15),
@@ -902,7 +922,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 child: Stack(
                   children: [
-                    // Badge com contagem de likes
                     if (recipe.likesCount > 0)
                       Positioned(
                         top: 6,
@@ -1087,6 +1106,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  // ✅ RECIPE CARD CORRIGIDO PARA WEB
   Widget _buildRecipeCard(
       String title,
       String time,
@@ -1096,12 +1116,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       String imagePath,
       int recipeId, {
         bool isPopular = false,
+        Recipe? recipe, // ✅ ADICIONAR PARÂMETRO recipe
       }) {
+
     ImageProvider imageProvider;
-    if (imagePath.startsWith('assets/')) {
-      imageProvider = AssetImage(imagePath);
+
+    // ✅ SE TEM RECIPE, USAR FUNÇÃO HELPER
+    if (recipe != null) {
+      imageProvider = _getRecipeImageProvider(recipe);
     } else {
-      imageProvider = FileImage(File(imagePath));
+      // Fallback antigo
+      if (imagePath.startsWith('assets/')) {
+        imageProvider = AssetImage(imagePath);
+      } else if (kIsWeb) {
+        imageProvider = AssetImage('assets/images/chef.jpg');
+      } else {
+        imageProvider = FileImage(File(imagePath));
+      }
     }
 
     return GestureDetector(

@@ -7,65 +7,159 @@ class CategoryData {
   final String name;
   final int recipesCount;
   final String emoji;
-  final int color; // Color value
+  final int color;
+  final String type; // 'restriction', 'cuisine', 'meal', 'custom'
 
   CategoryData({
     required this.name,
     required this.recipesCount,
     required this.emoji,
     required this.color,
+    this.type = 'custom',
   });
 }
+
+// ============================================================================
+// CATEGORIAS PREDEFINIDAS (NÃO PODEM SER ALTERADAS)
+// ============================================================================
+
+class PredefinedCategories {
+  // Restrições alimentares
+  static const Map<String, Map<String, dynamic>> restrictions = {
+    'Zero Glúten': {'emoji': '🌾', 'color': 0xFFFDD835},
+    'Zero Lactose': {'emoji': '🥛', 'color': 0xFF42A5F5},
+    'Vegano': {'emoji': '🌱', 'color': 0xFF66BB6A},
+    'Vegetariano': {'emoji': '🥗', 'color': 0xFF7CB342},
+    'Sem Açúcar': {'emoji': '🚫', 'color': 0xFFEF5350},
+  };
+
+  // Tipos de culinária
+  static const Map<String, Map<String, dynamic>> cuisines = {
+    'Brasileiro': {'emoji': '🇧🇷', 'color': 0xFFFDD835},
+    'Italiano': {'emoji': '🍕', 'color': 0xFFFF5722},
+    'Japonês': {'emoji': '🍱', 'color': 0xFFE91E63},
+    'Mexicano': {'emoji': '🌮', 'color': 0xFFFF9800},
+    'Chinês': {'emoji': '🥢', 'color': 0xFFF44336},
+    'Árabe': {'emoji': '🧆', 'color': 0xFFAB47BC},
+  };
+
+  // Tipos de refeição
+  static const Map<String, Map<String, dynamic>> meals = {
+    'Café da Manhã': {'emoji': '☕', 'color': 0xFFFF7043},
+    'Almoço': {'emoji': '🍽️', 'color': 0xFF5C6BC0},
+    'Jantar': {'emoji': '🌙', 'color': 0xFF3F51B5},
+    'Lanche': {'emoji': '🍪', 'color': 0xFFFFB74D},
+    'Sobremesa': {'emoji': '🍨', 'color': 0xFFAB47BC},
+  };
+
+  // Ocasiões especiais
+  static const Map<String, Map<String, dynamic>> occasions = {
+    'Junina': {'emoji': '🎉', 'color': 0xFFFA9500},
+    'Natal': {'emoji': '🎄', 'color': 0xFFF44336},
+    'Páscoa': {'emoji': '🐰', 'color': 0xFFAB47BC},
+    'Festa': {'emoji': '🎊', 'color': 0xFFEC407A},
+    'Aniversário': {'emoji': '🎂', 'color': 0xFFFF4081},
+  };
+
+  // Tipos gerais
+  static const Map<String, Map<String, dynamic>> general = {
+    'Doces': {'emoji': '🍰', 'color': 0xFFE91E63},
+    'Salgados': {'emoji': '🥐', 'color': 0xFF7CB342},
+    'Bebidas': {'emoji': '🧃', 'color': 0xFF00BCD4},
+    'Petiscos': {'emoji': '🍿', 'color': 0xFFFFB300},
+    'Massas': {'emoji': '🍝', 'color': 0xFFFF6F00},
+    'Carnes': {'emoji': '🥩', 'color': 0xFFD32F2F},
+    'Peixes': {'emoji': '🐟', 'color': 0xFF0288D1},
+    'Saladas': {'emoji': '🥗', 'color': 0xFF66BB6A},
+    'Sopas': {'emoji': '🍲', 'color': 0xFFFFA726},
+  };
+
+  // Retorna todas as categorias predefinidas
+  static Map<String, Map<String, dynamic>> getAll() {
+    return {
+      ...restrictions,
+      ...cuisines,
+      ...meals,
+      ...occasions,
+      ...general,
+    };
+  }
+
+  // Retorna categorias por tipo
+  static Map<String, Map<String, dynamic>> getByType(String type) {
+    switch (type) {
+      case 'restrictions':
+        return restrictions;
+      case 'cuisines':
+        return cuisines;
+      case 'meals':
+        return meals;
+      case 'occasions':
+        return occasions;
+      case 'general':
+        return general;
+      default:
+        return getAll();
+    }
+  }
+}
+
+// ============================================================================
+// PROVIDER DE CATEGORIAS COM CONTAGEM
+// ============================================================================
 
 final categoriesWithCountProvider = FutureProvider<List<CategoryData>>((ref) async {
   final recipeService = ref.watch(recipeServiceProviderForRecipes);
   final allRecipes = await recipeService.getAllRecipes();
 
-  // Mapear cores para cada categoria
-  final categoryColors = {
-    'Doces': 0xFFE91E63,
-    'Salgados': 0xFF7CB342,
-    'Bebidas': 0xFF00BCD4,
-    'Junina': 0xFFFA9500,
-    'Italiano': 0xFFFF5722,
-    'Brasileiro': 0xFFFDD835,
-    'Sobremesa': 0xFFAB47BC,
-    'Café da manhã': 0xFFFF7043,
-    'Jantar': 0xFF5C6BC0,
-    'Festa': 0xFFEC407A,
-  };
-
-  // Emojis para cada categoria
-  final categoryEmojis = {
-    'Doces': '🍰',
-    'Salgados': '🥐',
-    'Bebidas': '🧃',
-    'Junina': '🎉',
-    'Italiano': '🍕',
-    'Brasileiro': '🇧🇷',
-    'Sobremesa': '🍨',
-    'Café da manhã': '☕',
-    'Jantar': '🍽️',
-    'Festa': '🎊',
-  };
+  final predefinedCategories = PredefinedCategories.getAll();
 
   // Contar receitas por categoria
   final Map<String, int> categoryCounts = {};
+
   for (final recipe in allRecipes) {
-    final category = recipe.category ?? 'Outros';
-    categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
+    // Separar múltiplas categorias (ex: "Vegano - SP" vira ["Vegano", "SP"])
+    final categories = (recipe.category ?? 'Outros')
+        .split(' - ')
+        .map((c) => c.trim())
+        .where((c) => c.isNotEmpty)
+        .toList();
+
+    for (final category in categories) {
+      categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
+    }
   }
 
-  // Converter para lista e ordenar por quantidade (maior para menor)
+  // Converter para lista
   final categories = categoryCounts.entries
-      .map((entry) => CategoryData(
-    name: entry.key,
-    recipesCount: entry.value,
-    emoji: categoryEmojis[entry.key] ?? '🍴',
-    color: categoryColors[entry.key] ?? 0xFF9E9E9E,
-  ))
+      .map((entry) {
+    final predefined = predefinedCategories[entry.key];
+    return CategoryData(
+      name: entry.key,
+      recipesCount: entry.value,
+      emoji: predefined?['emoji'] ?? '🍴',
+      color: predefined?['color'] ?? 0xFF9E9E9E,
+      type: predefined != null ? 'predefined' : 'custom',
+    );
+  })
       .toList()
     ..sort((a, b) => b.recipesCount.compareTo(a.recipesCount));
 
   return categories;
+});
+
+// ============================================================================
+// PROVIDER PARA CATEGORIAS SELECIONÁVEIS (PARA O FORMULÁRIO)
+// ============================================================================
+
+final availableCategoriesProvider = Provider<List<Map<String, dynamic>>>((ref) {
+  final allCategories = PredefinedCategories.getAll();
+
+  return allCategories.entries.map((entry) {
+    return {
+      'name': entry.key,
+      'emoji': entry.value['emoji'],
+      'color': entry.value['color'],
+    };
+  }).toList();
 });

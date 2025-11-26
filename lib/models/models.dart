@@ -2,15 +2,15 @@
 import 'dart:typed_data';
 
 class User {
-  final int id; // Chave como int
+  final int id;
   final String username;
   final String email;
   final String? name;
   final String? location;
   final String? profileImage;
-  final Uint8List? profileImageBytes; // Adicionado
-  final String? coverImage; // Adicionado
-  final Uint8List? coverImageBytes; // Adicionado
+  final Uint8List? profileImageBytes;
+  final String? coverImage;
+  final Uint8List? coverImageBytes;
   final String? bio;
   final String? phone;
   final int recipesCount;
@@ -38,7 +38,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: int.tryParse(json['id'].toString()) ?? 0, // Garante que seja int
+      id: int.tryParse(json['id'].toString()) ?? 0,
       username: json['username'] ?? 'user_${json['id']}',
       email: json['email'],
       name: json['name'],
@@ -58,17 +58,18 @@ class User {
 }
 
 class Recipe {
-  final int id; // Chave como int
+  final int id;
   final String title;
   final String description;
   final String? image;
+  final Uint8List? imageBytes; // ✅ ADICIONADO: Bytes da imagem para WEB
   final int preparationTime;
   final int servings;
   final List<String> ingredients;
   final List<String> steps;
   final String? category;
   final String? state;
-  final int userId; // Chave como int
+  final int userId;
   final String? userName;
   final String? userImage;
   final DateTime createdAt;
@@ -84,6 +85,7 @@ class Recipe {
     required this.title,
     required this.description,
     this.image,
+    this.imageBytes, // ✅ ADICIONADO
     required this.preparationTime,
     required this.servings,
     required this.ingredients,
@@ -104,17 +106,18 @@ class Recipe {
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
-      id: int.tryParse(json['id'].toString()) ?? 0, // Garante que seja int
+      id: int.tryParse(json['id'].toString()) ?? 0,
       title: json['title'],
       description: json['description'],
       image: json['image'],
+      imageBytes: json['imageBytes'], // ✅ ADICIONADO
       preparationTime: json['preparation_time'],
       servings: json['servings'],
       ingredients: List<String>.from(json['ingredients'] ?? []),
       steps: List<String>.from(json['steps'] ?? []),
       category: json['category'],
       state: json['state'],
-      userId: int.tryParse(json['user_id'].toString()) ?? (json['user'] != null ? int.tryParse(json['user']['id'].toString()) ?? 0 : 0), // Garante que seja int
+      userId: int.tryParse(json['user_id'].toString()) ?? (json['user'] != null ? int.tryParse(json['user']['id'].toString()) ?? 0 : 0),
       userName: json['user_name'] ?? json['user']?['name'],
       userImage: json['user_image'] ?? json['user']?['profile_image'],
       createdAt: DateTime.parse(json['created_at']),
@@ -147,6 +150,7 @@ class Recipe {
     String? title,
     String? description,
     String? image,
+    Uint8List? imageBytes, // ✅ ADICIONADO
     int? preparationTime,
     int? servings,
     List<String>? ingredients,
@@ -166,6 +170,7 @@ class Recipe {
       title: title ?? this.title,
       description: description ?? this.description,
       image: image ?? this.image,
+      imageBytes: imageBytes ?? this.imageBytes, // ✅ ADICIONADO
       preparationTime: preparationTime ?? this.preparationTime,
       servings: servings ?? this.servings,
       ingredients: ingredients ?? this.ingredients,

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
 import '../services/mock_recipe_service.dart';
@@ -82,30 +83,31 @@ final isRecipeLikedProvider = FutureProvider.family<bool, RecipeLikeParams>((ref
 // ============================================================================
 
 class RecipesNotifier extends StateNotifier<AsyncValue<List<Recipe>>> {
+  final MockRecipeService _recipeService;
   final Ref ref;
 
-  RecipesNotifier(this.ref) : super(const AsyncValue.loading()) {
-    loadRecipes();
+  RecipesNotifier(this._recipeService, this.ref) : super(AsyncValue.loading()) {
+    _loadRecipes();
   }
 
-  // Carregar todas as receitas
-  Future<void> loadRecipes() async {
-    state = const AsyncValue.loading();
+  Future<void> _loadRecipes() async {
     try {
-      final service = ref.read(recipeServiceProviderForRecipes);
-      final recipes = await service.getAllRecipes();
+      state = AsyncValue.loading();
+      final recipes = await _recipeService.getAllRecipes();
       state = AsyncValue.data(recipes);
-    } catch (error, stack) {
-      state = AsyncValue.error(error, stack);
-      print('❌ Erro ao carregar receitas: $error');
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
     }
   }
 
-  // Adicionar nova receita
-  Future<void> addRecipe(Recipe recipe) async {
+  // ✅ CORRIGIDO: Adicionar nova receita COM imageBytes
+  Future<void> addRecipe(Recipe recipe, {Uint8List? imageBytes}) async {
     try {
-      final service = ref.read(recipeServiceProviderForRecipes);
-      final createdRecipe = await service.createRecipe(recipe);
+      // Criar receita passando imageBytes
+      final createdRecipe = await _recipeService.createRecipe(
+        recipe,
+        imageBytes: imageBytes,
+      );
 
       print('✅ Receita "${createdRecipe.title}" adicionada com sucesso!');
 
@@ -115,7 +117,7 @@ class RecipesNotifier extends StateNotifier<AsyncValue<List<Recipe>>> {
       ref.invalidate(userProfileProvider(recipe.userId));
 
       // Recarregar lista de receitas
-      await loadRecipes();
+      await _loadRecipes();
     } catch (error) {
       print('❌ Erro ao adicionar receita: $error');
       rethrow;
@@ -126,7 +128,7 @@ class RecipesNotifier extends StateNotifier<AsyncValue<List<Recipe>>> {
   Future<void> updateRecipe(Recipe recipe) async {
     try {
       print('✅ Receita "${recipe.title}" atualizada com sucesso!');
-      await loadRecipes();
+      await _loadRecipes();
     } catch (error) {
       print('❌ Erro ao atualizar receita: $error');
       rethrow;
@@ -137,7 +139,7 @@ class RecipesNotifier extends StateNotifier<AsyncValue<List<Recipe>>> {
   Future<void> deleteRecipe(int recipeId) async {
     try {
       print('✅ Receita $recipeId deletada com sucesso!');
-      await loadRecipes();
+      await _loadRecipes();
     } catch (error) {
       print('❌ Erro ao deletar receita: $error');
       rethrow;
@@ -146,13 +148,14 @@ class RecipesNotifier extends StateNotifier<AsyncValue<List<Recipe>>> {
 
   // Refresh manual
   Future<void> refresh() async {
-    await loadRecipes();
+    await _loadRecipes();
   }
 }
 
-// Provider do StateNotifier
+// ✅ CORRIGIDO: Provider do StateNotifier passando ref
 final recipesProvider = StateNotifierProvider<RecipesNotifier, AsyncValue<List<Recipe>>>((ref) {
-  return RecipesNotifier(ref);
+  final service = ref.watch(recipeServiceProviderForRecipes);
+  return RecipesNotifier(service, ref);
 });
 
 // ============================================================================
@@ -227,4 +230,3 @@ class RecipeActions {
     print('⭐ Receita $recipeId avaliada com $rating estrelas');
   }
 }
-

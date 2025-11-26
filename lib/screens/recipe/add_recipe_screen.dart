@@ -1,4 +1,4 @@
-// lib/screens/recipe/add_recipe_screen.dart
+// lib/screens/recipe/add_recipe_screen_improved.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,25 +9,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/recipe_provider.dart';
+import '../../providers/category_provider.dart';
 
 class AddRecipeScreen extends ConsumerStatefulWidget {
   @override
-  _AddRecipeScreenState createState() => _AddRecipeScreenState();
+  _AddRecipeScreenImprovedState createState() => _AddRecipeScreenImprovedState();
 }
 
-class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
+class _AddRecipeScreenImprovedState extends ConsumerState<AddRecipeScreen> {
   int currentStep = 1;
   final PageController _pageController = PageController();
   bool _isLoading = false;
 
-  // Controllers para os formulários
+  // Controllers
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   File? _selectedImageFile;
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
 
-  // Lista de estados
+  // Estados brasileiros
   final List<String> states = [
     'Nenhum', 'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
     'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS',
@@ -43,14 +44,13 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     'prepTime': 15,
     'cookTime': 45,
     'servings': 4,
-    'restriction': 'Não',
+    'categories': <String>[], // ✅ AGORA É LISTA
     'state': 'Nenhum',
   };
 
   @override
   void initState() {
     super.initState();
-    // Listeners para atualizar o 'canProceed' em tempo real
     _nameController.addListener(() => setState(() { recipeData['name'] = _nameController.text; }));
     _descriptionController.addListener(() => setState(() { recipeData['description'] = _descriptionController.text; }));
   }
@@ -59,77 +59,83 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFFAFAFA),
-      appBar: AppBar(
-        backgroundColor: Color(0xFFFAFAFA),
-        elevation: 0,
-        leading: GestureDetector(
-          onTap: () {
-            if (_isLoading) return;
-            if (currentStep > 1) {
-              setState(() { currentStep--; });
-              _pageController.previousPage(
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            } else {
-              context.pop();
-            }
-          },
-          child: Container(
-            margin: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Color(0xFF7CB342),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.arrow_back, color: Colors.white, size: 20),
-          ),
-        ),
-        title: Text(
-          'Adicionar Receita',
-          style: TextStyle(
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-            color: Color(0xFF3C4D18),
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          Container(
-            margin: EdgeInsets.all(8),
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Color(0xFFFA9500),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Text(
-              '$currentStep/5',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(),
       body: PageView(
         controller: _pageController,
         physics: NeverScrollableScrollPhysics(),
         children: [
-          _buildStep1(), // Nova receita
-          _buildStep2(), // Informações
-          _buildStep3(), // Ingredientes
-          _buildStep4(), // Modo de preparo
-          _buildStep5(), // Confirmar
+          _buildStep1(),
+          _buildStep2(),
+          _buildStep3Improved(), // ✅ MELHORADO
+          _buildStep4(),
+          _buildStep5(),
         ],
       ),
     );
   }
 
-  // Step 1: Nova receita
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Color(0xFFFAFAFA),
+      elevation: 0,
+      leading: GestureDetector(
+        onTap: () {
+          if (_isLoading) return;
+          if (currentStep > 1) {
+            setState(() { currentStep--; });
+            _pageController.previousPage(
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          } else {
+            context.pop();
+          }
+        },
+        child: Container(
+          margin: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Color(0xFF7CB342),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Icons.arrow_back, color: Colors.white, size: 20),
+        ),
+      ),
+      title: Text(
+        'Adicionar Receita',
+        style: TextStyle(
+          fontFamily: 'Montserrat',
+          fontWeight: FontWeight.w600,
+          fontSize: 18,
+          color: Color(0xFF3C4D18),
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        Container(
+          margin: EdgeInsets.all(8),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Color(0xFFFA9500),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Text(
+            '$currentStep/5',
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================================
+  // STEP 1: INFORMAÇÕES BÁSICAS
+  // ============================================================================
+
   Widget _buildStep1() {
-    // Verifica se pode avançar
     bool canProceed = _nameController.text.isNotEmpty &&
         _descriptionController.text.isNotEmpty &&
         _hasSelectedImage();
@@ -150,7 +156,6 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
           ),
           SizedBox(height: 30),
 
-          // Campo nome
           _buildTextField(
             controller: _nameController,
             labelText: 'Nome da Receita',
@@ -158,7 +163,6 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
           ),
           SizedBox(height: 20),
 
-          // Campo Descrição
           _buildTextField(
             controller: _descriptionController,
             labelText: 'Descrição da Receita',
@@ -200,7 +204,6 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
           ),
           SizedBox(height: 30),
 
-          // Botão Próximo (só aparece se puder avançar)
           if (canProceed)
             _buildNextButton(onPressed: _nextStep),
         ],
@@ -208,15 +211,20 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     );
   }
 
-  // Step 2: Informações
+  // ============================================================================
+  // STEP 2: CATEGORIAS E DETALHES (MELHORADO)
+  // ============================================================================
+
   Widget _buildStep2() {
+    final availableCategories = ref.watch(availableCategoriesProvider);
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Informações',
+            'Detalhes',
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontWeight: FontWeight.w700,
@@ -224,38 +232,129 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
               color: Color(0xFF3C4D18),
             ),
           ),
-          SizedBox(height: 40),
-
-          // Tempo de preparação
-          _buildTimeRow('Tempo de preparação', 'prepTime', recipeData['prepTime']),
-          SizedBox(height: 20),
-          // Tempo de cozimento
-          _buildTimeRow('Tempo de cozimento', 'cookTime', recipeData['cookTime']),
-          SizedBox(height: 20),
-          // Porções
-          _buildTimeRow('Porções (Pessoas)', 'servings', recipeData['servings'], step: 1, min: 1, labelSufix: ''),
-
           SizedBox(height: 30),
 
-          // Categoria
-          _buildDropdown('Categoria / Restrição', 'restriction',
-              ['Não', 'Zero Glúten', 'Zero Lactose', 'Vegano', 'Vegetariano']),
+          // ✅ SELETOR DE CATEGORIAS MÚLTIPLAS
+          Text(
+            'Categorias',
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: Color(0xFF3C4D18),
+            ),
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Selecione todas que se aplicam',
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontSize: 13,
+              color: Color(0xFF999999),
+            ),
+          ),
+          SizedBox(height: 16),
 
-          SizedBox(height: 20),
+          // Grid de categorias
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: availableCategories.map((category) {
+              final isSelected = (recipeData['categories'] as List<String>)
+                  .contains(category['name']);
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (isSelected) {
+                      (recipeData['categories'] as List<String>)
+                          .remove(category['name']);
+                    } else {
+                      (recipeData['categories'] as List<String>)
+                          .add(category['name']);
+                    }
+                  });
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Color(category['color']).withOpacity(0.2)
+                        : Color(0xFFFFF3E0),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? Color(category['color'])
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        category['emoji'],
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        category['name'],
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 13,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? Color(category['color'])
+                              : Color(0xFF666666),
+                        ),
+                      ),
+                      if (isSelected) ...[
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.check_circle,
+                          size: 16,
+                          color: Color(category['color']),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          SizedBox(height: 32),
+          Divider(),
+          SizedBox(height: 24),
+
+          // Tempos e porções
+          _buildTimeRow('Tempo de preparação', 'prepTime', recipeData['prepTime']),
+          SizedBox(height: 16),
+          _buildTimeRow('Tempo de cozimento', 'cookTime', recipeData['cookTime']),
+          SizedBox(height: 16),
+          _buildTimeRow('Porções', 'servings', recipeData['servings'], step: 1, min: 1, labelSufix: ' pessoas'),
+
+          SizedBox(height: 32),
+          Divider(),
+          SizedBox(height: 24),
 
           // Estado
           _buildDropdown('Estado (Opcional)', 'state', states),
 
-          SizedBox(height: 50),
+          SizedBox(height: 40),
           _buildNextButton(onPressed: _nextStep),
         ],
       ),
     );
   }
 
-  // Step 3: Ingredientes
-  Widget _buildStep3() {
-    // Verifica se pode avançar
+  // ============================================================================
+  // STEP 3: INGREDIENTES (UI MELHORADA)
+  // ============================================================================
+
+  Widget _buildStep3Improved() {
     bool canProceed = recipeData['ingredients'].isNotEmpty &&
         (recipeData['ingredients'] as List).every((ing) => ing['name']!.isNotEmpty);
 
@@ -273,74 +372,182 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
               color: Color(0xFF3C4D18),
             ),
           ),
+          SizedBox(height: 8),
+          Text(
+            '${(recipeData['ingredients'] as List).length} ${(recipeData['ingredients'] as List).length == 1 ? 'ingrediente' : 'ingredientes'}',
+            style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontSize: 14,
+              color: Color(0xFF999999),
+            ),
+          ),
           SizedBox(height: 30),
 
-          // Lista de ingredientes
+          // ✅ NOVA UI - Cards mais bonitos
           Expanded(
             child: ListView.builder(
               itemCount: recipeData['ingredients'].length,
               itemBuilder: (context, index) {
                 return Container(
-                  margin: EdgeInsets.only(bottom: 12),
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  margin: EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Color(0xFFFFF3E0),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 100,
-                        child: TextField(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Color(0xFFFA9500).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${index + 1}',
+                                  style: TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: Color(0xFFFA9500),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Spacer(),
+                            GestureDetector(
+                              onTap: () => setState(() {
+                                recipeData['ingredients'].removeAt(index);
+                              }),
+                              child: Container(
+                                padding: EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+
+                        // Nome do ingrediente
+                        TextField(
                           decoration: InputDecoration(
-                            hintText: 'Ex: 1 xícara',
-                            border: InputBorder.none,
+                            hintText: 'Ex: Farinha de trigo',
+                            hintStyle: TextStyle(
+                              color: Color(0xFFCCCCCC),
+                              fontSize: 15,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                color: Color(0xFFE0E0E0),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                color: Color(0xFFFA9500),
+                                width: 2,
+                              ),
+                            ),
+                            prefixIcon: Icon(
+                              Icons.egg_outlined,
+                              color: Color(0xFFFA9500),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              recipeData['ingredients'][index]['name'] = value;
+                            });
+                          },
+                        ),
+                        SizedBox(height: 12),
+
+                        // Quantidade
+                        TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Ex: 2 xícaras',
+                            hintStyle: TextStyle(
+                              color: Color(0xFFCCCCCC),
+                              fontSize: 15,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                color: Color(0xFFE0E0E0),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                color: Color(0xFF7CB342),
+                                width: 2,
+                              ),
+                            ),
+                            prefixIcon: Icon(
+                              Icons.scale_outlined,
+                              color: Color(0xFF7CB342),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                           ),
                           onChanged: (value) {
                             recipeData['ingredients'][index]['amount'] = value;
                           },
                         ),
-                      ),
-                      Container(width: 1, height: 20, color: Color(0xFFFA9500).withOpacity(0.3), margin: EdgeInsets.symmetric(horizontal: 8)),
-
-                      Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Ingrediente ${index + 1}',
-                            border: InputBorder.none,
-                          ),
-                          onChanged: (value) {
-                            setState(() { // setState aqui para atualizar o 'canProceed'
-                              recipeData['ingredients'][index]['name'] = value;
-                            });
-                          },
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: () => setState(() { recipeData['ingredients'].removeAt(index); }),
-                        child: Icon(Icons.close, color: Colors.red[300], size: 20),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },
             ),
           ),
 
-          _buildAddButton(onPressed: _addIngredient, label: 'Adicionar ingrediente'),
+          _buildAddButton(
+            onPressed: _addIngredient,
+            label: 'Adicionar ingrediente',
+            icon: Icons.add_circle_outline,
+          ),
           SizedBox(height: 20),
-          // Botão Próximo (só aparece se puder avançar)
-          if(canProceed)
+
+          if (canProceed)
             _buildNextButton(onPressed: _nextStep),
         ],
       ),
     );
   }
 
-  // Step 4: Modo de preparo
+  // ============================================================================
+  // STEP 4 e 5 (mantém igual)
+  // ============================================================================
+
   Widget _buildStep4() {
-    // Verifica se pode avançar
     bool canProceed = recipeData['preparations'].isNotEmpty &&
         (recipeData['preparations'] as List).every((step) => step.isNotEmpty);
 
@@ -386,7 +593,9 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
                           ),
                           Spacer(),
                           GestureDetector(
-                            onTap: () => setState(() { recipeData['preparations'].removeAt(index); }),
+                            onTap: () => setState(() {
+                              recipeData['preparations'].removeAt(index);
+                            }),
                             child: Icon(Icons.close, color: Colors.grey[400], size: 20),
                           ),
                         ],
@@ -413,18 +622,23 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
               },
             ),
           ),
-          _buildAddButton(onPressed: _addPreparation, label: 'Adicionar modo de preparo'),
+          _buildAddButton(
+            onPressed: _addPreparation,
+            label: 'Adicionar etapa',
+            icon: Icons.add,
+          ),
           SizedBox(height: 20),
-          // Botão Próximo (só aparece se puder avançar)
-          if(canProceed)
+
+          if (canProceed)
             _buildNextButton(onPressed: _nextStep),
         ],
       ),
     );
   }
 
-  // Step 5: Confirmar
   Widget _buildStep5() {
+    final selectedCategories = (recipeData['categories'] as List<String>);
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(20),
       child: Column(
@@ -441,16 +655,48 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
           ),
           SizedBox(height: 20),
 
-          // Categoria
-          _buildSummaryCard(
-            icon: Icons.category,
-            label: 'Categoria',
-            value: recipeData['restriction'],
-          ),
-          SizedBox(height: 12),
+          // Categorias selecionadas
+          if (selectedCategories.isNotEmpty) ...[
+            Text(
+              'Categorias',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: Color(0xFF3C4D18),
+              ),
+            ),
+            SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: selectedCategories.map((cat) {
+                return Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFFA9500).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: Color(0xFFFA9500),
+                    ),
+                  ),
+                  child: Text(
+                    cat,
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFFA9500),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 20),
+          ],
 
           // Estado
-          if(recipeData['state'] != 'Nenhum')
+          if (recipeData['state'] != 'Nenhum')
             _buildSummaryCard(
               icon: Icons.map,
               label: 'Estado',
@@ -458,7 +704,7 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
             ),
           SizedBox(height: 20),
 
-          // Imagem da receita
+          // Imagem
           Container(
             width: double.infinity,
             height: 250,
@@ -532,9 +778,16 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     );
   }
 
-  // ---- WIDGETS DE UI REUTILIZÁVEIS ----
+  // ============================================================================
+  // WIDGETS HELPER
+  // ============================================================================
 
-  Widget _buildTextField({required TextEditingController controller, required String labelText, required IconData prefixIcon, int maxLines = 1}) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData prefixIcon,
+    int maxLines = 1,
+  }) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
@@ -553,16 +806,21 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
         decoration: InputDecoration(
           border: InputBorder.none,
           labelText: labelText,
-          labelStyle: TextStyle(
-            color: Color(0xFF999999),
-          ),
+          labelStyle: TextStyle(color: Color(0xFF999999)),
           prefixIcon: Icon(prefixIcon, color: Color(0xFFFA9500)),
         ),
       ),
     );
   }
 
-  Widget _buildTimeRow(String label, String key, int value, {int step = 5, int min = 5, String labelSufix = ' min'}) {
+  Widget _buildTimeRow(
+      String label,
+      String key,
+      int value, {
+        int step = 5,
+        int min = 5,
+        String labelSufix = ' min',
+      }) {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -584,7 +842,9 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
           Row(
             children: [
               GestureDetector(
-                onTap: () => setState(() { recipeData[key] = (recipeData[key] - step).clamp(min, 300); }),
+                onTap: () => setState(() {
+                  recipeData[key] = (recipeData[key] - step).clamp(min, 300);
+                }),
                 child: Container(
                   padding: EdgeInsets.all(8),
                   child: Icon(Icons.remove, color: Color(0xFFFA9500)),
@@ -603,7 +863,9 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () => setState(() { recipeData[key] = (recipeData[key] + step).clamp(min, 300); }),
+                onTap: () => setState(() {
+                  recipeData[key] = (recipeData[key] + step).clamp(min, 300);
+                }),
                 child: Container(
                   padding: EdgeInsets.all(8),
                   child: Icon(Icons.add, color: Color(0xFFFA9500)),
@@ -647,7 +909,9 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
                 child: Text(value),
               );
             }).toList(),
-            onChanged: (String? newValue) => setState(() { recipeData[key] = newValue!; }),
+            onChanged: (String? newValue) => setState(() {
+              recipeData[key] = newValue!;
+            }),
           ),
         ),
       ],
@@ -686,10 +950,13 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     );
   }
 
-  Widget _buildAddButton({required VoidCallback onPressed, required String label}) {
+  Widget _buildAddButton({
+    required VoidCallback onPressed,
+    required String label,
+    required IconData icon,
+  }) {
     return Container(
       width: double.infinity,
-      margin: EdgeInsets.only(bottom: 20),
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -702,7 +969,7 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, color: Colors.white),
+            Icon(icon, color: Colors.white),
             SizedBox(width: 8),
             Text(
               label,
@@ -719,7 +986,11 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     );
   }
 
-  Widget _buildSummaryCard({required IconData icon, required String label, required String value}) {
+  Widget _buildSummaryCard({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16),
@@ -754,21 +1025,19 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     );
   }
 
-  // ---- MÉTODOS DE LÓGICA ----
-
+  // ============================================================================
+  // MÉTODOS
+  // ============================================================================
 
   void _nextStep() {
     if (currentStep < 5) {
-      setState(() {
-        currentStep++;
-      });
+      setState(() { currentStep++; });
       _pageController.nextPage(
         duration: Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
   }
-
 
   void _pickImage() async {
     final picker = ImagePicker();
@@ -781,18 +1050,18 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
           _selectedImageName = pickedFile.name;
         });
       } else {
-        setState(() { _selectedImageFile = File(pickedFile.path); });
+        setState(() {
+          _selectedImageFile = File(pickedFile.path);
+        });
       }
     }
   }
 
-
   void _addIngredient() {
     setState(() {
-      recipeData['ingredients'].add({ 'name': '', 'amount': '', });
+      recipeData['ingredients'].add({'name': '', 'amount': ''});
     });
   }
-
 
   void _addPreparation() {
     setState(() {
@@ -800,21 +1069,20 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     });
   }
 
-
-  void _confirmRecipe() async {
+  Future<void> _confirmRecipe() async {
     setState(() => _isLoading = true);
 
     try {
       String? imageUrl;
+      Uint8List? imageBytes;
       if (kIsWeb && _selectedImageBytes != null) {
-
-        imageUrl = 'web_image_${DateTime.now().millisecondsSinceEpoch}';
-        print("⚠️ Imagem web: A visualização não funcionará completamente no mock. Path: $imageUrl");
+        imageUrl = 'recipe_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        imageBytes = _selectedImageBytes;
+        print("📸 Imagem web: $imageUrl (${imageBytes!.length} bytes)");
       } else if (!kIsWeb && _selectedImageFile != null) {
-
-        imageUrl = _selectedImageFile!.path;
-        print("📸 Imagem mobile salva: $imageUrl");
-      }
+    imageUrl = _selectedImageFile!.path;
+    print("📸 Imagem mobile: $imageUrl");
+    }
 
       final ingredientsList = (recipeData['ingredients'] as List<Map<String, String>>)
           .map((ing) => "${ing['amount'] ?? ''} ${ing['name'] ?? ''}".trim())
@@ -831,36 +1099,42 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
       if (userId == null) throw Exception('Usuário não autenticado.');
       final userIdAsInt = int.tryParse(userId.toString()) ?? 0;
 
-      // IMPLEMENTAÇÃO DO ESTADO: Combina restrição e estado
-      String category = recipeData['restriction'];
+
+      List<String> finalCategories = List<String>.from(recipeData['categories']);
       if (recipeData['state'] != 'Nenhum') {
-        category = "$category - ${recipeData['state']}";
+        finalCategories.add(recipeData['state']);
       }
+
+      final categoryString = finalCategories.join(' - ');
 
       final newRecipe = Recipe(
         id: 0,
         title: recipeData['name'],
-        description: recipeData['description'], // USA A DESCRIÇÃO
+        description: recipeData['description'],
         image: imageUrl,
         preparationTime: preparationTime,
-        servings: recipeData['servings'], // USA AS PORÇÕES
+        servings: recipeData['servings'],
         ingredients: ingredientsList,
         steps: stepsList,
-        category: category, // USA A CATEGORIA COMBINADA
+        category: categoryString,
         userId: userIdAsInt,
         createdAt: DateTime.now(),
+        imageBytes: imageBytes,
       );
 
+      // ✅ PASSAR imageBytes ao provider
+      await ref.read(recipesProvider.notifier).addRecipe(newRecipe, imageBytes: imageBytes);
 
-      await ref.read(recipesProvider.notifier).addRecipe(newRecipe);
+      // Invalidar providers
       ref.invalidate(userRecipesProvider(userIdAsInt));
       ref.invalidate(userProfileProvider(userIdAsInt));
       ref.invalidate(allRecipesProvider);
+      ref.invalidate(categoriesWithCountProvider);
 
       if (mounted) context.push('/recipe-success');
 
     } catch (e) {
-      print('Erro ao criar receita: $e');
+      print('❌ Erro ao criar receita: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -874,22 +1148,25 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     }
   }
 
-
   bool _hasSelectedImage() {
     return (kIsWeb && _selectedImageBytes != null) ||
         (!kIsWeb && _selectedImageFile != null);
   }
 
-
   DecorationImage? _getImageProvider() {
     if (kIsWeb && _selectedImageBytes != null) {
-      return DecorationImage(image: MemoryImage(_selectedImageBytes!), fit: BoxFit.cover);
+      return DecorationImage(
+        image: MemoryImage(_selectedImageBytes!),
+        fit: BoxFit.cover,
+      );
     } else if (!kIsWeb && _selectedImageFile != null) {
-      return DecorationImage(image: FileImage(_selectedImageFile!), fit: BoxFit.cover);
+      return DecorationImage(
+        image: FileImage(_selectedImageFile!),
+        fit: BoxFit.cover,
+      );
     }
     return null;
   }
-
 
   @override
   void dispose() {
