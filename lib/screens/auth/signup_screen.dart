@@ -6,6 +6,7 @@ import '../../constants.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/mock_auth_service.dart';
+import '../../utils/responsive_utils.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   static const String route = '/signup';
@@ -115,17 +116,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w700,
-            fontSize: 40,
+            fontSize: ResponsiveUtils.fontSize(context, 40),
             color: Color(0xFF3C4D18),
           ),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: ResponsiveUtils.spacing(context, 8)),
         Text(
           'Preencha seus dados nos campos abaixo',
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w400,
-            fontSize: 14,
+            fontSize: ResponsiveUtils.fontSize(context, 14),
             color: Color(0xFF666666),
           ),
         ),
@@ -506,7 +507,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget _buildSignupButton() {
     return SizedBox(
       width: double.infinity,
-      height: 60,
+      height: ResponsiveUtils.buttonHeight(context, 60),
       child: ElevatedButton(
         onPressed: _signup,
         style: ElevatedButton.styleFrom(
@@ -522,7 +523,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w700,
-            fontSize: 18,
+            fontSize: ResponsiveUtils.fontSize(context, 18),
             color: Colors.white,
           ),
         ),

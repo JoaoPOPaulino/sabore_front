@@ -7,7 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sabore_app/providers/auth_provider.dart';
 import 'package:sabore_app/widgets/profile_image_widget.dart';
-import 'package:sabore_app/providers/recipe_provider.dart';
+
+import '../../utils/responsive_utils.dart';
 
 enum _SearchMode { recipes, users }
 
@@ -441,14 +442,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(color: Color(0xFFFA9500)),
-          SizedBox(height: 16),
+          SizedBox(height: ResponsiveUtils.spacing(context, 16)),
           Text(
             _searchMode == _SearchMode.recipes
                 ? 'Buscando receitas...'
                 : 'Buscando usuários...',
             style: TextStyle(
               fontFamily: 'Montserrat',
-              fontSize: 14,
+              fontSize: ResponsiveUtils.fontSize(context, 14),
               color: Color(0xFF999999),
             ),
           ),
@@ -685,41 +686,41 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: EdgeInsets.all(24),
+            padding: ResponsiveUtils.padding(context, all: 24),
             decoration: BoxDecoration(
               color: Color(0xFFFFF3E0),
               shape: BoxShape.circle,
             ),
             child: Icon(
               isUserSearch ? Icons.person_search_outlined : Icons.search_off,
-              size: 64,
+              size: ResponsiveUtils.iconSize(context, 64),
               color: Color(0xFFFA9500),
             ),
           ),
-          SizedBox(height: 24),
+          SizedBox(height: ResponsiveUtils.spacing(context, 24)),
           Text(
             isUserSearch
                 ? 'Nenhum usuário encontrado'
                 : 'Nenhuma receita encontrada',
             style: TextStyle(
               fontFamily: 'Montserrat',
-              fontSize: 20,
+              fontSize: ResponsiveUtils.fontSize(context, 20),
               fontWeight: FontWeight.w700,
               color: Color(0xFF3C4D18),
             ),
           ),
-          SizedBox(height: 8),
+          SizedBox(height: ResponsiveUtils.spacing(context, 8)),
           Text(
             isUserSearch
                 ? 'Verifique o @username'
                 : 'Tente buscar por outro termo',
             style: TextStyle(
               fontFamily: 'Montserrat',
-              fontSize: 14,
+              fontSize: ResponsiveUtils.fontSize(context, 14),
               color: Color(0xFF999999),
             ),
           ),
-          SizedBox(height: 24),
+          SizedBox(height: ResponsiveUtils.spacing(context, 24)),
           ElevatedButton.icon(
             onPressed: () {
               _searchController.clear();
@@ -729,7 +730,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFFFA9500),
               foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: ResponsiveUtils.padding(context, horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
               ),

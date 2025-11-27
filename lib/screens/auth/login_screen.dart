@@ -5,8 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../constants.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
+import 'package:sabore_app/utils/responsive_utils.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   static const String route = '/login';
@@ -94,8 +93,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Center(
       child: Image.asset(
         'assets/images/logo2.png',
-        width: 187,
-        height: 100,
+        width: ResponsiveUtils.isSmallPhone(context) ? 150 : 187,
+        height: ResponsiveUtils.isSmallPhone(context) ? 80 : 100,
         fit: BoxFit.contain,
       ),
     );
@@ -110,17 +109,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w700,
-            fontSize: 40,
+            fontSize: ResponsiveUtils.fontSize(context, 40),
             color: Color(0xFF3C4D18),
           ),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: ResponsiveUtils.spacing(context, 8)),
         Text(
           'Preencha seus dados nos campos abaixo',
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w400,
-            fontSize: 14,
+            fontSize: ResponsiveUtils.fontSize(context, 14),
             color: Color(0xFF666666),
           ),
         ),
@@ -167,7 +166,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           keyboardType: TextInputType.emailAddress,
           style: TextStyle(
             fontFamily: 'Montserrat',
-            fontSize: 16,
+            fontSize: ResponsiveUtils.fontSize(context, 16),
             color: Color(0xFF3C4D18),
           ),
           decoration: InputDecoration(
@@ -176,9 +175,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               color: Color(0xFF999999),
               fontFamily: 'Montserrat',
             ),
-            prefixIcon: Icon(Icons.email_outlined, color: Color(0xFFFA9500)),
+            prefixIcon: Icon(
+              Icons.email_outlined,
+              color: Color(0xFFFA9500),
+              size: ResponsiveUtils.iconSize(context, 24),
+            ),
             border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            contentPadding: ResponsiveUtils.padding(
+              context,
+              horizontal: 20,
+              vertical: ResponsiveUtils.isSmallPhone(context) ? 14 : 18,
+            ),
           ),
           validator: _validateEmail,
         ),
@@ -189,7 +196,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildPasswordField() {
     print('Building password field with _obscurePassword = $_obscurePassword');
     return ClipRRect(
-      borderRadius: BorderRadius.circular(25), // ✅ Clip para cortar as bordas
+      borderRadius: BorderRadius.circular(25),
       child: Container(
         decoration: BoxDecoration(
           color: Color(0xFFFFF3E0),
@@ -264,7 +271,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
-      height: 60,
+      height: ResponsiveUtils.buttonHeight(context, 60),
       child: ElevatedButton(
         onPressed: _login,
         style: ElevatedButton.styleFrom(
@@ -280,13 +287,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w700,
-            fontSize: 18,
+            fontSize: ResponsiveUtils.fontSize(context, 18),
             color: Colors.white,
           ),
         ),
       ),
     );
   }
+
   Widget _buildFooterLinks() {
     return Center(
       child: GestureDetector(
@@ -314,7 +322,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             onPressed: _handleGoogleLogin,
           ),
         ),
-        SizedBox(width: 15),
+        SizedBox(width: ResponsiveUtils.spacing(context, 15)),
         Expanded(
           child: _buildSocialButton(
             iconPath: 'assets/images/apple-logo.png',

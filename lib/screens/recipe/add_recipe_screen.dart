@@ -10,9 +10,10 @@ import '../../models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/recipe_provider.dart';
 import '../../providers/category_provider.dart';
+import '../../utils/responsive_utils.dart';
 
 class AddRecipeScreen extends ConsumerStatefulWidget {
-  final Recipe? recipeToEdit; // ✅ NOVO: Receita para editar
+  final Recipe? recipeToEdit;
 
   const AddRecipeScreen({Key? key, this.recipeToEdit}) : super(key: key);
 
@@ -393,8 +394,18 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
           Divider(),
           SizedBox(height: 24),
 
-          // Estado
-          _buildDropdown('Estado (Opcional)', 'state', states),
+          // ✅ DROPDOWN CORRIGIDO
+          _buildDropdown(
+            label: 'Estado (Opcional)',
+            value: recipeData['state'],
+            items: states,
+            onChanged: (value) {
+              setState(() {
+                recipeData['state'] = value ?? 'Nenhum';
+              });
+            },
+            icon: Icons.map,
+          ),
 
           SizedBox(height: 40),
           _buildNextButton(onPressed: _nextStep),
@@ -941,43 +952,95 @@ class _AddRecipeScreenState extends ConsumerState<AddRecipeScreen> {
     );
   }
 
-  Widget _buildDropdown(String label, String key, List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.w500,
-            fontSize: 16,
-            color: Color(0xFF3C4D18),
-          ),
+  Widget _buildDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+    required IconData icon,
+  }) {
+    final uniqueItems = <String>[];
+    final seen = <String>{};
+
+    for (final item in items) {
+      if (!seen.contains(item)) {
+        uniqueItems.add(item);
+        seen.add(item);
+      }
+    }
+
+    final validValue = uniqueItems.contains(value) ? value : null;
+
+    return Container(
+      padding: ResponsiveUtils.padding(context, all: 16),
+      decoration: BoxDecoration(
+        color: Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: Color(0xFFFA9500).withOpacity(0.3),
+          width: 1,
         ),
-        SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: Color(0xFFFFF3E0),
-            borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Color(0xFFFA9500).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: Color(0xFFFA9500),
+              size: ResponsiveUtils.iconSize(context, 20),
+            ),
           ),
-          child: DropdownButton<String>(
-            value: recipeData[key],
-            isExpanded: true,
-            underline: SizedBox(),
-            items: items.map((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-            onChanged: (String? newValue) => setState(() {
-              recipeData[key] = newValue!;
-            }),
+          SizedBox(width: ResponsiveUtils.spacing(context, 12)),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: validValue,
+                hint: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: ResponsiveUtils.fontSize(context, 14),
+                    color: Color(0xFF999999),
+                  ),
+                ),
+                isExpanded: true,
+                icon: Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Color(0xFFFA9500),
+                  size: ResponsiveUtils.iconSize(context, 24),
+                ),
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: ResponsiveUtils.fontSize(context, 14),
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF3C4D18),
+                ),
+                dropdownColor: Colors.white,
+                items: uniqueItems.map((String item) {
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: ResponsiveUtils.fontSize(context, 14),
+                        color: Color(0xFF3C4D18),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: onChanged,
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

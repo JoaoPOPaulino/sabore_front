@@ -1,3 +1,4 @@
+// lib/screens/home/home_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,7 @@ import '../../widgets/phone_verification_banner.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/state_provider.dart';
 import '../recipe/state_recipes_screen.dart';
+import '../../utils/responsive_utils.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -65,7 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       body: Stack(
         children: [
           Container(
-            height: 300,
+            height: ResponsiveUtils.imageHeight(context, 300), //  
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -81,26 +83,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           FadeTransition(
             opacity: _fadeAnimation,
             child: SingleChildScrollView(
-              padding: EdgeInsets.only(top: 50, left: 16, right: 16, bottom: 100),
+              padding: ResponsiveUtils.padding( //  
+                context,
+                top: 50,
+                left: 16,
+                right: 16,
+                bottom: 100,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(userData, firstName),
-                  SizedBox(height: 20),
+                  SizedBox(height: ResponsiveUtils.spacing(context, 20)), //  
                   PhoneVerificationBanner(),
-                  SizedBox(height: 24),
+                  SizedBox(height: ResponsiveUtils.spacing(context, 24)), //  
                   _buildSearchBar(),
-                  SizedBox(height: 24),
+                  SizedBox(height: ResponsiveUtils.spacing(context, 24)), //  
                   _buildCategoriesSection(),
-                  SizedBox(height: 32),
+                  SizedBox(height: ResponsiveUtils.spacing(context, 32)), //  
                   _buildFeaturedRecipe(),
-                  SizedBox(height: 32),
+                  SizedBox(height: ResponsiveUtils.spacing(context, 32)), //  
                   InfiniteStatesCarousel(),
-                  SizedBox(height: 32),
+                  SizedBox(height: ResponsiveUtils.spacing(context, 32)), //  
                   _buildPopularRecipesSection(),
-                  SizedBox(height: 32),
+                  SizedBox(height: ResponsiveUtils.spacing(context, 32)), //  
                   _buildNewRecipesSection(),
-                  SizedBox(height: 20),
+                  SizedBox(height: ResponsiveUtils.spacing(context, 20)), //  
                 ],
               ),
             ),
@@ -112,6 +120,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
+  //  HEADER 
   Widget _buildHeader(Map<String, dynamic>? userData, String firstName) {
     final unreadCountAsync = ref.watch(unreadNotificationCountProvider);
 
@@ -124,10 +133,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           },
           child: Hero(
             tag: 'profile_image',
-            child: ProfileImageWidget(userData: userData, radius: 28),
+            child: ProfileImageWidget(
+              userData: userData,
+              radius: ResponsiveUtils.isSmallPhone(context) ? 24 : 28, //  
+            ),
           ),
         ),
-        SizedBox(width: 16),
+        SizedBox(width: ResponsiveUtils.spacing(context, 16)), //  
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,7 +148,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 _getGreeting(),
                 style: TextStyle(
                   fontFamily: 'Montserrat',
-                  fontSize: 14,
+                  fontSize: ResponsiveUtils.fontSize(context, 14), //  
                   color: Color(0xFF666666),
                   fontWeight: FontWeight.w500,
                 ),
@@ -146,10 +158,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 firstName,
                 style: TextStyle(
                   fontFamily: 'Montserrat',
-                  fontSize: 24,
+                  fontSize: ResponsiveUtils.fontSize(context, 24), //  
                   color: Color(0xFF3C4D18),
                   fontWeight: FontWeight.w700,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -162,7 +176,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: Icon(Icons.notifications_outlined, color: Color(0xFFFA9500)),
+                icon: Icon(
+                  Icons.notifications_outlined,
+                  color: Color(0xFFFA9500),
+                  size: ResponsiveUtils.iconSize(context, 24), //  
+                ),
                 onPressed: () {
                   print('🔔 Notifications pressed');
                   context.push('/notifications');
@@ -199,7 +217,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                         count > 99 ? '99+' : count.toString(),
                         style: TextStyle(
                           fontFamily: 'Montserrat',
-                          fontSize: 10,
+                          fontSize: ResponsiveUtils.fontSize(context, 10), //  
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
@@ -217,6 +235,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
+  //  SEARCH BAR 
   Widget _buildSearchBar() {
     return GestureDetector(
       onTap: () {
@@ -224,7 +243,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         context.push('/search');
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: ResponsiveUtils.padding( //  
+          context,
+          horizontal: 20,
+          vertical: ResponsiveUtils.isSmallPhone(context) ? 14 : 16,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(30),
@@ -238,25 +261,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         ),
         child: Row(
           children: [
-            Icon(Icons.search, color: Color(0xFF999999), size: 22),
-            SizedBox(width: 12),
-            Text(
-              'O que você quer cozinhar hoje?',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 14,
-                color: Color(0xFF999999),
-                fontWeight: FontWeight.w500,
+            Icon(
+              Icons.search,
+              color: Color(0xFF999999),
+              size: ResponsiveUtils.iconSize(context, 22), //  
+            ),
+            SizedBox(width: ResponsiveUtils.spacing(context, 12)), //  
+            Expanded(
+              child: Text(
+                'O que você quer cozinhar hoje?',
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: ResponsiveUtils.fontSize(context, 14), //  
+                  color: Color(0xFF999999),
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            Spacer(),
+            SizedBox(width: ResponsiveUtils.spacing(context, 8)), //  
             Container(
-              padding: EdgeInsets.all(6),
+              padding: EdgeInsets.all(ResponsiveUtils.isSmallPhone(context) ? 5 : 6), //  
               decoration: BoxDecoration(
                 color: Color(0xFFFA9500),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.tune, color: Colors.white, size: 16),
+              child: Icon(
+                Icons.tune,
+                color: Colors.white,
+                size: ResponsiveUtils.iconSize(context, 16), //  
+              ),
             ),
           ],
         ),
@@ -264,6 +299,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
+  //  CATEGORIAS 
   Widget _buildCategoriesSection() {
     final categories = [
       {'name': 'Juninas', 'icon': '🎉', 'color': Color(0xFFFA9500)},
@@ -280,17 +316,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w700,
-            fontSize: 20,
+            fontSize: ResponsiveUtils.fontSize(context, 20), //  
             color: Color(0xFF3C4D18),
           ),
         ),
-        SizedBox(height: 16),
+        SizedBox(height: ResponsiveUtils.spacing(context, 16)), //  
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: categories.map((category) {
               return Container(
-                margin: EdgeInsets.only(right: 12),
+                margin: EdgeInsets.only(right: ResponsiveUtils.spacing(context, 12)), //  
                 child: _buildCategoryChip(
                   category['name'] as String,
                   category['icon'] as String,
@@ -304,6 +340,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
+  //  CATEGORY CHIP 
   Widget _buildCategoryChip(String name, String icon, Color color) {
     return GestureDetector(
       onTap: () {
@@ -311,7 +348,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         context.push('/categories');
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: ResponsiveUtils.padding( //  
+          context,
+          horizontal: ResponsiveUtils.isSmallPhone(context) ? 16 : 20,
+          vertical: ResponsiveUtils.isSmallPhone(context) ? 10 : 12,
+        ),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [color, color.withOpacity(0.8)],
@@ -329,15 +370,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           children: [
             Text(
               icon,
-              style: TextStyle(fontSize: 20),
+              style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 20)), //  
             ),
-            SizedBox(width: 8),
+            SizedBox(width: ResponsiveUtils.spacing(context, 8)), //  
             Text(
               name,
               style: TextStyle(
                 fontFamily: 'Montserrat',
                 fontWeight: FontWeight.w700,
-                fontSize: 14,
+                fontSize: ResponsiveUtils.fontSize(context, 14), //  
                 color: Colors.white,
               ),
             ),
@@ -347,6 +388,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
+  //  FEATURED RECIPE 
   Widget _buildFeaturedRecipe() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,44 +396,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Receita do Dia',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 20,
-                    color: Color(0xFF3C4D18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Receita do Dia',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w700,
+                      fontSize: ResponsiveUtils.fontSize(context, 20), //  
+                      color: Color(0xFF3C4D18),
+                    ),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Especial de hoje',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 12,
-                    color: Color(0xFF999999),
+                  SizedBox(height: 4),
+                  Text(
+                    'Especial de hoje',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: ResponsiveUtils.fontSize(context, 12), //  
+                      color: Color(0xFF999999),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: ResponsiveUtils.padding(context, horizontal: 12, vertical: 6), //  
               decoration: BoxDecoration(
                 color: Color(0xFFFA9500),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.star, color: Colors.white, size: 14),
+                  Icon(
+                    Icons.star,
+                    color: Colors.white,
+                    size: ResponsiveUtils.iconSize(context, 14), //  
+                  ),
                   SizedBox(width: 4),
                   Text(
                     'Destaque',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
-                      fontSize: 12,
+                      fontSize: ResponsiveUtils.fontSize(context, 12), //  
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -401,7 +449,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             ),
           ],
         ),
-        SizedBox(height: 16),
+        SizedBox(height: ResponsiveUtils.spacing(context, 16)), //  
         GestureDetector(
           onTap: () {
             print('🍰 Featured recipe tapped');
@@ -410,7 +458,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           child: Hero(
             tag: 'featured_recipe',
             child: Container(
-              height: 240,
+              height: ResponsiveUtils.imageHeight(context, 240), //  
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(25),
                 boxShadow: [
@@ -446,13 +494,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                       ),
                     ),
                     Padding(
-                      padding: EdgeInsets.all(20),
+                      padding: ResponsiveUtils.padding(context, all: 20), //  
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.end,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: ResponsiveUtils.padding(context, horizontal: 10, vertical: 4), //  
                             decoration: BoxDecoration(
                               color: Color(0xFF7CB342),
                               borderRadius: BorderRadius.circular(12),
@@ -461,31 +509,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                               'NOVO',
                               style: TextStyle(
                                 fontFamily: 'Montserrat',
-                                fontSize: 10,
+                                fontSize: ResponsiveUtils.fontSize(context, 10), //  
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                                 letterSpacing: 1,
                               ),
                             ),
                           ),
-                          SizedBox(height: 12),
+                          SizedBox(height: ResponsiveUtils.spacing(context, 12)), //  
                           Text(
                             'Canjica zero lactose',
                             style: TextStyle(
                               fontFamily: 'Montserrat',
                               fontWeight: FontWeight.w800,
-                              fontSize: 28,
+                              fontSize: ResponsiveUtils.fontSize(context, 28), //  
                               color: Colors.white,
                               height: 1.2,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          SizedBox(height: 8),
-                          Row(
+                          SizedBox(height: ResponsiveUtils.spacing(context, 8)), //  
+                          Wrap(
+                            spacing: ResponsiveUtils.spacing(context, 16), //  
+                            runSpacing: ResponsiveUtils.spacing(context, 8), //  
                             children: [
                               _buildRecipeInfo(Icons.access_time, '1h20min'),
-                              SizedBox(width: 16),
                               _buildRecipeInfo(Icons.restaurant, '9 itens'),
-                              SizedBox(width: 16),
                               _buildRecipeInfo(Icons.star, '4.8'),
                             ],
                           ),
@@ -507,16 +557,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
+  //  RECIPE INFO 
   Widget _buildRecipeInfo(IconData icon, String text) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: Colors.white, size: 16),
+        Icon(
+          icon,
+          color: Colors.white,
+          size: ResponsiveUtils.iconSize(context, 16), //  
+        ),
         SizedBox(width: 4),
         Text(
           text,
           style: TextStyle(
             fontFamily: 'Montserrat',
-            fontSize: 13,
+            fontSize: ResponsiveUtils.fontSize(context, 13), //  
             fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
@@ -525,19 +581,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
+  //  POPULAR RECIPES SECTION 
   Widget _buildPopularRecipesSection() {
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Receitas Populares',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w700,
-                fontSize: 20,
-                color: Color(0xFF3C4D18),
+            Expanded(
+              child: Text(
+                'Receitas Populares',
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontWeight: FontWeight.w700,
+                  fontSize: ResponsiveUtils.fontSize(context, 20), //  
+                  color: Color(0xFF3C4D18),
+                ),
               ),
             ),
             TextButton(
@@ -552,18 +611,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: ResponsiveUtils.fontSize(context, 14), //  
                       color: Color(0xFFFA9500),
                     ),
                   ),
                   SizedBox(width: 4),
-                  Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFFFA9500)),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: ResponsiveUtils.iconSize(context, 14), //  
+                    color: Color(0xFFFA9500),
+                  ),
                 ],
               ),
             ),
           ],
         ),
-        SizedBox(height: 16),
+        SizedBox(height: ResponsiveUtils.spacing(context, 16)), //  
         _buildRecipeCard(
           'Bolo de milho sem açúcar',
           '1h20min',
@@ -574,7 +637,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           1,
           isPopular: true,
         ),
-        SizedBox(height: 12),
+        SizedBox(height: ResponsiveUtils.spacing(context, 12)), //  
         _buildRecipeCard(
           'Brownie de chocolate',
           '45min',
@@ -589,6 +652,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
+  //  NEW RECIPES SECTION 
   Widget _buildNewRecipesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -598,11 +662,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w700,
-            fontSize: 20,
+            fontSize: ResponsiveUtils.fontSize(context, 20), //  
             color: Color(0xFF3C4D18),
           ),
         ),
-        SizedBox(height: 16),
+        SizedBox(height: ResponsiveUtils.spacing(context, 16)), //  
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -617,6 +681,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
+  //  RECIPE CARD 
   Widget _buildRecipeCard(
       String title,
       String time,
@@ -633,7 +698,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         context.push('/recipe/$recipeId');
       },
       child: Container(
-        height: 140,
+        height: ResponsiveUtils.cardHeight(context, 140), //  
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -648,7 +713,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         child: Row(
           children: [
             Container(
-              width: 120,
+              width: ResponsiveUtils.isSmallPhone(context) ? 100 : 120, //  
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.horizontal(left: Radius.circular(20)),
                 image: DecorationImage(
@@ -663,20 +728,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                       top: 8,
                       left: 8,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: ResponsiveUtils.padding(context, horizontal: 8, vertical: 4), //  
                         decoration: BoxDecoration(
                           color: Color(0xFFFA9500),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.trending_up, color: Colors.white, size: 12),
+                            Icon(
+                              Icons.trending_up,
+                              color: Colors.white,
+                              size: ResponsiveUtils.iconSize(context, 12), //  
+                            ),
                             SizedBox(width: 4),
                             Text(
                               'Popular',
                               style: TextStyle(
                                 fontFamily: 'Montserrat',
-                                fontSize: 10,
+                                fontSize: ResponsiveUtils.fontSize(context, 10), //  
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                               ),
@@ -690,7 +759,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             ),
             Expanded(
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: ResponsiveUtils.padding(context, all: 16), //  
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -699,23 +768,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                       style: TextStyle(
                         fontFamily: 'Montserrat',
                         fontWeight: FontWeight.w700,
-                        fontSize: 16,
+                        fontSize: ResponsiveUtils.fontSize(context, 16), //  
                         color: Color(0xFF3C4D18),
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(height: ResponsiveUtils.spacing(context, 8)), //  
                     Row(
                       children: [
-                        Icon(Icons.person_outline, color: Color(0xFF999999), size: 14),
+                        Icon(
+                          Icons.person_outline,
+                          color: Color(0xFF999999),
+                          size: ResponsiveUtils.iconSize(context, 14), //  
+                        ),
                         SizedBox(width: 4),
-                        Text(
-                          author,
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontSize: 12,
-                            color: Color(0xFF999999),
+                        Expanded(
+                          child: Text(
+                            author,
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: ResponsiveUtils.fontSize(context, 12), //  
+                              color: Color(0xFF999999),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -723,26 +800,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                     Spacer(),
                     Row(
                       children: [
-                        Icon(Icons.star, color: Color(0xFFFA9500), size: 16),
+                        Icon(
+                          Icons.star,
+                          color: Color(0xFFFA9500),
+                          size: ResponsiveUtils.iconSize(context, 16), //  
+                        ),
                         SizedBox(width: 4),
                         Text(
                           rating.toString(),
                           style: TextStyle(
                             fontFamily: 'Montserrat',
                             fontWeight: FontWeight.w600,
-                            fontSize: 13,
+                            fontSize: ResponsiveUtils.fontSize(context, 13), //  
                             color: Color(0xFF3C4D18),
                           ),
                         ),
-                        SizedBox(width: 12),
-                        Icon(Icons.access_time, color: Color(0xFF999999), size: 14),
+                        SizedBox(width: ResponsiveUtils.spacing(context, 12)), //  
+                        Icon(
+                          Icons.access_time,
+                          color: Color(0xFF999999),
+                          size: ResponsiveUtils.iconSize(context, 14), //  
+                        ),
                         SizedBox(width: 4),
-                        Text(
-                          time,
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontSize: 12,
-                            color: Color(0xFF999999),
+                        Expanded(
+                          child: Text(
+                            time,
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: ResponsiveUtils.fontSize(context, 12), //  
+                              color: Color(0xFF999999),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -751,16 +840,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 ),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.only(right: 12),
-              child: _buildBookmarkButton(title, recipeId),
-            ),
+            if (!ResponsiveUtils.isSmallPhone(context)) //  OCULTAR EM TELAS PEQUENAS
+              Padding(
+                padding: EdgeInsets.only(right: 12),
+                child: _buildBookmarkButton(title, recipeId),
+              ),
           ],
         ),
       ),
     );
   }
 
+  //  SMALL RECIPE CARD 
   Widget _buildSmallRecipeCard(String title, String imagePath, int recipeId) {
     return GestureDetector(
       onTap: () {
@@ -768,8 +859,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         context.push('/recipe/$recipeId');
       },
       child: Container(
-        width: 160,
-        margin: EdgeInsets.only(right: 12),
+        width: ResponsiveUtils.isSmallPhone(context) ? 140 : 160, //  
+        margin: EdgeInsets.only(right: ResponsiveUtils.spacing(context, 12)), //  
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
@@ -785,7 +876,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           child: Stack(
             children: [
               Container(
-                height: 200,
+                height: ResponsiveUtils.imageHeight(context, 200), //  
                 decoration: BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage(imagePath),
@@ -794,7 +885,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 ),
               ),
               Container(
-                height: 200,
+                height: ResponsiveUtils.imageHeight(context, 200), //  
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -815,7 +906,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                   style: TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w700,
-                    fontSize: 14,
+                    fontSize: ResponsiveUtils.fontSize(context, 14), //  
                     color: Colors.white,
                   ),
                   maxLines: 2,
@@ -826,7 +917,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 top: 8,
                 left: 8,
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: ResponsiveUtils.padding(context, horizontal: 8, vertical: 4), //  
                   decoration: BoxDecoration(
                     color: Color(0xFF7CB342),
                     borderRadius: BorderRadius.circular(12),
@@ -835,7 +926,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                     'NOVO',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
-                      fontSize: 10,
+                      fontSize: ResponsiveUtils.fontSize(context, 10), //  
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -903,17 +994,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               data: (isSaved) => Icon(
                 isSaved ? Icons.bookmark : Icons.bookmark_border,
                 color: Color(0xFFFA9500),
-                size: 20,
+                size: ResponsiveUtils.iconSize(context, 20), //  
               ),
               loading: () => Icon(
                 Icons.bookmark_border,
                 color: Color(0xFFFA9500),
-                size: 20,
+                size: ResponsiveUtils.iconSize(context, 20), //  
               ),
               error: (_, __) => Icon(
                 Icons.bookmark_border,
                 color: Color(0xFFFA9500),
-                size: 20,
+                size: ResponsiveUtils.iconSize(context, 20), //  
               ),
             ),
           ),
@@ -928,8 +1019,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       right: 0,
       bottom: 0,
       child: Container(
-        height: 75,
-        margin: EdgeInsets.all(16),
+        height: ResponsiveUtils.isSmallPhone(context) ? 70 : 75, //  
+        margin: ResponsiveUtils.padding(context, all: 16), //  
         decoration: BoxDecoration(
           color: Color(0xFF3C4D18),
           borderRadius: BorderRadius.circular(30),
@@ -972,7 +1063,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(12),
+        padding: ResponsiveUtils.padding(context, all: 12), //  
         decoration: BoxDecoration(
           color: isActive ? Color(0xFFFA9500) : Colors.transparent,
           borderRadius: BorderRadius.circular(15),
@@ -980,7 +1071,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         child: Icon(
           icon,
           color: isActive ? Colors.white : Colors.white70,
-          size: 24,
+          size: ResponsiveUtils.iconSize(context, 24), //  
         ),
       ),
     );
@@ -990,7 +1081,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: ResponsiveUtils.padding(context, all: 16), //  
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFFFA9500), Color(0xFFFF6B35)],
@@ -1004,12 +1095,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             ),
           ],
         ),
-        child: Icon(icon, color: Colors.white, size: 28),
+        child: Icon(
+          icon,
+          color: Colors.white,
+          size: ResponsiveUtils.iconSize(context, 28), //  
+        ),
       ),
     );
   }
 }
 
+// ============================================================================
+//  CARROSSEL DE ESTADOS 
+// ============================================================================
 class InfiniteStatesCarousel extends ConsumerStatefulWidget {
   const InfiniteStatesCarousel({Key? key}) : super(key: key);
 
@@ -1025,10 +1123,30 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
   @override
   void initState() {
     super.initState();
+    // ✅ CORREÇÃO: Usar valor fixo no initState
     _pageController = PageController(
       initialPage: 0,
-      viewportFraction: 0.4,
+      viewportFraction: 0.4, // ✅ Valor fixo - será ajustado em didChangeDependencies
     );
+  }
+
+  // ✅ NOVO: Ajustar viewportFraction quando o context estiver disponível
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Atualizar viewportFraction com base no tamanho da tela
+    final newViewportFraction = ResponsiveUtils.isSmallPhone(context) ? 0.35 : 0.4;
+
+    // Se o PageController já foi inicializado, criar um novo
+    if (_pageController.hasClients) {
+      final currentPage = _pageController.page?.round() ?? 0;
+      _pageController.dispose();
+      _pageController = PageController(
+        initialPage: currentPage,
+        viewportFraction: newViewportFraction,
+      );
+    }
   }
 
   void _startAutoScroll(int statesLength) {
@@ -1076,28 +1194,30 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Estados Brasileiros',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 20,
-                    color: Color(0xFF3C4D18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Estados Brasileiros',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w700,
+                      fontSize: ResponsiveUtils.fontSize(context, 20),
+                      color: Color(0xFF3C4D18),
+                    ),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Explore receitas típicas',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 12,
-                    color: Color(0xFF999999),
+                  SizedBox(height: 4),
+                  Text(
+                    'Explore receitas típicas',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: ResponsiveUtils.fontSize(context, 12),
+                      color: Color(0xFF999999),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -1111,26 +1231,28 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: ResponsiveUtils.fontSize(context, 14),
                       color: Color(0xFFFA9500),
                     ),
                   ),
                   SizedBox(width: 4),
-                  Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFFFA9500)),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: ResponsiveUtils.iconSize(context, 14),
+                    color: Color(0xFFFA9500),
+                  ),
                 ],
               ),
             ),
           ],
         ),
-        SizedBox(height: 16),
+        SizedBox(height: ResponsiveUtils.spacing(context, 16)),
 
         // Carrossel de estados
         statesAsync.when(
           data: (states) {
-            // Pegar apenas os 10 primeiros estados com mais receitas
             final topStates = states.take(10).toList();
 
-            // Iniciar auto-scroll apenas uma vez
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (_timer == null || !_timer!.isActive) {
                 _startAutoScroll(topStates.length);
@@ -1140,7 +1262,7 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
             return Column(
               children: [
                 Container(
-                  height: 160,
+                  height: ResponsiveUtils.imageHeight(context, 160),
                   child: PageView.builder(
                     controller: _pageController,
                     onPageChanged: (index) {
@@ -1165,7 +1287,6 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                             _resumeAutoScrollAfterDelay(topStates.length);
                             print('🗺️ State tapped: ${state.name}');
 
-                            // Navegar para tela de receitas do estado
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -1184,7 +1305,7 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                   ),
                 ),
 
-                SizedBox(height: 12),
+                SizedBox(height: ResponsiveUtils.spacing(context, 12)),
 
                 // Indicadores
                 Row(
@@ -1194,7 +1315,7 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                     return AnimatedContainer(
                       duration: Duration(milliseconds: 300),
                       width: isActive ? 24 : 8,
-                      height: 8,
+                      height: ResponsiveUtils.isSmallPhone(context) ? 6 : 8,
                       margin: EdgeInsets.symmetric(horizontal: 3),
                       decoration: BoxDecoration(
                         color: isActive ? Color(0xFFFA9500) : Color(0xFFE0E0E0),
@@ -1216,7 +1337,7 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
             );
           },
           loading: () => Container(
-            height: 160,
+            height: ResponsiveUtils.imageHeight(context, 160),
             child: Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFA9500)),
@@ -1224,18 +1345,22 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
             ),
           ),
           error: (error, stack) => Container(
-            height: 160,
+            height: ResponsiveUtils.imageHeight(context, 160),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, color: Colors.red, size: 32),
-                  SizedBox(height: 8),
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: ResponsiveUtils.iconSize(context, 32),
+                  ),
+                  SizedBox(height: ResponsiveUtils.spacing(context, 8)),
                   Text(
                     'Erro ao carregar estados',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
-                      fontSize: 12,
+                      fontSize: ResponsiveUtils.fontSize(context, 12),
                       color: Colors.red,
                     ),
                   ),
@@ -1248,6 +1373,7 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
     );
   }
 
+  // ✅ STATE CARD RESPONSIVO
   Widget _buildStateCard(StateData state, bool isCenter) {
     return Container(
       decoration: BoxDecoration(
@@ -1264,7 +1390,6 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // Imagem de fundo
             Container(
               decoration: BoxDecoration(
                 image: DecorationImage(
@@ -1273,8 +1398,6 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                 ),
               ),
             ),
-
-            // Gradiente com cor do estado
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -1287,14 +1410,12 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                 ),
               ),
             ),
-
-            // Badge "Popular" apenas no card central
             if (isCenter)
               Positioned(
                 top: 12,
                 right: 12,
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: ResponsiveUtils.padding(context, horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Color(0xFFFA9500),
                     borderRadius: BorderRadius.circular(12),
@@ -1308,13 +1429,17 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.star, color: Colors.white, size: 10),
+                      Icon(
+                        Icons.star,
+                        color: Colors.white,
+                        size: ResponsiveUtils.iconSize(context, 10),
+                      ),
                       SizedBox(width: 4),
                       Text(
                         'Popular',
                         style: TextStyle(
                           fontFamily: 'Montserrat',
-                          fontSize: 9,
+                          fontSize: ResponsiveUtils.fontSize(context, 9),
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
@@ -1323,13 +1448,11 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                   ),
                 ),
               ),
-
-            // Badge de região
             Positioned(
               top: 12,
               left: 12,
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: ResponsiveUtils.padding(context, horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(12),
@@ -1345,7 +1468,7 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                   state.region,
                   style: TextStyle(
                     fontFamily: 'Montserrat',
-                    fontSize: 8,
+                    fontSize: ResponsiveUtils.fontSize(context, 8),
                     fontWeight: FontWeight.w700,
                     color: Color(state.color),
                     letterSpacing: 0.5,
@@ -1353,8 +1476,6 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                 ),
               ),
             ),
-
-            // Conteúdo
             Positioned(
               bottom: 12,
               left: 12,
@@ -1365,15 +1486,15 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                 children: [
                   Text(
                     state.emoji,
-                    style: TextStyle(fontSize: 24),
+                    style: TextStyle(fontSize: ResponsiveUtils.fontSize(context, 24)),
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: ResponsiveUtils.spacing(context, 8)),
                   Text(
                     state.name,
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontWeight: FontWeight.w800,
-                      fontSize: 16,
+                      fontSize: ResponsiveUtils.fontSize(context, 16),
                       color: Colors.white,
                       height: 1.1,
                     ),
@@ -1386,7 +1507,7 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                       Icon(
                         Icons.restaurant_menu,
                         color: Colors.white.withOpacity(0.9),
-                        size: 12,
+                        size: ResponsiveUtils.iconSize(context, 12),
                       ),
                       SizedBox(width: 4),
                       Flexible(
@@ -1395,7 +1516,7 @@ class _InfiniteStatesCarouselState extends ConsumerState<InfiniteStatesCarousel>
                           style: TextStyle(
                             fontFamily: 'Montserrat',
                             fontWeight: FontWeight.w500,
-                            fontSize: 11,
+                            fontSize: ResponsiveUtils.fontSize(context, 11),
                             color: Colors.white.withOpacity(0.9),
                           ),
                           maxLines: 1,

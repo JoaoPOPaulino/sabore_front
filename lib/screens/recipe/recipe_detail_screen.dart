@@ -266,14 +266,21 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             ),
           ),
         ),
-        // ✅ MENU DE 3 PONTINHOS (APENAS PARA O AUTOR)
+        // ✅ MENU DE 3 PONTINHOS COMPACTO (APENAS PARA O AUTOR)
         if (isAuthor)
           PopupMenuButton<String>(
             icon: Container(
               margin: EdgeInsets.all(8),
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white,
+                    Colors.white.withOpacity(0.95),
+                  ],
+                ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -283,8 +290,20 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                   ),
                 ],
               ),
-              child: Icon(Icons.more_vert, color: Color(0xFF3C4D18)),
+              child: Icon(
+                Icons.more_vert,
+                color: Color(0xFF3C4D18),
+                size: 20,
+              ),
             ),
+            offset: Offset(-10, 50),
+            elevation: 12,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            color: Colors.transparent,
+            shadowColor: Colors.transparent,
+            tooltip: '', // ✅ Remove o tooltip "Show menu"
             onSelected: (value) {
               if (value == 'edit') {
                 _editRecipe(recipe);
@@ -294,39 +313,221 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             },
             itemBuilder: (context) => [
               PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit, color: Color(0xFF7CB342), size: 20),
-                    SizedBox(width: 12),
-                    Text(
-                      'Editar',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF3C4D18),
-                      ),
+                enabled: false,
+                padding: EdgeInsets.zero,
+                height: 0,
+                child: Container(
+                  width: 280,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white,
+                        Color(0xFFFFF8F0),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, color: Colors.red, size: 20),
-                    SizedBox(width: 12),
-                    Text(
-                      'Excluir',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.red,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: Offset(0, 5),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ✅ ITEM EDITAR
+                      InkWell(
+                        onTap: () {
+                          Navigator.pop(context);
+                          _editRecipe(recipe);
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF7CB342).withOpacity(0.1),
+                                Color(0xFF7CB342).withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Color(0xFF7CB342).withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Color(0xFF7CB342),
+                                      Color(0xFF8BC34A),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Color(0xFF7CB342).withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.edit_outlined,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                              SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Editar Receita',
+                                      style: TextStyle(
+                                        fontFamily: 'Montserrat',
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF3C4D18),
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      'Modificar ingredientes e preparo',
+                                      style: TextStyle(
+                                        fontFamily: 'Montserrat',
+                                        fontSize: 11,
+                                        color: Colors.grey[600],
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 14,
+                                color: Color(0xFF7CB342),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // ✅ DIVISOR ELEGANTE
+                      Container(
+                        margin: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                        height: 1,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              Colors.grey[300]!,
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // ✅ ITEM EXCLUIR
+                      InkWell(
+                        onTap: () {
+                          Navigator.pop(context);
+                          _deleteRecipe(recipe);
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.red.withOpacity(0.08),
+                                Colors.red.withOpacity(0.03),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.red.withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.red[600]!,
+                                      Colors.red[500]!,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.red.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                              SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Excluir Receita',
+                                      style: TextStyle(
+                                        fontFamily: 'Montserrat',
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.red[700],
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      'Ação permanente e irreversível',
+                                      style: TextStyle(
+                                        fontFamily: 'Montserrat',
+                                        fontSize: 11,
+                                        color: Colors.red[400],
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 14,
+                                color: Colors.red[400],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -379,59 +580,210 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   Future<void> _deleteRecipe(Recipe recipe) async {
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
-            SizedBox(width: 12),
-            Text(
-              'Excluir Receita',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: Color(0xFF3C4D18),
-              ),
-            ),
-          ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25),
         ),
-        content: Text(
-          'Tem certeza que deseja excluir "${recipe.title}"?\n\nEsta ação não pode ser desfeita.',
-          style: TextStyle(
-            fontFamily: 'Montserrat',
-            fontSize: 14,
-            color: Colors.grey[700],
+        contentPadding: EdgeInsets.zero,
+        content: Container(
+          width: 320,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(25),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Color(0xFFFFF8F0),
+              ],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ✅ HEADER COM ÍCONE
+              Container(
+                padding: EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(25),
+                    topRight: Radius.circular(25),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Excluir Receita?',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 22,
+                        color: Color(0xFF3C4D18),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ✅ CONTEÚDO
+              Padding(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Text(
+                      'Tem certeza que deseja excluir',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 15,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFFA9500).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '"${recipe.title}"?',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFFA9500),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.red.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.red,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Esta ação não pode ser desfeita',
+                              style: TextStyle(
+                                fontFamily: 'Montserrat',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.red[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ✅ BOTÕES
+              Padding(
+                padding: EdgeInsets.only(left: 24, right: 24, bottom: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: Colors.grey[300]!,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancelar',
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          elevation: 4,
+                          shadowColor: Colors.red.withOpacity(0.3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.delete_outline, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'Excluir',
+                              style: TextStyle(
+                                fontFamily: 'Montserrat',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: Text(
-              'Excluir',
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
       ),
     );
 
@@ -448,25 +800,62 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ Receita excluída com sucesso!'),
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Receita excluída com sucesso!',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               backgroundColor: Color(0xFF7CB342),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
-          context.go('/home'); // Redirecionar para home
+          context.go('/home');
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('❌ Erro ao excluir receita: ${e.toString()}'),
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Erro ao excluir receita',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
         }
       }
     }
   }
-
   Widget _buildRecipeHeader(Recipe recipe) {
     // ✅ BUSCAR DADOS ATUALIZADOS DO AUTOR
     final authorDataAsync = ref.watch(userProfileProvider(recipe.userId));
